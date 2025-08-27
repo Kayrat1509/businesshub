@@ -1,0 +1,217 @@
+ПРОМТ ДЛЯ АВТОГЕНЕРАЦИИ ПРОЕКТА (WORKING MVP)
+Ты — full-stack разработчик и UI/UX-дизайнер. Сгенерируй полностью рабочий MVP B2B-платформы поиска поставщиков товаров и услуг с нуля, строго по ТЗ ниже. Все кнопки, ссылки, формы и переходы должны работать из коробки. Код компилируется без ошибок, запускается по инструкции из README и покрыт базовыми тестами.
+1) Технологии и архитектура
+Стек
+•	Backend: Python 3.11, Django 5, DRF, drf-simplejwt (JWT), pandas для импорта Excel.
+•	БД: PostgreSQL.
+•	Frontend: React 18 + Vite, React Router v6, TailwindCSS, Axios/RTK Query (на выбор), Framer Motion (анимации).
+•	Mobile: тот же REST API (без отдельного фронта).
+•	Контейнеризация: Docker + docker-compose (app, db, pgadmin, nginx).
+•	Линтинг/форматтеры: Backend — black, isort, flake8; Frontend — eslint, prettier, Typescript строго включён.
+•	.env.example для обоих частей.
+Структура репозитория
+b2b-platform/
+  backend/
+    app/
+      companies/    # модели компании/филиалы/сотрудники
+      products/     # товары/услуги
+      categories/   # рубрики
+      reviews/      # отзывы/рейтинги
+      tenders/      # тендеры/модерация
+      users/        # регистрация/логин/JWT/роли
+      ads/          # реклама/акции
+      logs/         # логи действий
+      common/       # utils, mixins, pagination, filters
+      settings.py
+      urls.py
+    manage.py
+    requirements.txt
+    README.md
+    tests/
+  frontend/
+    src/
+      app/            # роутинг, провайдеры
+      api/            # axios/rtk query с типами
+      components/     # общие UI-компоненты
+      pages/
+        Home/
+        CompanyCard/
+        SupplierDashboard/
+        AdminPanel/
+        Auth/
+        Search/
+        Category/
+      store/          # глобальное состояние (если RTK)
+      styles/
+      assets/
+      mocks/          # фиктивные данные на случай отсутствия API
+    index.html
+    vite.config.ts
+    package.json
+    README.md
+    tailwind.config.ts
+    postcss.config.js
+  docker-compose.yml
+  nginx.conf
+  README.md  # корневой с командами запуска
+2) Роли и доступы
+•	Соискатель (ROLE_SEEKER): поиск и фильтрация компаний, просмотр карточек, после регистрации — отзывы, избранное, создание тендера (уходит на модерацию).
+•	Поставщик (ROLE_SUPPLIER): регистрация, CRUD своей компании, управление товарами/услугами (ручной ввод и импорт Excel/1С), загрузка логотипа (ровно 600×600 px; валидация).
+•	Админ/Модератор (ROLE_ADMIN): модерация компаний/товаров/тендеров/отзывов, управление категориями, импорт базы Excel, реклама/акции, просмотр логов.
+JWT-аутентификация; refresh/rotate; права через DRF permissions + IsOwner/IsAdmin.
+3) Модели (Django)
+Сделай модели и миграции:
+•	Category(id, name, parent, slug, is_active)
+•	Company(id, owner(FK->User), name, logo(ImageField, 600x600), description, categories(M2M->Category), contacts(json), legal_info(json), payment_methods(Choice/Array), work_schedule(json), staff_count, branches_count, location(lat, lng, address parts), status(choices: DRAFT/PENDING/APPROVED/BANNED), rating(Float), created_at, updated_at)
+•	Branch(id, company, address, lat, lng)
+•	Employee(id, company, full_name, position, phone, email)
+•	Product(id, company, title, sku, description, price, currency, is_service(bool), category(FK->Category), images, in_stock, is_active)
+•	Review(id, company, author(FK->User), rating(Int1..5), text, status(PENDING/APPROVED/REJECTED), created_at)
+•	Tender(id, author(FK->User), title, description, attachments, status(PENDING/APPROVED/REJECTED), categories(M2M), city, budget_min, budget_max, deadline_date, created_at)
+•	Ad(id, title, image, url, position(enum: HOME_WIDGET, SIDEBAR, BANNER), is_active, starts_at, ends_at)
+•	Action(id, company, title, description, starts_at, ends_at, is_active)
+•	Favorite(id, user, company, unique_together)
+•	ActionLog(id, user, action, entity_type, entity_id, payload(json), created_at)
+Сериализаторы DRF для всех сущностей (включая вложенные, где нужно), пагинация, фильтры (django-filter), поиск (по названию/товарам/категориям/городу).
+4) Импорт Excel (pandas → ORM)
+•	Эндпоинт: POST /api/import/companies-excel/ (ROLE_ADMIN/ROLE_SUPPLIER).
+•	Принимает файл XLSX/CSV по шаблону (см. образец из ТЗ). Парсит строки, валидирует, создает/обновляет:
+o	Company (+ адрес, координаты, категории через |), Branch (если район/улица), Employee (опционально), Contact/Emails/Phones (парсить |).
+•	Повторный импорт: по уникальному ключу (name + city) — upsert.
+•	Валидация логотипа: если файл не 600×600 — отклонять.
+•	Возвращать детальный отчёт: добавлено/обновлено/пропущено, список ошибок по строкам.
+5) REST API (DRF + JWT)
+Минимальный набор:
+•	POST /api/auth/register (email, password, role)
+•	POST /api/auth/token (JWT), POST /api/auth/token/refresh
+•	GET /api/companies (фильтры: q, category, city, rating_gte, has_actions)
+•	GET /api/companies/{id}
+•	POST/PUT/PATCH/DELETE /api/companies (поставщик — только свои)
+•	GET/POST /api/products (+ фильтры), CRUD своими
+•	GET/POST /api/reviews (создать — только зарегистрированный; модерация — админ)
+•	POST /api/favorites/{company_id} toggle, GET /api/favorites
+•	GET/POST /api/tenders (создаёт соискатель → статус PENDING), PATCH /api/tenders/{id} (админ меняет статус)
+•	GET/POST /api/categories (список/дерево, CRUD — админ)
+•	GET/POST /api/ads, GET/POST /api/actions (админ CRUD)
+•	GET /api/logs (админ)
+•	POST /api/import/companies-excel/
+Стандартизируй ответы (envelop: {results, count, next, prev}), ошибки в JSON, коды статусов корректные.
+6) Frontend: страницы и кликабельность (ВСЁ ДОЛЖНО РАБОТАТЬ)
+Роутинг (React Router v6):
+/
+ /company/:id
+ /search?q=&category=&city=
+ /category/:slug
+ /auth/login
+ /auth/register
+ /dashboard            # кабинет поставщика
+ /dashboard/company
+ /dashboard/products
+ /dashboard/import
+ /dashboard/actions
+ /dashboard/settings
+ /admin                # панель модератора/админа
+ /admin/moderation
+ /admin/categories
+ /admin/reviews
+ /admin/tenders
+ /admin/import
+Главная (/)
+•	Верхний поиск (по названию/товарам/категориям/городу) → редирект на /search с query-параметрами.
+•	Сетка категорий (карточки) кликабельна → /category/:slug.
+•	Блок «Популярные компании» (подгружается из /api/companies?is_popular=true), карточка кликабельна → /company/:id.
+•	Блок «Тендеры» (модерированные) — кнопка “Подробнее” → открывает модал с краткой инфой и ссылкой на страницу /search?type=tender&id=... (или отдельную страницу).
+•	Виджет рекламы — кликабельный (переход на url из Ad.url в новой вкладке).
+Карточка компании (/company/:id)
+•	Вкладки: «О компании», «Товары и услуги», «Отзывы», «Филиалы», «Карта».
+•	Кнопка «В избранное» — работает (требует логин; если не залогинен → модал логина).
+•	Кнопка «Оставить отзыв» — показывает форму (рейтинг + текст) → POST /api/reviews.
+•	Галерея фото — листается.
+•	Кнопка «Построить маршрут» — ссылка на Google/2GIS (query по координатам).
+•	Статус отображается бейджем (Approved/На модерации/Заблокирована).
+Поиск (/search) и Категория (/category/:slug)
+•	Фильтры (категория, город, рейтинг) + пагинация.
+•	Карточки компаний кликабельны.
+•	Сохранение фильтров в URL.
+•	Кнопки сброса фильтров и применения — работают.
+Личный кабинет поставщика (/dashboard/*)
+•	Боковое меню: Company, Products, Import, Actions, Settings — все пункты кликабельны.
+•	Company: форма редактирования, загрузка логотипа (валидация 600×600 до отправки).
+•	Products: таблица, CRUD (модалки «Создать/Редактировать», удаление с confirm-диалогом).
+•	Import: загрузка Excel по шаблону, прогресс, отчёт об импорте (успешно/ошибки).
+•	Actions: управление акциями (вкл/выкл).
+•	Settings: смена пароля/контакты.
+•	В хедере — «Выйти» (очищает токен, редирект на /).
+Панель админа (/admin/*)
+•	Moderation: очереди на модерацию (компании, товары, отзывы, тендеры) с кнопками Approve/Reject — работают (PATCH).
+•	Categories: дерево категорий с CRUD.
+•	Reviews: список с фильтром по статусу; Approve/Reject.
+•	Tenders: список PENDING; Approve/Reject с комментарием.
+•	Import: загрузка Excel, просмотр истории импортов.
+•	Логи: таблица действий с фильтрами по пользователю/типу.
+UI/UX high-tech
+•	Тёмные тона, акценты синие/бирюзовые, неоновые свечения на hover.
+•	Плавные hover-эффекты и micro-animatons (Framer Motion).
+•	Адаптив: ≥1280, 768–1279, ≤767.
+•	Карточки/гриды с мягкими тенями, скругл. 2xl.
+7) Обработчики и состояния (обязательно)
+•	Для каждой кнопки/ссылки/иконки навигации опиши и реализуй onClick/to → реальный маршрут/вызов API.
+•	Кнопки дизейблятся на загрузке, показывают спиннер.
+•	Валидации форм (логин, регистрация, отзыв, товар, компания).
+•	Обработка ошибок API (toast/alert).
+•	Пустые состояния (нет данных/ошибка/пустой результат).
+•	Сохранение сессии JWT в localStorage (access/refresh) + авто-рефреш.
+8) Тестовые данные (сидеры + фикстуры)
+•	Backend: Django management-команда seed_demo создаёт:
+o	10 категорий (с вложенностью),
+o	8 компаний (разные города, статусы, координаты),
+o	20 товаров/услуг,
+o	12 отзывов (разные статусы),
+o	5 тендеров (PENDING/APPROVED),
+o	3 баннера рекламы.
+•	Frontend: при VITE_USE_MOCK=true используй мок-ответы (msw), иначе — реальное API.
+9) Импорт из 1С/Excel
+•	Шаблон Excel положи в backend/app/common/templates/company_import_template.xlsx.
+•	В README опиши соответствие колонок → полям моделей.
+•	Поля с несколькими значениями парсятся по разделителю |.
+•	Координаты — float; дата — DD.MM.YYYY.
+10) Качество и сборка
+•	Сборка без ошибок. Исправь «Unexpected token, expected ';' (8:43)» и подобные: конфиг Vite/TS корректный, неиспользуемые плагины убрать.
+•	ESLint/Prettier/TS pass; Flake8/Black pass.
+•	docker-compose up поднимает всё и даёт доступ:
+o	Frontend: http://localhost:5173
+o	Backend API: http://localhost:8000/api
+o	Swagger/OpenAPI: http://localhost:8000/api/schema/swagger/
+o	PgAdmin: http://localhost:5050
+•	Demo-учётки:
+o	admin: admin@example.com / Admin123!
+o	supplier: supplier@example.com / Supplier123!
+o	seeker: seeker@example.com / Seeker123!
+11) Тесты (минимум)
+•	Backend: pytest:
+o	auth (register/login/jwt refresh),
+o	permissions (supplier видит только свои компании/товары),
+o	импорт Excel (валид/ошибки).
+•	Frontend: Vitest + Testing Library:
+o	роутинг кликов по сетке категорий (переход на /category/:slug),
+o	кнопка «В избранное» (незалогинен → логин-модал, залогинен → POST),
+o	CRUD товара (создание/редактирование/удаление),
+o	модерация в админке (approve/reject).
+12) Документация
+•	Подробный README.md в корне:
+o	Установка, .env, команды (dev/prod), Docker, миграции, загрузка медиа.
+o	Описание ролей.
+o	Список эндпоинтов (с примером запросов/ответов).
+o	Как запустить сиды и импорт Excel.
+o	Тестовые логины.
+13) Definition of Done (приёмка)
+•	Все заявленные страницы существуют и доступны по роутам.
+•	Любая кнопка/ссылка/элемент навигации выполняет действие: переход, открытие модалки или запрос к API.
+•	Функционал сетки категорий на главной — кликабелен и фильтрует.
+•	Есть рабочая страница админа/модератора с утверждением/отклонением.
+•	Импорт Excel работает и возвращает понятный отчёт.
+•	Избранное, отзывы, тендеры — работают с учётом прав.
+•	Лого валидируется на 600×600 до загрузки.
+•	Проект собирается и запускается одной командой (docker-compose up), без ошибок линтеров.
+Сгенерируй проект целиком: все файлы, код, конфиги, миграции, сиды, тесты, mock-сервер (при необходимости), README. Если какой-то пункт неоднозначен — выбери разумную реализацию и задокументируй её в README.
+
