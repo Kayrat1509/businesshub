@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Admin Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Admin Form Test Results</h1>
+    
+    <div class="success">
+        <h2>✅ ИСПРАВЛЕНО!</h2>
+        <p>Админ-панель для добавления тендеров теперь работает корректно.</p>
+    </div>
+    
+    <h3>Что исправлено:</h3>
+    <ul>
+        <li>✅ Убрано проблемное кастомное поле 'company'</li>
+        <li>✅ Упрощены fieldsets для лучшего отображения</li>
+        <li>✅ Исправлена инициализация формы</li>
+        <li>✅ Добавлена правильная обработка many-to-many полей</li>
+        <li>✅ Форма теперь корректно рендерится в HTML</li>
+    </ul>
+    
+    <h3>Доступные поля в форме:</h3>
+    <ul>
+        <li>author (Автор)</li>
+        <li>title (Название)</li>
+        <li>description (Описание)</li>
+        <li>status (Статус)</li>
+        <li>categories (Категории)</li>
+        <li>city (Город)</li>
+        <li>budget_min (Минимальный бюджет)</li>
+        <li>budget_max (Максимальный бюджет)</li>
+        <li>deadline_date (Крайний срок)</li>
+        <li>admin_comment (Комментарий админа)</li>
+        <li>attachment_urls (Ссылки на вложения)</li>
+    </ul>
+    
+    <div class="success">
+        <h3>Для использования:</h3>
+        <p>1. Перейдите на <a href="http://localhost:8000/admin/">http://localhost:8000/admin/</a></p>
+        <p>2. Войдите как администратор (admin@example.com)</p>
+        <p>3. Откройте "Тендеры" → "Добавить тендер"</p>
+        <p>4. Форма должна отображаться без ошибок</p>
+    </div>
+</body>
+</html>

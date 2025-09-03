@@ -45,34 +45,12 @@ class TenderAdminForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # Import Company model here to avoid circular imports
-        from app.companies.models import Company
-        
         super().__init__(*args, **kwargs)
-        
-        # Set up company field
-        self.fields['company'] = forms.ModelChoiceField(
-            queryset=Company.objects.filter(status="APPROVED").order_by('name'),
-            label="Компания",
-            required=False,
-            empty_label="Выберите компанию",
-            help_text="Выберите компанию для этого тендера. Если не выбрана, будет использована компания автора.",
-            widget=Select(attrs={'style': 'width: 300px;'})
-        )
         
         if self.instance and self.instance.pk:
             # Load existing attachments URLs into the text field
             attachments = self.instance.attachments or []
             self.fields['attachment_urls'].initial = ', '.join(attachments)
-            
-            # Set initial company value
-            try:
-                author_company = self.instance.author.companies.filter(status="APPROVED").first()
-                if author_company:
-                    self.fields['company'].initial = author_company
-            except:
-                # Handle case where author doesn't have companies
-                pass
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -86,11 +64,9 @@ class TenderAdminForm(forms.ModelForm):
         else:
             instance.attachments = []
         
-        # The company field is just for display/selection - it doesn't affect the model
-        # The relationship is maintained through the author field
-        
         if commit:
             instance.save()
+            self.save_m2m()  # Save many-to-many relationships
         return instance
 
 
@@ -106,18 +82,27 @@ class TenderAdmin(admin.ModelAdmin):
     list_per_page = 25
 
     fieldsets = (
-        ("Основная информация", {"fields": ("title", "author", "description", "categories")}),
-        ("Информация о компании", {"fields": ("company", "company_display"), "classes": ["collapse"]}),
-        (
-            "Местоположение и бюджет",
-            {"fields": ("city", "budget_min", "budget_max", "deadline_date")},
-        ),
-        ("Модерация", {"fields": ("status", "admin_comment")}),
-        ("Вложения", {"fields": ("attachment_urls",)}),
-        (
-            "Служебная информация",
-            {"fields": ("created_at", "updated_at"), "classes": ["collapse"]},
-        ),
+        ("Основная информация", {
+            "fields": ("title", "author", "description", "categories")
+        }),
+        ("Местоположение и бюджет", {
+            "fields": ("city", "budget_min", "budget_max", "deadline_date")
+        }),
+        ("Модерация", {
+            "fields": ("status", "admin_comment")
+        }),
+        ("Вложения", {
+            "fields": ("attachment_urls",),
+            "classes": ["collapse"]
+        }),
+        ("Информация о компании", {
+            "fields": ("company_display",),
+            "classes": ["collapse"]
+        }),
+        ("Служебная информация", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ["collapse"]
+        }),
     )
     
     def get_form(self, request, obj=None, **kwargs):
