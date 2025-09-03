@@ -1,10 +1,10 @@
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Category } from '../../types'
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Category } from '../../types';
 import { 
   Building2, Laptop, Wrench, Car, Shirt, Home, 
-  Utensils, Heart, GraduationCap, Briefcase 
-} from 'lucide-react'
+  Utensils, Heart, GraduationCap, Briefcase, 
+} from 'lucide-react';
 
 interface CategoryGridProps {
   categories: Category[]
@@ -13,20 +13,38 @@ interface CategoryGridProps {
 const CategoryGrid = ({ categories }: CategoryGridProps) => {
   // Icon mapping for categories
   const getIconForCategory = (categoryName: string) => {
-    const name = categoryName.toLowerCase()
+    const name = categoryName.toLowerCase();
     
-    if (name.includes('строительств') || name.includes('недвижим')) return Building2
-    if (name.includes('it') || name.includes('компьютер') || name.includes('программ')) return Laptop
-    if (name.includes('оборудование') || name.includes('инструмент')) return Wrench
-    if (name.includes('автомобил') || name.includes('транспорт')) return Car
-    if (name.includes('одежд') || name.includes('текстил')) return Shirt
-    if (name.includes('мебель') || name.includes('интерьер')) return Home
-    if (name.includes('продукт') || name.includes('питан')) return Utensils
-    if (name.includes('медицин') || name.includes('здоров')) return Heart
-    if (name.includes('образован') || name.includes('обучен')) return GraduationCap
+    if (name.includes('строительств') || name.includes('недвижим')) {
+return Building2;
+}
+    if (name.includes('it') || name.includes('компьютер') || name.includes('программ')) {
+return Laptop;
+}
+    if (name.includes('оборудование') || name.includes('инструмент')) {
+return Wrench;
+}
+    if (name.includes('автомобил') || name.includes('транспорт')) {
+return Car;
+}
+    if (name.includes('одежд') || name.includes('текстил')) {
+return Shirt;
+}
+    if (name.includes('мебель') || name.includes('интерьер')) {
+return Home;
+}
+    if (name.includes('продукт') || name.includes('питан')) {
+return Utensils;
+}
+    if (name.includes('медицин') || name.includes('здоров')) {
+return Heart;
+}
+    if (name.includes('образован') || name.includes('обучен')) {
+return GraduationCap;
+}
     
-    return Briefcase // default icon
-  }
+    return Briefcase; // default icon
+  };
 
   const colors = [
     'from-primary-600 to-primary-500',
@@ -37,13 +55,13 @@ const CategoryGrid = ({ categories }: CategoryGridProps) => {
     'from-yellow-600 to-yellow-500',
     'from-pink-600 to-pink-500',
     'from-indigo-600 to-indigo-500',
-  ]
+  ];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
       {categories.map((category, index) => {
-        const IconComponent = getIconForCategory(category.name)
-        const gradientColor = colors[index % colors.length]
+        const IconComponent = getIconForCategory(category.name);
+        const gradientColor = colors[index % colors.length];
         
         return (
           <motion.div
@@ -77,10 +95,10 @@ const CategoryGrid = ({ categories }: CategoryGridProps) => {
               </div>
             </Link>
           </motion.div>
-        )
+        );
       })}
     </div>
-  )
-}
+  );
+};
 
-export default CategoryGrid
+export default CategoryGrid;

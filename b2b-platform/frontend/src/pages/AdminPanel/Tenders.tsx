@@ -1,12 +1,17 @@
-import React from 'react'
+import React from 'react';
 
-const Tenders = () => {
+const AdminTenders: React.FC = () => {
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white">Модерация тендеров</h2>
-      <p className="text-dark-300 mt-2">Страница модерации тендеров в разработке</p>
+      <h1 className="text-3xl font-bold text-white mb-6">🛡️ Tenders</h1>
+      <div className="card p-6">
+        <p className="text-dark-300">Админ панель: Tenders</p>
+        <div className="mt-4 text-center">
+          <p className="text-red-400">🔧 Страница в разработке</p>
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default Tenders
+export default AdminTenders;

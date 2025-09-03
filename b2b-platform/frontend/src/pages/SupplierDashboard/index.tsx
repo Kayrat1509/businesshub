@@ -1,41 +1,84 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   Building2, Package, Star, TrendingUp, Users, Eye,
-  Plus, Calendar, ArrowUpRight, Activity
-} from 'lucide-react'
-import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { fetchCompanies } from '../../store/slices/companiesSlice'
-import { fetchProducts } from '../../store/slices/productsSlice'
-import LoadingSpinner from '../../components/LoadingSpinner'
+  Plus, Calendar, ArrowUpRight, Activity,
+} from 'lucide-react';
+import { useAppSelector } from '../../store/hooks';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const SupplierDashboard = () => {
-  const dispatch = useAppDispatch()
-  const { user } = useAppSelector(state => state.auth)
-  const { companies, isLoading: companiesLoading } = useAppSelector(state => state.companies)
-  const { products, totalCount: productsCount } = useAppSelector(state => state.products)
+  const { user } = useAppSelector(state => state.auth);
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [stats] = useState({
     views: 1250,
     inquiries: 24,
     rating: 4.8,
     totalReviews: 156,
-  })
+  });
 
   useEffect(() => {
-    // Fetch user's companies and products
+    // Load mock data for demonstration
     if (user) {
-      dispatch(fetchCompanies({ filters: {} }))
-      dispatch(fetchProducts({ filters: {} }))
+      loadMockData();
     }
-  }, [dispatch, user])
+  }, [user]);
 
-  const userCompany = companies.find(company => company.owner_name === user?.username) || companies[0]
+  const loadMockData = () => {
+    // Simulate loading with mock companies and products
+    const mockCompanies = [
+      {
+        id: 1,
+        name: 'ТОО АДАЛ САУДА',
+        status: 'APPROVED',
+        city: 'Алматы',
+        rating: 4.8,
+      },
+    ];
+
+    const mockProducts = [
+      {
+        id: 1,
+        title: 'Смеситель для кухни',
+        description: 'Качественный смеситель из нержавеющей стали',
+        category: { name: 'Сантехника' },
+        price: 15000,
+        is_active: true,
+        images: [],
+      },
+      {
+        id: 2,
+        title: 'Кабель ВВГ 3x2.5',
+        description: 'Медный кабель для электропроводки',
+        category: { name: 'Электрика' },
+        price: 250,
+        is_active: true,
+        images: [],
+      },
+      {
+        id: 3,
+        title: 'Краска водоэмульсионная',
+        description: 'Краска для внутренних работ, белая',
+        category: { name: 'Лакокрасочные материалы' },
+        price: 800,
+        is_active: true,
+        images: [],
+      },
+    ];
+
+    setCompanies(mockCompanies);
+    setProducts(mockProducts);
+  };
+
+  const userCompany = companies.find(company => company.owner_name === user?.username) || companies[0];
 
   const dashboardCards = [
     {
-      title: 'Моя компания',
+      title: 'Карточка компании',
       description: userCompany ? 'Управление профилем' : 'Создать компанию',
       icon: Building2,
       color: 'from-primary-600 to-primary-500',
@@ -44,16 +87,16 @@ const SupplierDashboard = () => {
       status: userCompany?.status,
     },
     {
-      title: 'Товары и услуги',
+      title: 'Карточка товаров',
       description: 'Управление каталогом',
       icon: Package,
       color: 'from-secondary-600 to-secondary-500',
       link: '/dashboard/products',
-      value: `${productsCount} позиций`,
+      value: `${products.length} позиций`,
       action: 'Добавить',
     },
     {
-      title: 'Рейтинг',
+      title: 'Отзывы',
       description: 'Отзывы клиентов',
       icon: Star,
       color: 'from-yellow-600 to-yellow-500',
@@ -70,7 +113,7 @@ const SupplierDashboard = () => {
       value: stats.views.toLocaleString(),
       change: '+12%',
     },
-  ]
+  ];
 
   const quickActions = [
     {
@@ -81,43 +124,54 @@ const SupplierDashboard = () => {
       color: 'bg-primary-600 hover:bg-primary-700',
     },
     {
-      title: 'Импорт данных',
+      title: 'Импорт товаров',
       description: 'Загрузить из Excel',
       icon: TrendingUp,
       link: '/dashboard/import',
       color: 'bg-secondary-600 hover:bg-secondary-700',
     },
     {
-      title: 'Создать акцию',
+      title: 'Создать акции',
       description: 'Привлечь клиентов',
       icon: Activity,
       link: '/dashboard/actions/create',
       color: 'bg-purple-600 hover:bg-purple-700',
     },
-  ]
+    {
+      title: 'Добавить тендер',
+      description: 'Создать новый тендер',
+      icon: Calendar,
+      link: '/dashboard/tenders/create',
+      color: 'bg-green-600 hover:bg-green-700',
+    },
+  ];
 
   const getStatusBadge = (status?: string) => {
-    if (!status) return null
+    if (!status) {
+return null;
+}
     
     const statusConfig = {
       APPROVED: { text: 'Одобрено', color: 'bg-green-500/20 text-green-400' },
       PENDING: { text: 'На модерации', color: 'bg-yellow-500/20 text-yellow-400' },
       BANNED: { text: 'Заблокировано', color: 'bg-red-500/20 text-red-400' },
       DRAFT: { text: 'Черновик', color: 'bg-gray-500/20 text-gray-400' },
-    }
+    };
     
-    const config = statusConfig[status as keyof typeof statusConfig]
-    if (!config) return null
+    const config = statusConfig[status as keyof typeof statusConfig];
+    if (!config) {
+return null;
+}
     
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
         {config.text}
       </span>
-    )
-  }
+    );
+  };
 
-  if (companiesLoading) {
-    return <LoadingSpinner />
+  if (isLoading) {
+    return <LoadingSpinner />;
   }
 
   return (
@@ -210,7 +264,7 @@ const SupplierDashboard = () => {
           Быстрые действия
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action, index) => (
             <Link
               key={action.title}
@@ -283,19 +337,19 @@ const SupplierDashboard = () => {
             Каталог товаров
           </h3>
           
-          {productsCount > 0 ? (
+          {products.length > 0 ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-dark-300">Всего позиций:</span>
-                <span className="text-white font-medium">{productsCount}</span>
+                <span className="text-white font-medium">{products.length}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-dark-300">В наличии:</span>
-                <span className="text-green-400">{Math.floor(productsCount * 0.8)}</span>
+                <span className="text-green-400">{Math.floor(products.length * 0.8)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-dark-300">Услуги:</span>
-                <span className="text-blue-400">{Math.floor(productsCount * 0.3)}</span>
+                <span className="text-blue-400">{Math.floor(products.length * 0.3)}</span>
               </div>
               <Link 
                 to="/dashboard/products" 
@@ -315,8 +369,104 @@ const SupplierDashboard = () => {
           )}
         </div>
       </motion.div>
-    </div>
-  )
-}
 
-export default SupplierDashboard
+      {/* Products Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.9 }}
+        className="card p-6"
+      >
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+          <Package className="w-5 h-5 mr-2 text-secondary-400" />
+          Список добавленных товаров
+        </h3>
+
+        {products.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-dark-700">
+                  <th className="pb-3 text-dark-300 font-medium">Название</th>
+                  <th className="pb-3 text-dark-300 font-medium">Категория</th>
+                  <th className="pb-3 text-dark-300 font-medium">Цена</th>
+                  <th className="pb-3 text-dark-300 font-medium">Статус</th>
+                  <th className="pb-3 text-dark-300 font-medium">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.slice(0, 10).map((product) => (
+                  <tr key={product.id} className="border-b border-dark-800">
+                    <td className="py-3">
+                      <div className="flex items-center space-x-3">
+                        {product.images && product.images[0] && (
+                          <img 
+                            src={product.images[0].image} 
+                            alt={product.title || product.name}
+                            className="w-10 h-10 object-cover rounded-lg"
+                          />
+                        )}
+                        <div>
+                          <p className="text-white font-medium">{product.title || product.name}</p>
+                          <p className="text-dark-400 text-sm">{product.description?.slice(0, 50)}...</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <span className="px-2 py-1 bg-dark-700 text-dark-300 text-sm rounded">
+                        {product.category?.name || product.category || 'Без категории'}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <span className="text-white font-medium">
+                        {product.price ? `₸${product.price.toLocaleString()}` : 'По запросу'}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      {getStatusBadge(product.status || (product.is_active ? 'APPROVED' : 'DRAFT'))}
+                    </td>
+                    <td className="py-3">
+                      <div className="flex items-center space-x-2">
+                        <Link 
+                          to={`/dashboard/products/${product.id}/edit`}
+                          className="text-primary-400 hover:text-primary-300 text-sm"
+                        >
+                          Редактировать
+                        </Link>
+                        <span className="text-dark-600">|</span>
+                        <button className="text-red-400 hover:text-red-300 text-sm">
+                          Удалить
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {products.length > 10 && (
+              <div className="mt-4 text-center">
+                <Link to="/dashboard/products" className="btn-outline px-6 py-2">
+                  Посмотреть все {products.length} товаров
+                </Link>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Package className="w-16 h-16 text-dark-400 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-white mb-2">Товары не добавлены</h4>
+            <p className="text-dark-300 mb-6">
+              Начните с добавления первого товара в ваш каталог
+            </p>
+            <Link to="/dashboard/products/create" className="btn-primary">
+              Добавить товар
+            </Link>
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
+};
+
+export default SupplierDashboard;

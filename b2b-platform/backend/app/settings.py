@@ -1,184 +1,198 @@
+# Импорт библиотек для конфигурации Django
 import os
 from datetime import timedelta
 from pathlib import Path
-from decouple import config
-import dj_database_url
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+import dj_database_url
+from decouple import config
+
+# Базовая директория проекта - путь к корневой папке проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me')
+# Секретный ключ Django для криптографических операций (должен быть уникальным в продакшене)
+SECRET_KEY = config("SECRET_KEY", default="django-insecure-change-me")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+# Режим отладки - включен только в разработке, выключен в продакшене
+DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+# Список разрешенных хостов для обращения к приложению
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1").split(",")
 
-# Application definition
+# Стандартные приложения Django (админка, аутентификация, сессии и т.д.)
 DJANGO_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
 ]
 
+# Сторонние библиотеки и пакеты
 THIRD_PARTY_APPS = [
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'corsheaders',
-    'django_filters',
-    'drf_spectacular',
+    "rest_framework",  # Django REST Framework для API
+    "rest_framework_simplejwt",  # JWT аутентификация
+    "corsheaders",  # Обработка CORS заголовков
+    "django_filters",  # Фильтрация данных
+    "drf_spectacular",  # Автогенерация документации API
 ]
 
+# Локальные приложения проекта (модули B2B платформы)
 LOCAL_APPS = [
-    'app.users',
-    'app.companies',
-    'app.products',
-    'app.categories',
-    'app.reviews',
-    'app.tenders',
-    'app.ads',
-    'app.logs',
-    'app.common',
+    "app.users",  # Модуль пользователей
+    "app.companies",  # Модуль компаний
+    "app.products",  # Модуль товаров
+    "app.categories",  # Модуль категорий
+    "app.reviews",  # Модуль отзывов
+    "app.tenders",  # Модуль тендеров
+    "app.ads",  # Модуль объявлений
+    "app.logs",  # Модуль логирования
+    "app.common",  # Общие компоненты
 ]
 
+# Полный список всех установленных приложений
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
+# Middleware - промежуточное ПО для обработки запросов и ответов
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'app.common.middleware.ActionLogMiddleware',
+    "django.middleware.security.SecurityMiddleware",  # Безопасность
+    "corsheaders.middleware.CorsMiddleware",  # CORS политики
+    "django.contrib.sessions.middleware.SessionMiddleware",  # Сессии
+    "django.middleware.common.CommonMiddleware",  # Общие функции
+    "django.middleware.csrf.CsrfViewMiddleware",  # Защита от CSRF атак
+    "django.contrib.auth.middleware.AuthenticationMiddleware",  # Аутентификация
+    "django.contrib.messages.middleware.MessageMiddleware",  # Сообщения
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Защита от clickjacking
+    "app.common.middleware.ActionLogMiddleware",  # Логирование действий пользователей
 ]
 
-ROOT_URLCONF = 'app.urls'
+# Главный модуль URL конфигурации
+ROOT_URLCONF = "app.urls"
 
+# Конфигурация шаблонов Django
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",  # Движок шаблонов
+        "DIRS": [],  # Дополнительные директории с шаблонами
+        "APP_DIRS": True,  # Поиск шаблонов в приложениях
+        "OPTIONS": {
+            "context_processors": [  # Процессоры контекста для шаблонов
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'app.wsgi.application'
+# WSGI приложение для развертывания
+WSGI_APPLICATION = "app.wsgi.application"
 
-# Database
+# Конфигурация базы данных (по умолчанию SQLite, можно переопределить через переменные окружения)
 DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL', default='sqlite:///db.sqlite3')
+    "default": dj_database_url.config(
+        default=config("DATABASE_URL", default="sqlite:///db.sqlite3")
     )
 }
 
-# Password validation
+# Валидаторы паролей для обеспечения безопасности
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",  # Проверка схожести с данными пользователя
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",  # Минимальная длина пароля
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",  # Проверка на распространенные пароли
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",  # Запрет полностью цифровых паролей
     },
 ]
 
-# Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
-USE_I18N = True
-USE_TZ = True
+# Настройки интернационализации
+LANGUAGE_CODE = "ru-ru"  # Язык по умолчанию
+TIME_ZONE = "Europe/Moscow"  # Часовой пояс
+USE_I18N = True  # Включение интернационализации
+USE_TZ = True  # Включение поддержки часовых поясов
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Конфигурация статических файлов (CSS, JavaScript, изображения)
+STATIC_URL = "/static/"  # URL префикс для статических файлов
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # Директория для сборки статики
 
-# Media files
-MEDIA_URL = config('MEDIA_URL', default='/media/')
-MEDIA_ROOT = os.path.join(BASE_DIR, config('MEDIA_ROOT', default='media'))
+# Конфигурация медиа файлов (загружаемые пользователями файлы)
+MEDIA_URL = config("MEDIA_URL", default="/media/")  # URL префикс для медиа файлов
+MEDIA_ROOT = os.path.join(BASE_DIR, config("MEDIA_ROOT", default="media"))  # Директория медиа файлов
 
-# Default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Тип первичного ключа по умолчанию для всех моделей
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Custom user model
-AUTH_USER_MODEL = 'users.User'
+# Кастомная модель пользователя вместо стандартной Django User
+AUTH_USER_MODEL = "users.User"
 
-# REST Framework
+# Настройки Django REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (  # Классы аутентификации по умолчанию
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+    "DEFAULT_PERMISSION_CLASSES": [  # Классы разрешений по умолчанию
+        "rest_framework.permissions.IsAuthenticated",  # Требуется аутентификация
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20,
-    'DEFAULT_FILTER_BACKENDS': [
-        'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",  # Пагинация
+    "PAGE_SIZE": 20,  # Количество элементов на странице
+    "DEFAULT_FILTER_BACKENDS": [  # Бэкенды фильтрации
+        "django_filters.rest_framework.DjangoFilterBackend",  # Django filters
+        "rest_framework.filters.SearchFilter",  # Поиск
+        "rest_framework.filters.OrderingFilter",  # Сортировка
     ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",  # Автогенерация схемы OpenAPI
 }
 
-# JWT Settings
+# Настройки JWT токенов для аутентификации
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_LIFETIME', default=60, cast=int)),
-    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=config('JWT_REFRESH_TOKEN_LIFETIME', default=1440, cast=int)),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'UPDATE_LAST_LOGIN': False,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'VERIFYING_KEY': None,
-    'AUDIENCE': None,
-    'ISSUER': None,
-    'JWK_URL': None,
-    'LEEWAY': 0,
+    "ACCESS_TOKEN_LIFETIME": timedelta(  # Время жизни access токена
+        minutes=config("JWT_ACCESS_TOKEN_LIFETIME", default=60, cast=int)
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(  # Время жизни refresh токена
+        minutes=config("JWT_REFRESH_TOKEN_LIFETIME", default=1440, cast=int)
+    ),
+    "ROTATE_REFRESH_TOKENS": True,  # Ротация refresh токенов
+    "BLACKLIST_AFTER_ROTATION": True,  # Блокировка старых токенов после ротации
+    "UPDATE_LAST_LOGIN": False,  # Не обновлять last_login при каждом запросе
+    "ALGORITHM": "HS256",  # Алгоритм шифрования
+    "SIGNING_KEY": SECRET_KEY,  # Ключ для подписи
+    "VERIFYING_KEY": None,  # Ключ для верификации (для асимметричного шифрования)
+    "AUDIENCE": None,  # Аудитория токена
+    "ISSUER": None,  # Издатель токена
+    "JWK_URL": None,  # URL для получения JWK
+    "LEEWAY": 0,  # Допустимая разница во времени
 }
 
-# CORS settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+# Настройки CORS для работы с фронтендом
+CORS_ALLOWED_ORIGINS = [  # Разрешенные домены для CORS запросов
+    "http://localhost:3000",  # React development server (Create React App)
+    "http://127.0.0.1:3000",  # Альтернативный localhost
+    "http://localhost:5173",  # Vite development server
+    "http://127.0.0.1:5173",  # Альтернативный localhost для Vite
 ]
 
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = True  # Разрешить отправку cookies и других credentials
 
-# Spectacular settings
+# Настройки для автогенерации документации API через drf-spectacular
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'B2B Platform API',
-    'DESCRIPTION': 'API for B2B supplier search platform',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'COMPONENT_SPLIT_REQUEST': True,
+    "TITLE": "B2B Platform API",  # Название API
+    "DESCRIPTION": "API for B2B supplier search platform",  # Описание API
+    "VERSION": "1.0.0",  # Версия API
+    "SERVE_INCLUDE_SCHEMA": False,  # Не включать схему в endpoint
+    "COMPONENT_SPLIT_REQUEST": True,  # Разделять request и response схемы
 }
 
-# File upload settings
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+# Настройки загрузки файлов
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # Максимальный размер файла в памяти (5MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # Максимальный размер данных в памяти (5MB)
 
-# Company logo validation
-LOGO_MAX_SIZE = (600, 600)  # 600x600 pixels
-LOGO_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png']
+# Настройки валидации логотипов компаний
+LOGO_MAX_SIZE = (600, 600)  # Максимальный размер изображения 600x600 пикселей
+LOGO_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png"]  # Разрешенные форматы изображений

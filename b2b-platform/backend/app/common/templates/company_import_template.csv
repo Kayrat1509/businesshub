@@ -1,0 +1,3 @@
+name,city,description,categories,latitude,longitude,address,phone,email,website,staff_count,branch_address,branch_latitude,branch_longitude,branch_phone
+"ООО ""ТехСолюшн""",Москва,"Разработка веб-приложений и IT-консалтинг","IT и программирование|Веб-разработка",55.7558,37.6176,"ул. Ленина, д. 10, оф. 205","+7-495-123-45-67|+7-495-123-45-68","info@techsolution.ru|sales@techsolution.ru",https://techsolution.ru,25,"ул. Пушкина, д. 20",55.7600,37.6200,"+7-495-111-22-33"
+"ИП Иванов И.И.",Санкт-Петербург,"Поставка строительных материалов","Строительство|Отделочные работы",59.9311,30.3609,"Невский проспект, д. 50","+7-812-987-65-43",ivanov@example.com,https://ivanov-stroy.ru,5,,,,

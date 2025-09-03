@@ -1,47 +1,53 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect } from 'react'
-import { useAppDispatch } from './store/hooks'
-import { initializeAuth } from './store/slices/authSlice'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useAppDispatch } from './store/hooks';
+import { initializeAuth } from './store/slices/authSlice';
 
 // Layout components
-import Layout from './components/Layout'
-import AuthLayout from './components/AuthLayout'
-import DashboardLayout from './components/DashboardLayout'
-import AdminLayout from './components/AdminLayout'
+import Layout from './components/Layout';
+import AuthLayout from './components/AuthLayout';
+import DashboardLayout from './components/DashboardLayout';
+import AdminLayout from './components/AdminLayout';
 
 // Pages
-import Home from './pages/Home'
-import Search from './pages/Search'
-import CompanyCard from './pages/CompanyCard'
-import Category from './pages/Category'
-import Login from './pages/Auth/Login'
-import Register from './pages/Auth/Register'
+import Home from './pages/Home';
+import CompanyCard from './pages/CompanyCard';
+import Category from './pages/Category';
+import Tenders from './pages/Tenders';
+import Suppliers from './pages/Suppliers';
+import Login from './pages/Auth/Login';
+import Register from './pages/Auth/Register';
 
 // Dashboard pages
-import SupplierDashboard from './pages/SupplierDashboard'
-import DashboardCompany from './pages/SupplierDashboard/Company'
-import DashboardProducts from './pages/SupplierDashboard/Products'
-import DashboardImport from './pages/SupplierDashboard/Import'
-import DashboardActions from './pages/SupplierDashboard/Actions'
-import DashboardSettings from './pages/SupplierDashboard/Settings'
+import SupplierDashboard from './pages/SupplierDashboard';
+import DashboardCompany from './pages/SupplierDashboard/Company';
+import DashboardProducts from './pages/SupplierDashboard/Products';
+import DashboardImport from './pages/SupplierDashboard/Import';
+import DashboardActions from './pages/SupplierDashboard/Actions';
+import DashboardSettings from './pages/SupplierDashboard/Settings';
+import DashboardReviews from './pages/SupplierDashboard/Reviews';
+import CreateTender from './pages/SupplierDashboard/CreateTender';
+import CreateProduct from './pages/SupplierDashboard/CreateProduct';
+import DashboardTenders from './pages/SupplierDashboard/Tenders';
 
 // Admin pages
-import AdminPanel from './pages/AdminPanel'
-import AdminModeration from './pages/AdminPanel/Moderation'
-import AdminCategories from './pages/AdminPanel/Categories'
-import AdminReviews from './pages/AdminPanel/Reviews'
-import AdminTenders from './pages/AdminPanel/Tenders'
-import AdminImport from './pages/AdminPanel/Import'
+import AdminPanel from './pages/AdminPanel';
+import AdminModeration from './pages/AdminPanel/Moderation';
+import AdminCategories from './pages/AdminPanel/Categories';
+import AdminReviews from './pages/AdminPanel/Reviews';
+import AdminTenders from './pages/AdminPanel/Tenders';
+import AdminImport from './pages/AdminPanel/Import';
 
 // Protected route components
-import ProtectedRoute from './components/ProtectedRoute'
+import ProtectedRoute from './components/ProtectedRoute';
+import DiagnosticPage from './DiagnosticPage';
 
 function App() {
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
-    dispatch(initializeAuth())
-  }, [dispatch])
+    dispatch(initializeAuth());
+  }, [dispatch]);
 
   return (
     <div className="min-h-screen bg-dark-900 text-white">
@@ -49,7 +55,8 @@ function App() {
         {/* Public routes */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="search" element={<Search />} />
+          <Route path="tenders" element={<Tenders />} />
+          <Route path="suppliers" element={<Suppliers />} />
           <Route path="company/:id" element={<CompanyCard />} />
           <Route path="category/:slug" element={<Category />} />
         </Route>
@@ -69,8 +76,12 @@ function App() {
           <Route index element={<SupplierDashboard />} />
           <Route path="company" element={<DashboardCompany />} />
           <Route path="products" element={<DashboardProducts />} />
+          <Route path="products/create" element={<CreateProduct />} />
+          <Route path="reviews" element={<DashboardReviews />} />
           <Route path="import" element={<DashboardImport />} />
           <Route path="actions" element={<DashboardActions />} />
+          <Route path="tenders" element={<DashboardTenders />} />
+          <Route path="tenders/create" element={<CreateTender />} />
           <Route path="settings" element={<DashboardSettings />} />
         </Route>
 
@@ -88,11 +99,14 @@ function App() {
           <Route path="import" element={<AdminImport />} />
         </Route>
 
+        {/* Diagnostic page for development */}
+        <Route path="/diagnostic" element={<DiagnosticPage />} />
+
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

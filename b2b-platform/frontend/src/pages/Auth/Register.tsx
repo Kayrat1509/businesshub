@@ -1,310 +1,183 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { yupResolver } from '@hookform/resolvers/yup'
-import * as yup from 'yup'
-import { motion } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, User, UserPlus, Phone } from 'lucide-react'
-import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { register as registerUser, clearError } from '../../store/slices/authSlice'
-import { toast } from 'react-toastify'
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { register } from '../../store/slices/authSlice';
+import { toast } from 'react-hot-toast';
 
-const schema = yup.object({
-  email: yup
-    .string()
-    .required('Email обязателен')
-    .email('Некорректный email'),
-  username: yup
-    .string()
-    .required('Имя пользователя обязательно')
-    .min(3, 'Минимум 3 символа')
-    .max(20, 'Максимум 20 символов'),
-  first_name: yup.string(),
-  last_name: yup.string(),
-  phone: yup.string(),
-  password: yup
-    .string()
-    .required('Пароль обязателен')
-    .min(8, 'Пароль должен содержать минимум 8 символов')
-    .matches(/(?=.*[a-z])/, 'Должна быть минимум одна строчная буква')
-    .matches(/(?=.*[A-Z])/, 'Должна быть минимум одна заглавная буква')
-    .matches(/(?=.*\d)/, 'Должна быть минимум одна цифра'),
-  password_confirm: yup
-    .string()
-    .required('Подтверждение пароля обязательно')
-    .oneOf([yup.ref('password')], 'Пароли должны совпадать'),
-  role: yup
-    .string()
-    .required('Выберите тип аккаунта')
-    .oneOf(['ROLE_SEEKER', 'ROLE_SUPPLIER'], 'Некорректный тип аккаунта'),
-})
-
-type RegisterFormData = yup.InferType<typeof schema>
-
-const Register = () => {
-  const navigate = useNavigate()
-  const dispatch = useAppDispatch()
-  const { isLoading, error, isAuthenticated } = useAppSelector(state => state.auth)
+const Register: React.FC = () => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { isLoading } = useAppSelector(state => state.auth);
   
-  const [showPassword, setShowPassword] = useState(false)
-  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false)
+  const [formData, setFormData] = useState({
+    email: '',
+    username: '',
+    password: '',
+    password_confirm: '',
+    role: 'ROLE_SUPPLIER' as 'ROLE_SUPPLIER',
+    first_name: '',
+    last_name: '',
+  });
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<RegisterFormData>({
-    resolver: yupResolver(schema),
-    defaultValues: {
-      role: 'ROLE_SEEKER',
-    },
-  })
-
-  const selectedRole = watch('role')
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/')
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (formData.password !== formData.password_confirm) {
+      toast.error('Пароли не совпадают');
+      return;
     }
-  }, [isAuthenticated, navigate])
 
-  useEffect(() => {
-    if (error) {
-      toast.error(typeof error === 'string' ? error : 'Ошибка регистрации')
-      dispatch(clearError())
-    }
-  }, [error, dispatch])
-
-  const onSubmit = async (data: RegisterFormData) => {
     try {
-      await dispatch(registerUser(data)).unwrap()
-      toast.success('Регистрация успешна! Добро пожаловать!')
-    } catch (error) {
-      // Error handled by useEffect
+      await dispatch(register(formData)).unwrap();
+      toast.success('Регистрация успешна! Добро пожаловать!');
+      navigate('/dashboard');
+    } catch (error: any) {
+      // Format error message for better readability
+      let errorMessage = error || 'Ошибка регистрации';
+      
+      // Replace field names with Russian equivalents
+      errorMessage = errorMessage
+        .replace(/password:/g, 'Пароль:')
+        .replace(/email:/g, 'Email:')
+        .replace(/username:/g, 'Имя пользователя:')
+        .replace(/This password is too short\. It must contain at least 8 characters\./g, 'Пароль слишком короткий. Минимум 8 символов.')
+        .replace(/This password is too common\./g, 'Пароль слишком простой. Используйте более сложный пароль.')
+        .replace(/A user with that username already exists\./g, 'Пользователь с таким именем уже существует.')
+        .replace(/Enter a valid email address\./g, 'Введите корректный email адрес.');
+      
+      toast.error(errorMessage);
     }
-  }
+  };
 
-  const roleOptions = [
-    {
-      value: 'ROLE_SEEKER',
-      title: 'Покупатель',
-      description: 'Ищете товары и услуги для своего бизнеса',
-    },
-    {
-      value: 'ROLE_SUPPLIER',
-      title: 'Поставщик',
-      description: 'Предлагаете товары и услуги другим компаниям',
-    },
-  ]
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Создать аккаунт</h1>
-        <p className="text-dark-300">Присоединяйтесь к нашей B2B платформе</p>
+    <div className="card p-8">
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-bold text-white mb-2">Регистрация поставщика</h2>
+        <p className="text-dark-300">Создайте аккаунт для размещения товаров</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Role Selection */}
-        <div>
-          <label className="block text-sm font-medium text-dark-300 mb-3">
-            Тип аккаунта
-          </label>
-          <div className="grid grid-cols-1 gap-3">
-            {roleOptions.map((option) => (
-              <label
-                key={option.value}
-                className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-                  selectedRole === option.value
-                    ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-dark-600 hover:border-dark-500'
-                }`}
-              >
-                <input
-                  type="radio"
-                  value={option.value}
-                  {...register('role')}
-                  className="sr-only"
-                />
-                <div className="flex items-start space-x-3">
-                  <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center ${
-                    selectedRole === option.value
-                      ? 'border-primary-500 bg-primary-500'
-                      : 'border-dark-400'
-                  }`}>
-                    {selectedRole === option.value && (
-                      <div className="w-2 h-2 rounded-full bg-white" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-white font-medium">{option.title}</h3>
-                    <p className="text-dark-300 text-sm">{option.description}</p>
-                  </div>
-                </div>
-              </label>
-            ))}
-          </div>
-          {errors.role && (
-            <p className="mt-1 text-sm text-red-400">{errors.role.message}</p>
-          )}
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-medium text-dark-300 mb-2">
-            Email адрес
+          <label htmlFor="email" className="block text-sm font-medium text-dark-200 mb-2">
+            Email *
           </label>
-          <div className="relative">
-            <input
-              type="email"
-              {...register('email')}
-              className={`input pl-10 ${errors.email ? 'border-red-500' : ''}`}
-              placeholder="Введите ваш email"
-            />
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
-          </div>
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-400">{errors.email.message}</p>
-          )}
+          <input
+            type="email"
+            name="email"
+            id="email"
+            required
+            className="input"
+            placeholder="your@email.com"
+            value={formData.email}
+            onChange={handleChange}
+          />
         </div>
 
         {/* Username */}
         <div>
-          <label className="block text-sm font-medium text-dark-300 mb-2">
-            Имя пользователя
+          <label htmlFor="username" className="block text-sm font-medium text-dark-200 mb-2">
+            Имя пользователя *
           </label>
-          <div className="relative">
-            <input
-              type="text"
-              {...register('username')}
-              className={`input pl-10 ${errors.username ? 'border-red-500' : ''}`}
-              placeholder="Введите имя пользователя"
-            />
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
-          </div>
-          {errors.username && (
-            <p className="mt-1 text-sm text-red-400">{errors.username.message}</p>
-          )}
+          <input
+            type="text"
+            name="username"
+            id="username"
+            required
+            className="input"
+            placeholder="username"
+            value={formData.username}
+            onChange={handleChange}
+          />
         </div>
 
-        {/* Name Fields */}
+        {/* First Name & Last Name */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-2">
+            <label htmlFor="first_name" className="block text-sm font-medium text-dark-200 mb-2">
               Имя
             </label>
             <input
               type="text"
-              {...register('first_name')}
+              name="first_name"
+              id="first_name"
               className="input"
               placeholder="Ваше имя"
+              value={formData.first_name}
+              onChange={handleChange}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-2">
+            <label htmlFor="last_name" className="block text-sm font-medium text-dark-200 mb-2">
               Фамилия
             </label>
             <input
               type="text"
-              {...register('last_name')}
+              name="last_name"
+              id="last_name"
               className="input"
               placeholder="Ваша фамилия"
+              value={formData.last_name}
+              onChange={handleChange}
             />
-          </div>
-        </div>
-
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-medium text-dark-300 mb-2">
-            Телефон (необязательно)
-          </label>
-          <div className="relative">
-            <input
-              type="tel"
-              {...register('phone')}
-              className="input pl-10"
-              placeholder="+7 (999) 123-45-67"
-            />
-            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
           </div>
         </div>
 
         {/* Password */}
         <div>
-          <label className="block text-sm font-medium text-dark-300 mb-2">
-            Пароль
+          <label htmlFor="password" className="block text-sm font-medium text-dark-200 mb-2">
+            Пароль *
           </label>
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              {...register('password')}
-              className={`input pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
-              placeholder="Создайте надежный пароль"
-            />
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-white"
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          {errors.password && (
-            <p className="mt-1 text-sm text-red-400">{errors.password.message}</p>
-          )}
+          <input
+            type="password"
+            name="password"
+            id="password"
+            required
+            className="input"
+            placeholder="Минимум 8 символов"
+            value={formData.password}
+            onChange={handleChange}
+          />
+          <p className="text-xs text-dark-400 mt-1">
+            Минимум 8 символов, используйте сложный пароль
+          </p>
         </div>
 
-        {/* Password Confirmation */}
+        {/* Confirm Password */}
         <div>
-          <label className="block text-sm font-medium text-dark-300 mb-2">
-            Подтвердите пароль
+          <label htmlFor="password_confirm" className="block text-sm font-medium text-dark-200 mb-2">
+            Подтвердите пароль *
           </label>
-          <div className="relative">
-            <input
-              type={showPasswordConfirm ? 'text' : 'password'}
-              {...register('password_confirm')}
-              className={`input pl-10 pr-10 ${errors.password_confirm ? 'border-red-500' : ''}`}
-              placeholder="Повторите пароль"
-            />
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
-            <button
-              type="button"
-              onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-white"
-            >
-              {showPasswordConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          {errors.password_confirm && (
-            <p className="mt-1 text-sm text-red-400">{errors.password_confirm.message}</p>
-          )}
+          <input
+            type="password"
+            name="password_confirm"
+            id="password_confirm"
+            required
+            className="input"
+            placeholder="Повторите пароль"
+            value={formData.password_confirm}
+            onChange={handleChange}
+          />
         </div>
 
-        {/* Submit Button */}
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full btn-primary py-3 flex items-center justify-center space-x-2 disabled:opacity-50"
+          className="w-full btn-primary py-3 disabled:opacity-50"
         >
-          {isLoading ? (
-            <div className="loading-spinner w-5 h-5" />
-          ) : (
-            <>
-              <UserPlus className="w-5 h-5" />
-              <span>Создать аккаунт</span>
-            </>
-          )}
+          {isLoading ? 'Регистрация...' : 'Создать аккаунт'}
         </button>
       </form>
 
-      {/* Login Link */}
-      <div className="mt-8 text-center border-t border-dark-700 pt-6">
+      <div className="mt-6 text-center border-t border-dark-700 pt-6">
         <p className="text-dark-300 text-sm">
           Уже есть аккаунт?{' '}
           <Link to="/auth/login" className="link font-medium">
@@ -312,8 +185,8 @@ const Register = () => {
           </Link>
         </p>
       </div>
-    </motion.div>
-  )
-}
+    </div>
+  );
+};
 
-export default Register
+export default Register;

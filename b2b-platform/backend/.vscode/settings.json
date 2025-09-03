@@ -1,0 +1,23 @@
+{
+    "python.defaultInterpreterPath": "./venv/bin/python",
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}",
+        "${workspaceFolder}/app"
+    ],
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.autoImportCompletions": true,
+    "pylint.args": [
+        "--load-plugins=pylint_django",
+        "--django-settings-module=app.settings"
+    ],
+    "python.linting.pylintArgs": [
+        "--load-plugins=pylint_django",
+        "--django-settings-module=app.settings"
+    ],
+    "python.analysis.stubPath": "./typings",
+    "files.associations": {
+        "*.html": "html",
+        "*.py": "python"
+    }
+}

@@ -1,39 +1,39 @@
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { MapPin, Star, Heart, Building2, Users } from 'lucide-react'
-import { Company } from '../../types'
-import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { toggleFavorite } from '../../store/slices/companiesSlice'
-import { toast } from 'react-toastify'
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { MapPin, Heart, Building2, Users } from 'lucide-react';
+import { Company } from '../../types';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { toggleFavorite } from '../../store/slices/companiesSlice';
+import { toast } from 'react-toastify';
 
 interface CompanyCardProps {
   company: Company
 }
 
 const CompanyCard = ({ company }: CompanyCardProps) => {
-  const dispatch = useAppDispatch()
-  const { isAuthenticated } = useAppSelector(state => state.auth)
+  const dispatch = useAppDispatch();
+  const { isAuthenticated } = useAppSelector(state => state.auth);
 
   const handleToggleFavorite = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
     
     if (!isAuthenticated) {
-      toast.info('Войдите в систему, чтобы добавлять в избранное')
-      return
+      toast.info('Войдите в систему, чтобы добавлять в избранное');
+      return;
     }
 
     try {
-      await dispatch(toggleFavorite(company.id)).unwrap()
+      await dispatch(toggleFavorite(company.id)).unwrap();
       toast.success(
         company.is_favorite 
           ? 'Удалено из избранного' 
-          : 'Добавлено в избранное'
-      )
+          : 'Добавлено в избранное',
+      );
     } catch (error) {
-      toast.error('Ошибка при обновлении избранного')
+      toast.error('Ошибка при обновлении избранного');
     }
-  }
+  };
 
   const getStatusBadge = () => {
     const statusConfig = {
@@ -41,15 +41,15 @@ const CompanyCard = ({ company }: CompanyCardProps) => {
       PENDING: { text: 'На модерации', color: 'bg-yellow-500/20 text-yellow-400' },
       BANNED: { text: 'Заблокировано', color: 'bg-red-500/20 text-red-400' },
       DRAFT: { text: 'Черновик', color: 'bg-gray-500/20 text-gray-400' },
-    }
+    };
     
-    const config = statusConfig[company.status]
+    const config = statusConfig[company.status];
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
         {config.text}
       </span>
-    )
-  }
+    );
+  };
 
   return (
     <motion.div
@@ -121,18 +121,10 @@ const CompanyCard = ({ company }: CompanyCardProps) => {
         {/* Stats */}
         <div className="flex justify-between items-center pt-4 border-t border-dark-700">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-1">
-              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-              <span className="text-white font-medium">{company.rating.toFixed(1)}</span>
-              {company.reviews_count !== undefined && (
-                <span className="text-dark-400 text-sm">({company.reviews_count})</span>
-              )}
-            </div>
-            
             {company.staff_count > 0 && (
               <div className="flex items-center space-x-1">
                 <Users className="w-4 h-4 text-dark-400" />
-                <span className="text-dark-300 text-sm">{company.staff_count}</span>
+                <span className="text-dark-300 text-sm">{company.staff_count} сотрудников</span>
               </div>
             )}
           </div>
@@ -141,7 +133,7 @@ const CompanyCard = ({ company }: CompanyCardProps) => {
         </div>
       </Link>
     </motion.div>
-  )
-}
+  );
+};
 
-export default CompanyCard
+export default CompanyCard;

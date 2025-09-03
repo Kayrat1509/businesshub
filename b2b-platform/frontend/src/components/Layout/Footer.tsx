@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import { Building2, Mail, Phone, MapPin } from 'lucide-react'
+import { Link } from 'react-router-dom';
+import { Building2, Mail, Phone, MapPin } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -92,7 +92,7 @@ const Footer = () => {
         </div>
       </div>
     </footer>
-  )
-}
+  );
+};
 
-export default Footer
+export default Footer;

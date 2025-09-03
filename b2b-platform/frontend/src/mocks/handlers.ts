@@ -1,4 +1,4 @@
-import { rest } from 'msw'
+import { rest } from 'msw';
 
 export const handlers = [
   // Auth endpoints
@@ -17,8 +17,8 @@ export const handlers = [
           phone: '+7-999-123-45-67',
           created_at: new Date().toISOString(),
         },
-      })
-    )
+      }),
+    );
   }),
 
   // Categories
@@ -37,8 +37,8 @@ export const handlers = [
           slug: 'construction',
           children: [],
         },
-      ])
-    )
+      ]),
+    );
   }),
 
   // Companies
@@ -49,8 +49,8 @@ export const handlers = [
         next: null,
         previous: null,
         results: [],
-      })
-    )
+      }),
+    );
   }),
 
   // Products
@@ -61,8 +61,8 @@ export const handlers = [
         next: null,
         previous: null,
         results: [],
-      })
-    )
+      }),
+    );
   }),
 
   // Tenders
@@ -73,7 +73,7 @@ export const handlers = [
         next: null,
         previous: null,
         results: [],
-      })
-    )
+      }),
+    );
   }),
-]
+];

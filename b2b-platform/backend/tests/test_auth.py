@@ -27,9 +27,9 @@ class AuthTestCase(APITestCase):
         """Test user registration"""
         response = self.client.post(self.register_url, self.user_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
-        self.assertIn('user', response.data)
+        self.assertIn('email', response.data)
+        self.assertIn('username', response.data)
+        self.assertIn('role', response.data)
         
         # Check user was created
         self.assertTrue(User.objects.filter(email=self.user_data['email']).exists())

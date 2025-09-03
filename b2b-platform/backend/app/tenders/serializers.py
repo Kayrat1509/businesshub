@@ -1,82 +1,150 @@
 from rest_framework import serializers
-from .models import Tender, TenderAttachment
+
 from app.categories.serializers import CategorySerializer
+
+from .models import Tender, TenderAttachment
 
 
 class TenderAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = TenderAttachment
-        fields = ['id', 'file', 'filename', 'file_size', 'uploaded_at']
+        fields = ["id", "file", "filename", "file_size", "uploaded_at"]
 
 
 class TenderListSerializer(serializers.ModelSerializer):
     categories = CategorySerializer(many=True, read_only=True)
-    author_name = serializers.CharField(source='author.get_full_name', read_only=True)
-    
+    author_name = serializers.CharField(source="author.get_full_name", read_only=True)
+    company = serializers.SerializerMethodField()
+
     class Meta:
         model = Tender
         fields = [
-            'id', 'title', 'description', 'categories', 'city', 
-            'budget_min', 'budget_max', 'deadline_date', 'status',
-            'author_name', 'created_at'
+            "id",
+            "title",
+            "description",
+            "categories",
+            "city",
+            "budget_min",
+            "budget_max",
+            "deadline_date",
+            "status",
+            "author_name",
+            "company",
+            "created_at",
         ]
+
+    def get_company(self, obj):
+        try:
+            company = obj.author.companies.filter(status="APPROVED").first()
+            if company:
+                return {
+                    "id": company.id,
+                    "name": company.name,
+                    "logo": company.logo.url if company.logo else None,
+                }
+            return None
+        except:
+            return None
 
 
 class TenderDetailSerializer(serializers.ModelSerializer):
     categories = CategorySerializer(many=True, read_only=True)
-    author_name = serializers.CharField(source='author.get_full_name', read_only=True)
+    author_name = serializers.CharField(source="author.get_full_name", read_only=True)
     tender_attachments = TenderAttachmentSerializer(many=True, read_only=True)
-    
+    company = serializers.SerializerMethodField()
+
     class Meta:
         model = Tender
         fields = [
-            'id', 'title', 'description', 'categories', 'city',
-            'budget_min', 'budget_max', 'deadline_date', 'status',
-            'attachments', 'tender_attachments', 'author_name',
-            'admin_comment', 'created_at', 'updated_at'
+            "id",
+            "title",
+            "description",
+            "categories",
+            "city",
+            "budget_min",
+            "budget_max",
+            "deadline_date",
+            "status",
+            "attachments",
+            "tender_attachments",
+            "author_name",
+            "company",
+            "admin_comment",
+            "created_at",
+            "updated_at",
         ]
+
+    def get_company(self, obj):
+        try:
+            company = obj.author.companies.filter(status="APPROVED").first()
+            if company:
+                return {
+                    "id": company.id,
+                    "name": company.name,
+                    "logo": company.logo.url if company.logo else None,
+                }
+            return None
+        except:
+            return None
 
 
 class TenderCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tender
         fields = [
-            'title', 'description', 'categories', 'city',
-            'budget_min', 'budget_max', 'deadline_date', 'attachments'
+            "title",
+            "description",
+            "categories",
+            "city",
+            "budget_min",
+            "budget_max",
+            "deadline_date",
+            "attachments",
         ]
-    
+
     def create(self, validated_data):
-        categories = validated_data.pop('categories', [])
+        categories = validated_data.pop("categories", [])
         tender = Tender.objects.create(**validated_data)
         tender.categories.set(categories)
         return tender
-    
+
     def update(self, instance, validated_data):
-        categories = validated_data.pop('categories', None)
+        categories = validated_data.pop("categories", None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        
+
         if categories is not None:
             instance.categories.set(categories)
-        
+
         return instance
 
 
 class TenderModerationSerializer(serializers.ModelSerializer):
-    author_name = serializers.CharField(source='author.get_full_name', read_only=True)
+    author_name = serializers.CharField(source="author.get_full_name", read_only=True)
     categories = CategorySerializer(many=True, read_only=True)
-    
+
     class Meta:
         model = Tender
         fields = [
-            'id', 'title', 'description', 'categories', 'city',
-            'budget_min', 'budget_max', 'deadline_date', 'status',
-            'admin_comment', 'author_name', 'created_at'
+            "id",
+            "title",
+            "description",
+            "categories",
+            "city",
+            "budget_min",
+            "budget_max",
+            "deadline_date",
+            "status",
+            "admin_comment",
+            "author_name",
+            "created_at",
         ]
-    
+
     def update(self, instance, validated_data):
-        instance.status = validated_data.get('status', instance.status)
-        instance.admin_comment = validated_data.get('admin_comment', instance.admin_comment)
+        instance.status = validated_data.get("status", instance.status)
+        instance.admin_comment = validated_data.get(
+            "admin_comment", instance.admin_comment
+        )
         instance.save()
         return instance

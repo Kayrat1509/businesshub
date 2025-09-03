@@ -1,10 +1,20 @@
-import { Outlet, Link } from 'react-router-dom'
-import { Building2 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Outlet, Link } from 'react-router-dom';
+import { Building2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const AuthLayout = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4 relative">
+      {/* Top-right link to home */}
+      <div className="absolute top-4 right-4">
+        <Link 
+          to="/" 
+          className="text-primary-400 hover:text-primary-300 transition-colors font-medium"
+        >
+          НА ГЛАВНУЮ СТРАНИЦУ
+        </Link>
+      </div>
+      
       <div className="max-w-md w-full">
         {/* Logo */}
         <motion.div 
@@ -45,7 +55,7 @@ const AuthLayout = () => {
         </motion.div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AuthLayout
+export default AuthLayout;

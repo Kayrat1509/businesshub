@@ -47,7 +47,7 @@ class CompanyTestCase(APITestCase):
         """Test that supplier can create a company"""
         self.client.force_authenticate(user=self.supplier)
         
-        response = self.client.post('/api/companies/', self.company_data)
+        response = self.client.post('/api/companies/', self.company_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Company.objects.count(), 1)
         
@@ -59,7 +59,7 @@ class CompanyTestCase(APITestCase):
         """Test that seeker cannot create a company"""
         self.client.force_authenticate(user=self.seeker)
         
-        response = self.client.post('/api/companies/', self.company_data)
+        response = self.client.post('/api/companies/', self.company_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_unauthenticated_can_view_companies(self):

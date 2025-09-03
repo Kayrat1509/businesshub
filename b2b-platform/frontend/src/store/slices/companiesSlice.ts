@@ -1,24 +1,28 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import apiService from '../../api'
-import { Company, CompanyFilters, PaginatedResponse } from '../../types'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import apiService from '../../api';
+import { Company, CompanyFilters, PaginatedResponse, Tender } from '../../types';
 
 interface CompaniesState {
   companies: Company[]
-  currentCompany: Company | null
+  selectedCompany: Company | null
+  companyTenders: Tender[]
   totalCount: number
   isLoading: boolean
+  tendersLoading: boolean
   error: string | null
   filters: CompanyFilters
 }
 
 const initialState: CompaniesState = {
   companies: [],
-  currentCompany: null,
+  selectedCompany: null,
+  companyTenders: [],
   totalCount: 0,
   isLoading: false,
+  tendersLoading: false,
   error: null,
   filters: {},
-}
+};
 
 // Async thunks
 export const fetchCompanies = createAsyncThunk<
@@ -28,99 +32,122 @@ export const fetchCompanies = createAsyncThunk<
   'companies/fetchCompanies',
   async ({ page = 1, filters = {} }, { rejectWithValue }) => {
     try {
-      const params = { page, ...filters }
-      const response = await apiService.get<PaginatedResponse<Company>>('/companies/', params)
-      return response
+      const params = { page, ...filters };
+      const response = await apiService.get<PaginatedResponse<Company>>('/companies/', params);
+      return response;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.detail || 'Failed to fetch companies')
+      return rejectWithValue(error.response?.data?.message || 'Ошибка загрузки компаний');
     }
-  }
-)
+  },
+);
 
 export const fetchCompanyById = createAsyncThunk<Company, number>(
   'companies/fetchCompanyById',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await apiService.get<Company>(`/companies/${id}/`)
-      return response
+      const response = await apiService.get<Company>(`/companies/${id}/`);
+      return response;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.detail || 'Failed to fetch company')
+      return rejectWithValue(error.response?.data?.detail || 'Failed to fetch company');
     }
-  }
-)
+  },
+);
 
 export const toggleFavorite = createAsyncThunk<{ message: string }, number>(
   'companies/toggleFavorite',
   async (companyId, { rejectWithValue }) => {
     try {
-      const response = await apiService.post<{ message: string }>(`/favorites/${companyId}/`)
-      return response
+      const response = await apiService.post<{ message: string }>(`/favorites/${companyId}/`);
+      return response;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.detail || 'Failed to toggle favorite')
+      return rejectWithValue(error.response?.data?.detail || 'Failed to toggle favorite');
     }
-  }
-)
+  },
+);
+
+export const fetchCompanyTenders = createAsyncThunk<Tender[], number>(
+  'companies/fetchCompanyTenders',
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const response = await apiService.get<PaginatedResponse<Tender>>(`/companies/${companyId}/tenders/`);
+      return response.results;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.detail || 'Failed to fetch company tenders');
+    }
+  },
+);
 
 const companiesSlice = createSlice({
   name: 'companies',
   initialState,
   reducers: {
     setFilters: (state, action) => {
-      state.filters = action.payload
+      state.filters = action.payload;
     },
     clearCurrentCompany: (state) => {
-      state.currentCompany = null
+      state.selectedCompany = null;
     },
     clearError: (state) => {
-      state.error = null
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
       // Fetch companies
       .addCase(fetchCompanies.pending, (state) => {
-        state.isLoading = true
-        state.error = null
+        state.isLoading = true;
+        state.error = null;
       })
       .addCase(fetchCompanies.fulfilled, (state, action) => {
-        state.isLoading = false
-        state.companies = action.payload.results
-        state.totalCount = action.payload.count
+        state.isLoading = false;
+        state.companies = action.payload.results;
+        state.totalCount = action.payload.count;
       })
       .addCase(fetchCompanies.rejected, (state, action) => {
-        state.isLoading = false
-        state.error = action.payload as string
+        state.isLoading = false;
+        state.error = action.payload as string;
       })
-      
-      // Fetch company by ID
+      // Fetch company by id
       .addCase(fetchCompanyById.pending, (state) => {
-        state.isLoading = true
-        state.error = null
+        state.isLoading = true;
+        state.error = null;
       })
       .addCase(fetchCompanyById.fulfilled, (state, action) => {
-        state.isLoading = false
-        state.currentCompany = action.payload
+        state.isLoading = false;
+        state.selectedCompany = action.payload;
       })
       .addCase(fetchCompanyById.rejected, (state, action) => {
-        state.isLoading = false
-        state.error = action.payload as string
+        state.isLoading = false;
+        state.error = action.payload as string;
       })
-      
       // Toggle favorite
       .addCase(toggleFavorite.fulfilled, (state, action) => {
-        // Update favorite status in current company
-        if (state.currentCompany) {
-          state.currentCompany.is_favorite = !state.currentCompany.is_favorite
+        // Update the company in the list if it exists
+        const companyIndex = state.companies.findIndex(
+          (company) => company.id === action.meta.arg
+        );
+        if (companyIndex !== -1) {
+          state.companies[companyIndex].is_favorite = !state.companies[companyIndex].is_favorite;
         }
-        // Update in companies list
-        state.companies.forEach(company => {
-          if (company.id === state.currentCompany?.id) {
-            company.is_favorite = !company.is_favorite
-          }
-        })
+        // Update selected company if it matches
+        if (state.selectedCompany && state.selectedCompany.id === action.meta.arg) {
+          state.selectedCompany.is_favorite = !state.selectedCompany.is_favorite;
+        }
       })
+      // Fetch company tenders
+      .addCase(fetchCompanyTenders.pending, (state) => {
+        state.tendersLoading = true;
+      })
+      .addCase(fetchCompanyTenders.fulfilled, (state, action) => {
+        state.tendersLoading = false;
+        state.companyTenders = action.payload;
+      })
+      .addCase(fetchCompanyTenders.rejected, (state) => {
+        state.tendersLoading = false;
+        state.companyTenders = [];
+      });
   },
-})
+});
 
-export const { setFilters, clearCurrentCompany, clearError } = companiesSlice.actions
-export default companiesSlice.reducer
+export const { setFilters, clearCurrentCompany, clearError } = companiesSlice.actions;
+export default companiesSlice.reducer;

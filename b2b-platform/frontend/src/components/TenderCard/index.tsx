@@ -1,59 +1,90 @@
-import { motion } from 'framer-motion'
-import { MapPin, Calendar, DollarSign, Clock, Tag } from 'lucide-react'
-import { Tender } from '../../types'
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, Calendar, DollarSign, Clock, Tag } from 'lucide-react';
+import { Tender } from '../../types';
 
 interface TenderCardProps {
   tender: Tender
 }
 
 const TenderCard = ({ tender }: TenderCardProps) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (tender.company?.id) {
+      navigate(`/company/${tender.company.id}?tab=tenders`);
+    }
+  };
   const formatBudget = (min?: number, max?: number) => {
-    if (!min && !max) return 'Бюджет не указан'
-    if (min && max) return `${min.toLocaleString()} - ${max.toLocaleString()} ₽`
-    if (min) return `от ${min.toLocaleString()} ₽`
-    if (max) return `до ${max.toLocaleString()} ₽`
-  }
+    if (!min && !max) {
+return 'Бюджет не указан';
+}
+    if (min && max) {
+return `${min.toLocaleString()} - ${max.toLocaleString()} ₽`;
+}
+    if (min) {
+return `от ${min.toLocaleString()} ₽`;
+}
+    if (max) {
+return `до ${max.toLocaleString()} ₽`;
+}
+  };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Не указано'
-    return new Date(dateString).toLocaleDateString('ru-RU')
-  }
+    if (!dateString) {
+return 'Не указано';
+}
+    return new Date(dateString).toLocaleDateString('ru-RU');
+  };
 
   const getDaysLeft = (dateString?: string) => {
-    if (!dateString) return null
-    const deadline = new Date(dateString)
-    const today = new Date()
-    const diffTime = deadline.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    if (!dateString) {
+return null;
+}
+    const deadline = new Date(dateString);
+    const today = new Date();
+    const diffTime = deadline.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return 'Просрочен'
-    if (diffDays === 0) return 'Сегодня'
-    if (diffDays === 1) return '1 день'
-    if (diffDays < 5) return `${diffDays} дня`
-    return `${diffDays} дней`
-  }
+    if (diffDays < 0) {
+return 'Просрочен';
+}
+    if (diffDays === 0) {
+return 'Сегодня';
+}
+    if (diffDays === 1) {
+return '1 день';
+}
+    if (diffDays < 5) {
+return `${diffDays} дня`;
+}
+    return `${diffDays} дней`;
+  };
 
   const getStatusBadge = () => {
     const statusConfig = {
       APPROVED: { text: 'Активный', color: 'bg-green-500/20 text-green-400' },
       PENDING: { text: 'На модерации', color: 'bg-yellow-500/20 text-yellow-400' },
       REJECTED: { text: 'Отклонен', color: 'bg-red-500/20 text-red-400' },
-    }
+    };
     
-    const config = statusConfig[tender.status]
+    const config = statusConfig[tender.status];
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
         {config.text}
       </span>
-    )
-  }
+    );
+  };
 
-  const daysLeft = getDaysLeft(tender.deadline_date)
+  const daysLeft = getDaysLeft(tender.deadline_date);
 
   return (
     <motion.div
       whileHover={{ y: -3 }}
-      className="card p-6 hover:shadow-glow transition-all duration-300 group cursor-pointer"
+      onClick={handleClick}
+      className={`card p-6 hover:shadow-glow transition-all duration-300 group ${
+        tender.company?.id ? 'cursor-pointer' : 'cursor-default'
+      }`}
     >
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
@@ -151,11 +182,13 @@ const TenderCard = ({ tender }: TenderCardProps) => {
       </div>
 
       {/* Hover effect */}
-      <div className="mt-3 text-primary-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        Подробнее →
-      </div>
+      {tender.company?.id && (
+        <div className="mt-3 text-primary-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          Смотреть компанию →
+        </div>
+      )}
     </motion.div>
-  )
-}
+  );
+};
 
-export default TenderCard
+export default TenderCard;

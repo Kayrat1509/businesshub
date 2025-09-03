@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { yupResolver } from '@hookform/resolvers/yup'
-import * as yup from 'yup'
-import { motion } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react'
-import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { login, clearError } from '../../store/slices/authSlice'
-import { toast } from 'react-toastify'
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { login, clearError } from '../../store/slices/authSlice';
+import { toast } from 'react-toastify';
 
 const schema = yup.object({
   email: yup
@@ -18,19 +18,19 @@ const schema = yup.object({
     .string()
     .required('Пароль обязателен')
     .min(6, 'Пароль должен содержать минимум 6 символов'),
-})
+});
 
 type LoginFormData = yup.InferType<typeof schema>
 
 const Login = () => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const dispatch = useAppDispatch()
-  const { isLoading, error, isAuthenticated } = useAppSelector(state => state.auth)
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useAppDispatch();
+  const { isLoading, error, isAuthenticated } = useAppSelector(state => state.auth);
   
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
 
-  const from = (location.state as any)?.from?.pathname || '/'
+  const from = (location.state as any)?.from?.pathname || '/';
 
   const {
     register,
@@ -38,29 +38,29 @@ const Login = () => {
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: yupResolver(schema),
-  })
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(from, { replace: true })
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, from])
+  }, [isAuthenticated, navigate, from]);
 
   useEffect(() => {
     if (error) {
-      toast.error(error)
-      dispatch(clearError())
+      toast.error(error);
+      dispatch(clearError());
     }
-  }, [error, dispatch])
+  }, [error, dispatch]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await dispatch(login(data)).unwrap()
-      toast.success('Добро пожаловать!')
+      await dispatch(login(data)).unwrap();
+      toast.success('Добро пожаловать!');
     } catch (error) {
       // Error handled by useEffect
     }
-  }
+  };
 
   return (
     <motion.div
@@ -175,7 +175,7 @@ const Login = () => {
         </div>
       </div>
     </motion.div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;

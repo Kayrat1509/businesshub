@@ -109,6 +109,7 @@ export interface Product {
   primary_image?: string
   product_images?: ProductImage[]
   images: string[]
+  rating: number
   in_stock: boolean
   is_active: boolean
   created_at: string
@@ -151,6 +152,11 @@ export interface Tender {
   attachments: string[]
   tender_attachments?: TenderAttachment[]
   author_name: string
+  company?: {
+    id: number
+    name: string
+    logo?: string
+  }
   admin_comment?: string
   created_at: string
   updated_at: string
