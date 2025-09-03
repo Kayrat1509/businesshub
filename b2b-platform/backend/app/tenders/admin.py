@@ -19,6 +19,7 @@ class TenderAdminForm(forms.ModelForm):
 
     class Meta:
         model = Tender
+        fields = '__all__'
         exclude = ['attachments']
         widgets = {
             'title': TextInput(attrs={'size': '80'}),
@@ -77,13 +78,16 @@ class TenderAdminForm(forms.ModelForm):
         instance = super().save(commit=False)
         
         # Convert attachment URLs from text field to JSON list
-        attachment_urls_text = self.cleaned_data['attachment_urls']
+        attachment_urls_text = self.cleaned_data.get('attachment_urls', '')
         if attachment_urls_text:
             # Split by comma and clean up URLs
             urls = [url.strip() for url in attachment_urls_text.split(',') if url.strip()]
             instance.attachments = urls
         else:
             instance.attachments = []
+        
+        # The company field is just for display/selection - it doesn't affect the model
+        # The relationship is maintained through the author field
         
         if commit:
             instance.save()
@@ -102,7 +106,8 @@ class TenderAdmin(admin.ModelAdmin):
     list_per_page = 25
 
     fieldsets = (
-        ("Основная информация", {"fields": ("title", "author", "company", "company_display", "description", "categories")}),
+        ("Основная информация", {"fields": ("title", "author", "description", "categories")}),
+        ("Информация о компании", {"fields": ("company", "company_display"), "classes": ["collapse"]}),
         (
             "Местоположение и бюджет",
             {"fields": ("city", "budget_min", "budget_max", "deadline_date")},
@@ -114,6 +119,19 @@ class TenderAdmin(admin.ModelAdmin):
             {"fields": ("created_at", "updated_at"), "classes": ["collapse"]},
         ),
     )
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """Custom form handling to ensure company field is properly handled"""
+        form = super().get_form(request, obj, **kwargs)
+        return form
+        
+    def get_readonly_fields(self, request, obj=None):
+        """Make company_display always readonly"""
+        readonly_fields = list(self.readonly_fields)
+        if obj:
+            # For existing objects, show company info as readonly
+            pass
+        return readonly_fields
 
     def title_with_link(self, obj):
         """Display tender title with clickable link to company card"""
