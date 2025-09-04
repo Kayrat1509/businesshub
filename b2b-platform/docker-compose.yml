@@ -4,8 +4,10 @@ services:
   db:
     image: postgres:15
     container_name: b2b_postgres
-    env_file:
-      - .env
+    environment:
+      POSTGRES_DB: b2b_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -18,11 +20,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: b2b_backend
-    environment:
-      - DEBUG=1
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/b2b_platform
-      - SECRET_KEY=your-secret-key-change-in-production
-      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+    env_file:
+      - .env
     volumes:
       - ./backend:/app
       - media_volume:/app/media
