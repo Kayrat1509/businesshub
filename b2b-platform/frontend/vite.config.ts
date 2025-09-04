@@ -12,6 +12,7 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
+    allowedHosts: ['orbiz.asia', 'localhost', 'api.orbiz.asia'],
     port: 5173,
     proxy: {
       '/api': {
