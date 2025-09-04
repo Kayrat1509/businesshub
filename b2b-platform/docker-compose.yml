@@ -21,7 +21,7 @@ services:
       dockerfile: Dockerfile
     container_name: b2b_backend
     env_file:
-      - .env
+      - backend/.env
     volumes:
       - ./backend:/app
       - media_volume:/app/media
@@ -47,7 +47,7 @@ services:
     ports:
       - "5173:5173"
     env_file:
-      - .env
+      - backend/.env
     networks:
       - b2b_network
     command: npm run dev
