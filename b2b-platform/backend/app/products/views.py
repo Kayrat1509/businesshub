@@ -4,8 +4,10 @@ from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
+from django.http import JsonResponse
 
 from app.common.permissions import IsOwnerOrReadOnly
+# from app.common.services import CurrencyConverter
 
 from .models import Product
 from .serializers import (ProductCreateUpdateSerializer,
@@ -120,3 +122,54 @@ def products_by_category(request, category_name):
     
     serializer = ProductListSerializer(products, many=True, context={'request': request})
     return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_exchange_rates(request):
+    """API endpoint to get current exchange rates"""
+    # Temporary fallback rates
+    return JsonResponse({
+        'success': True,
+        'rates': {'KZT': 450.0, 'RUB': 90.0, 'USD': 1.0},
+        'base': 'USD'
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def convert_price(request):
+    """API endpoint to convert price between currencies"""
+    try:
+        data = request.data
+        amount = float(data.get('amount', 0))
+        from_currency = data.get('from_currency', 'USD')
+        to_currency = data.get('to_currency', 'USD')
+        
+        if amount <= 0:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid amount'
+            }, status=400)
+        
+        # Simple conversion with fallback rates
+        rates = {'KZT': 450.0, 'RUB': 90.0, 'USD': 1.0}
+        if from_currency == to_currency:
+            converted_amount = amount
+        else:
+            usd_amount = amount / rates.get(from_currency, 1)
+            converted_amount = usd_amount * rates.get(to_currency, 1)
+        
+        return JsonResponse({
+            'success': True,
+            'original_amount': amount,
+            'original_currency': from_currency,
+            'converted_amount': round(converted_amount, 2),
+            'target_currency': to_currency
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

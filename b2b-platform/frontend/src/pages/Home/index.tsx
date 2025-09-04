@@ -7,7 +7,6 @@ import { fetchCategories, fetchCategoryTree } from '../../store/slices/categorie
 import { fetchCompanies } from '../../store/slices/companiesSlice';
 import { fetchTenders } from '../../store/slices/tendersSlice';
 import { fetchAds } from '../../store/slices/adsSlice';
-import { fetchProductsByCategory } from '../../store/slices/productsSlice';
 import CompanyCard from '../../components/CompanyCard';
 import CategoryGrid from '../../components/CategoryGrid';
 import TenderCard from '../../components/TenderCard';
@@ -467,74 +466,6 @@ return;
       </section>
 
 
-      {/* Categories Section - Hide when showing search results */}
-      {!hasSearched && (
-        <section className="py-20 px-4">
-          <div className="container mx-auto max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-4xl font-bold text-white mb-4">
-                Популярные товары
-              </h2>
-              <p className="text-xl text-dark-300">
-                Найдите товары от производителей и дилеров
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {[
-                { name: 'Строительные материалы', icon: '🏗️', color: 'from-primary-600 to-primary-500' },
-                { name: 'Продовольственные товары', icon: '🍎', color: 'from-secondary-600 to-secondary-500' },
-                { name: 'Энергетика и топливо', icon: '⚡', color: 'from-purple-600 to-purple-500' },
-                { name: 'Медицинские товары', icon: '🏥', color: 'from-green-600 to-green-500' },
-                { name: 'IT и техника', icon: '💻', color: 'from-blue-600 to-blue-500' },
-                { name: 'Транспорт', icon: '🚛', color: 'from-yellow-600 to-yellow-500' },
-                { name: 'Металлы', icon: '🔩', color: 'from-red-600 to-red-500' },
-                { name: 'Одежда и текстиль', icon: '👕', color: 'from-pink-600 to-pink-500' },
-                { name: 'Химия', icon: '🧪', color: 'from-indigo-600 to-indigo-500' },
-                { name: 'Офисные товары', icon: '📊', color: 'from-cyan-600 to-cyan-500' },
-                { name: 'ЖКХ и коммунальное хозяйство', icon: '🏘️', color: 'from-orange-600 to-orange-500' },
-                { name: 'Агропром', icon: '🌾', color: 'from-lime-600 to-lime-500' },
-              ].map((product, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <button 
-                    onClick={() => {
-                      dispatch(fetchProductsByCategory(product.name));
-                      setSearchQuery(product.name);
-                      setSearchParams({ q: product.name });
-                      setHasSearched(true);
-                    }}
-                    className="block w-full p-6 card hover:shadow-glow transition-all duration-300 group"
-                  >
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${product.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 mx-auto`}>
-                      <span className="text-2xl">{product.icon}</span>
-                    </div>
-                    
-                    <h3 className="text-white font-semibold text-lg mb-2 group-hover:text-primary-400 transition-colors text-center">
-                      {product.name}
-                    </h3>
-                    
-                    <div className="mt-3 text-primary-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
-                      Найти товары →
-                    </div>
-                  </button>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Popular Companies Section - Hide when showing search results */}
       {!hasSearched && (
@@ -667,7 +598,7 @@ return;
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button 
                 onClick={() => {
-                  document.querySelector('input[type="text"]')?.focus();
+                  (document.querySelector('input[type="text"]') as HTMLInputElement)?.focus();
                 }}
                 className="btn border-2 border-white text-white hover:bg-white hover:text-primary-600 px-8 py-4 text-lg font-semibold"
               >

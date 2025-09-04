@@ -71,6 +71,7 @@ export interface Company {
   owner_name: string
   is_favorite: boolean
   reviews_count?: number
+  products?: Product[]
   branches?: Branch[]
   employees?: Employee[]
   created_at: string
@@ -102,7 +103,7 @@ export interface Product {
   sku?: string
   description: string
   price?: number
-  currency: 'RUB' | 'USD' | 'EUR'
+  currency: 'KZT' | 'RUB' | 'USD'
   is_service: boolean
   category?: Category
   company_name: string

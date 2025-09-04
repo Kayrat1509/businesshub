@@ -7,6 +7,7 @@ import { fetchCompanies } from '../../store/slices/companiesSlice';
 import { fetchCategories } from '../../store/slices/categoriesSlice';
 import CompanyCard from '../../components/CompanyCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import apiService from '../../api';
 
 const Suppliers = () => {
   const dispatch = useAppDispatch();
@@ -30,8 +31,7 @@ const Suppliers = () => {
 
   const fetchParentCategories = async () => {
     try {
-      const response = await fetch('/api/categories/tree/');
-      const data = await response.json();
+      const data = await apiService.get('/categories/tree/');
       setParentCategories(data);
     } catch (error) {
       console.error('Error fetching parent categories:', error);
@@ -55,13 +55,14 @@ const Suppliers = () => {
   const filteredCompanies = selectedCategory 
     ? companies.filter(company => 
         company.categories?.some(cat => {
-          // Match by exact category name
+          // Direct match by category name
           if (cat.name === selectedCategory) return true;
           
-          // Match by parent category name - check if this category belongs to the selected parent
-          if (cat.parent) {
-            const parentCategory = categories.find(c => c.id === cat.parent);
-            return parentCategory?.name === selectedCategory;
+          // Check if this is a child category of the selected parent category
+          const selectedParent = parentCategories.find(p => p.name === selectedCategory);
+          if (selectedParent) {
+            // Check if company's category is a child of the selected parent
+            return selectedParent.children?.some((child: any) => child.name === cat.name);
           }
           
           return false;
@@ -72,13 +73,14 @@ const Suppliers = () => {
   const getCompaniesForCategory = (categoryName: string) => {
     return companies.filter(company => 
       company.categories?.some(cat => {
-        // Match by exact category name
+        // Direct match by category name
         if (cat.name === categoryName) return true;
         
-        // Match by parent category name - check if this category belongs to the selected parent
-        if (cat.parent) {
-          const parentCategory = categories.find(c => c.id === cat.parent);
-          return parentCategory?.name === categoryName;
+        // Check if this is a child category of the selected parent category
+        const selectedParent = parentCategories.find(p => p.name === categoryName);
+        if (selectedParent) {
+          // Check if company's category is a child of the selected parent
+          return selectedParent.children?.some((child: any) => child.name === cat.name);
         }
         
         return false;

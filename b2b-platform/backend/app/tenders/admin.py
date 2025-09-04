@@ -16,6 +16,16 @@ class TenderAdminForm(forms.ModelForm):
         help_text="Введите ссылки на файлы через запятую, например: https://example.com/file1.pdf, https://example.com/file2.docx",
         widget=Textarea(attrs={'rows': 3, 'cols': 80, 'placeholder': 'https://example.com/file1.pdf, https://example.com/file2.docx'})
     )
+    
+    # Custom field for selecting client company that ordered this tender
+    client_company = forms.ModelChoiceField(
+        queryset=None,
+        label="Компания-заказчик",
+        required=False,
+        empty_label="-- Выберите компанию-заказчик --",
+        help_text="Выберите компанию, которая заказала этот тендер",
+        widget=forms.Select(attrs={'style': 'width: 100%;'})
+    )
 
     class Meta:
         model = Tender
@@ -47,10 +57,24 @@ class TenderAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
+        # Import Company model here to avoid circular imports
+        from app.companies.models import Company
+        
+        # Set queryset for client company field
+        self.fields['client_company'].queryset = Company.objects.filter(status="APPROVED").order_by('name')
+        
         if self.instance and self.instance.pk:
             # Load existing attachments URLs into the text field
             attachments = self.instance.attachments or []
             self.fields['attachment_urls'].initial = ', '.join(attachments)
+            
+            # Set initial client company if exists (based on author's company)
+            try:
+                author_company = self.instance.author.companies.filter(status="APPROVED").first()
+                if author_company:
+                    self.fields['client_company'].initial = author_company
+            except:
+                pass
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -63,6 +87,9 @@ class TenderAdminForm(forms.ModelForm):
             instance.attachments = urls
         else:
             instance.attachments = []
+        
+        # Note: client_company is for admin convenience only to show which company ordered the tender
+        # The actual company relationship is determined by the author field
         
         if commit:
             instance.save()
@@ -83,7 +110,7 @@ class TenderAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ("Основная информация", {
-            "fields": ("title", "author", "description", "categories")
+            "fields": ("title", "author", "client_company", "description", "categories")
         }),
         ("Местоположение и бюджет", {
             "fields": ("city", "budget_min", "budget_max", "deadline_date")
@@ -97,7 +124,6 @@ class TenderAdmin(admin.ModelAdmin):
         }),
         ("Информация о компании", {
             "fields": ("company_display",),
-            "classes": ["collapse"]
         }),
         ("Служебная информация", {
             "fields": ("created_at", "updated_at"),
@@ -119,21 +145,14 @@ class TenderAdmin(admin.ModelAdmin):
         return readonly_fields
 
     def title_with_link(self, obj):
-        """Display tender title with clickable link to company card"""
-        try:
-            if obj.author:
-                company = obj.author.companies.filter(status="APPROVED").first()
-                if company:
-                    # Link to frontend company card
-                    frontend_url = f"http://localhost:5173/company/{company.id}?tab=tenders"
-                    return format_html(
-                        '<a href="{}" target="_blank" style="color: #0066cc; text-decoration: none;">{}</a>',
-                        frontend_url,
-                        obj.title
-                    )
-        except:
-            pass
-        return obj.title
+        """Display tender title with clickable link to edit tender"""
+        # Link to admin edit page for this tender
+        edit_url = reverse('admin:tenders_tender_change', args=[obj.pk])
+        return format_html(
+            '<a href="{}" style="color: #0066cc; text-decoration: none;">{}</a>',
+            edit_url,
+            obj.title
+        )
     title_with_link.short_description = "Название тендера"
     title_with_link.allow_tags = True
 

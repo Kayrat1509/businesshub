@@ -5,6 +5,23 @@ from app.categories.serializers import CategorySerializer
 from .models import Branch, Company, Employee
 
 
+class CompanyProductSerializer(serializers.Serializer):
+    """Simplified serializer for products in company cards"""
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True)
+    currency = serializers.CharField()
+    is_service = serializers.BooleanField()
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Truncate description to 4 lines (approximately 200 chars)
+        if data['description'] and len(data['description']) > 200:
+            data['description'] = data['description'][:200] + '...'
+        return data
+
+
 class BranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Branch
@@ -23,6 +40,7 @@ class CompanyListSerializer(serializers.ModelSerializer):
     is_favorite = serializers.SerializerMethodField()
     staff_count = serializers.IntegerField()
     reviews_count = serializers.SerializerMethodField()
+    products = serializers.SerializerMethodField()
 
     class Meta:
         model = Company
@@ -39,6 +57,7 @@ class CompanyListSerializer(serializers.ModelSerializer):
             "is_favorite",
             "staff_count",
             "reviews_count",
+            "products",
             "created_at",
         ]
 
@@ -50,6 +69,11 @@ class CompanyListSerializer(serializers.ModelSerializer):
 
     def get_reviews_count(self, obj):
         return obj.reviews.filter(status="APPROVED").count()
+    
+    def get_products(self, obj):
+        # Get first 4 active products for the company card
+        products = obj.products.filter(is_active=True)[:4]
+        return CompanyProductSerializer(products, many=True).data
 
 
 class CompanyDetailSerializer(serializers.ModelSerializer):

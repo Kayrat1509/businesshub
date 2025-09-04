@@ -40,7 +40,8 @@ class CategoryAdmin(admin.ModelAdmin):
     products_count.short_description = "Товары"
 
     def companies_count(self, obj):
-        count = obj.companies.count()
+        from app.companies.models import Company
+        count = Company.objects.filter(categories=obj).count()
         if count > 0:
             return format_html('<span style="color: blue; font-weight: bold;">{}</span>', count)
         return count

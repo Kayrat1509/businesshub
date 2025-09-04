@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.forms import TextInput, Textarea, NumberInput, Select, CheckboxInput
+from django.utils.html import format_html
 
 from .models import Product, ProductImage
 
@@ -41,6 +42,7 @@ class ProductAdmin(admin.ModelAdmin):
         "company",
         "category", 
         "get_price_display",
+        "get_price_conversions",
         "is_service",
         "in_stock",
         "is_active",
@@ -76,6 +78,27 @@ class ProductAdmin(admin.ModelAdmin):
             return f"{obj.price} {obj.currency}"
         return "Договорная"
     get_price_display.short_description = "Цена"
+    
+    def get_price_conversions(self, obj):
+        """Display price conversions in other currencies"""
+        if not obj.price:
+            return "-"
+        
+        conversions = []
+        for currency in ['KZT', 'RUB', 'USD']:
+            if currency != obj.currency:
+                converted_price = obj.get_price_in(currency)
+                if converted_price:
+                    conversions.append(f"{converted_price} {currency}")
+        
+        if conversions:
+            conversion_text = " | ".join(conversions)
+            return format_html(
+                '<span style="color: #666; font-size: 0.9em;">{}</span>', 
+                conversion_text
+            )
+        return "-"
+    get_price_conversions.short_description = "Конвертация валют"
 
 
 @admin.register(ProductImage)
