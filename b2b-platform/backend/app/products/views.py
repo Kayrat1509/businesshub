@@ -35,12 +35,24 @@ class ProductFilter(filters.FilterSet):
 
 
 class ProductListCreateView(generics.ListCreateAPIView):
-    queryset = Product.objects.filter(is_active=True, company__status="APPROVED")
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
     search_fields = ["title", "description", "sku"]
     ordering_fields = ["title", "price", "created_at", "rating"]
     ordering = ["-rating", "-created_at"]
+    
+    def get_queryset(self):
+        """
+        Фильтрация продуктов в зависимости от пользователя:
+        - Неаутентифицированные: только активные продукты одобренных компаний
+        - Обычные пользователи: могут видеть все активные продукты для просмотра
+        - Суперпользователи: видят все продукты
+        """
+        if self.request.user.is_authenticated and self.request.user.is_superuser:
+            return Product.objects.all()
+        
+        # Для всех остальных - только активные продукты одобренных компаний
+        return Product.objects.filter(is_active=True, company__status="APPROVED")
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -53,19 +65,35 @@ class ProductListCreateView(generics.ListCreateAPIView):
         return [permissions.AllowAny()]
 
     def perform_create(self, serializer):
-        # Get the user's company
-        user_companies = self.request.user.companies.filter(
-            status__in=["APPROVED", "PENDING"]
-        )
-        if not user_companies.exists():
-            return Response(
-                {"error": "You must have an approved company to create products"},
-                status=status.HTTP_400_BAD_REQUEST,
+        """
+        Автоматическое присваивание компании при создании продукта.
+        Компания определяется через Company.objects.get(owner=request.user)
+        """
+        try:
+            from app.companies.models import Company
+            
+            # Суперпользователи могут создавать продукты для любой компании
+            if self.request.user.is_superuser:
+                # Если company_id передан в запросе, используем его
+                company_id = self.request.data.get('company_id')
+                if company_id:
+                    try:
+                        company = Company.objects.get(id=company_id)
+                        serializer.save(company=company)
+                        return
+                    except Company.DoesNotExist:
+                        pass
+            
+            # Для обычных пользователей получаем компанию автоматически
+            user_company = Company.objects.get(owner=self.request.user)
+            serializer.save(company=user_company)
+            
+        except Company.DoesNotExist:
+            # Если у пользователя нет компании, возвращаем ошибку
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError(
+                {"error": "У вас нет компании для создания продуктов"}
             )
-
-        # Use the first company (suppliers typically have one company)
-        company = user_companies.first()
-        serializer.save(company=company)
 
 
 class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):

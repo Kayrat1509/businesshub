@@ -22,16 +22,17 @@ class UserRegistrationView(generics.CreateAPIView):
             # Get the created user
             user = User.objects.get(email=request.data.get("email"))
 
-            # Generate JWT tokens
+            # Generate JWT tokens for immediate authentication
             from rest_framework_simplejwt.tokens import RefreshToken
 
             refresh = RefreshToken.for_user(user)
 
-            # Return user data with tokens
+            # Return user data with tokens for auto-login
             response.data = {
                 "user": UserSerializer(user).data,
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
+                "message": "Регистрация прошла успешно. Добро пожаловать!"
             }
         return response
 

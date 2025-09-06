@@ -3,7 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Menu, X, User, LogOut, Settings, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { logout } from '../../store/slices/authSlice';
+import { logout, login } from '../../store/slices/authSlice';
+import { toast } from 'react-hot-toast';
 
 const Header = () => {
   const navigate = useNavigate();
@@ -35,6 +36,19 @@ return '/admin';
 return '/dashboard';
 }
     return null;
+  };
+
+  const handleQuickLogin = async () => {
+    try {
+      await dispatch(login({ 
+        email: 'supplier@demo.com', 
+        password: 'demo123' 
+      })).unwrap();
+      toast.success('Вход выполнен успешно');
+    } catch (error) {
+      toast.error('Ошибка входа');
+      console.error('Login error:', error);
+    }
   };
 
   return (

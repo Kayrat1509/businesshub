@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAppSelector } from '../../store/hooks';
+import { useAppSelector, useAppDispatch } from '../../store/hooks';
+import { setTestUser } from '../../store/slices/authSlice';
 import { toast } from 'react-hot-toast';
 import {
-  Package, Save, Edit3, Plus, Trash2, Search, Filter,
-  DollarSign, Tag, CheckCircle, XCircle, Loader, Eye,
-  Image as ImageIcon, AlertCircle, X,
+  Package, Plus, Search, Loader, AlertCircle, 
+  DollarSign, Tag, CheckCircle, XCircle, 
+  Image as ImageIcon, ExternalLink, LogIn
 } from 'lucide-react';
 import apiService from '../../api';
 
 interface Product {
-  id?: number
+  id: number
   title: string
   sku?: string
   description: string
   price?: number
   currency: string
   is_service: boolean
-  category?: Category | number
+  category?: Category
   images: string[]
   in_stock: boolean
   is_active: boolean
@@ -25,6 +26,7 @@ interface Product {
   primary_image?: string
   created_at?: string
   updated_at?: string
+  rating?: number
 }
 
 interface Category {
@@ -33,254 +35,263 @@ interface Category {
   slug?: string
 }
 
+// Курсы валют для конвертации
+const EXCHANGE_RATES = {
+  KZT: 450.0, // 1 USD = 450 KZT
+  RUB: 90.0,  // 1 USD = 90 RUB  
+  USD: 1.0    // базовая валюта
+};
+
+// Функция конвертации валют
+const convertPrice = (price: number, fromCurrency: string, toCurrency: string): number => {
+  if (fromCurrency === toCurrency) return price;
+  
+  // Конвертируем в USD сначала
+  const priceInUSD = price / EXCHANGE_RATES[fromCurrency as keyof typeof EXCHANGE_RATES];
+  // Затем в целевую валюту
+  const convertedPrice = priceInUSD * EXCHANGE_RATES[toCurrency as keyof typeof EXCHANGE_RATES];
+  
+  return Math.round(convertedPrice * 100) / 100; // округляем до 2 знаков
+};
+
 const DashboardProducts: React.FC = () => {
+  const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState<number | ''>('');
-  const [filterService, setFilterService] = useState<boolean | ''>('');
 
-  const [formData, setFormData] = useState<Product>({
-    title: '',
-    sku: '',
-    description: '',
-    price: undefined,
-    currency: 'RUB',
-    is_service: false,
-    category: undefined,
-    images: [],
-    in_stock: true,
-    is_active: true,
-  });
-
-  const currencies = [
-    { value: 'RUB', label: '₽ Рубли' },
-    { value: 'USD', label: '$ Доллары' },
-    { value: 'EUR', label: '€ Евро' },
-  ];
+  const handleQuickLogin = () => {
+    dispatch(setTestUser());
+    toast.success('Выполнен быстрый вход в систему');
+    // Перезагружаем товары после входа
+    setTimeout(() => loadProducts(), 500);
+  };
 
   useEffect(() => {
-    loadData();
+    loadProducts();
   }, []);
 
-  const loadData = async () => {
+  const loadProducts = async () => {
     setIsLoading(true);
+    setError(null);
+    
+    console.log('Current user:', user);
+    console.log('Auth state:', { isAuthenticated: !!user, hasToken: !!localStorage.getItem('accessToken') });
+    
     try {
-      // Mock data for demonstration
-      const mockProducts: Product[] = [
-        {
-          id: 1,
-          title: 'Смеситель для кухни',
-          sku: 'SME-001',
-          description: 'Качественный смеситель из нержавеющей стали с поворотным изливом',
-          price: 15000,
-          currency: 'RUB',
-          is_service: false,
-          category: 1,
-          images: [],
-          in_stock: true,
-          is_active: true,
-          created_at: '2024-01-15T10:00:00Z',
-        },
-        {
-          id: 2,
-          title: 'Кабель ВВГ 3x2.5',
-          sku: 'KAB-002',
-          description: 'Медный кабель для электропроводки, длина 100м',
-          price: 2500,
-          currency: 'RUB',
-          is_service: false,
-          category: 2,
-          images: [],
-          in_stock: true,
-          is_active: true,
-          created_at: '2024-01-14T15:00:00Z',
-        },
-        {
-          id: 3,
-          title: 'Монтаж сантехники',
-          sku: 'SER-001',
-          description: 'Профессиональный монтаж сантехнического оборудования',
-          price: 5000,
-          currency: 'RUB',
-          is_service: true,
-          category: 1,
-          images: [],
-          in_stock: true,
-          is_active: true,
-          created_at: '2024-01-13T12:00:00Z',
-        },
-      ];
-
-      const mockCategories: Category[] = [
-        { id: 1, name: 'Сантехника' },
-        { id: 2, name: 'Электрика' },
-        { id: 3, name: 'Лакокрасочные материалы' },
-        { id: 4, name: 'Кровельные материалы' },
-        { id: 5, name: 'Железобетонные изделия' },
-      ];
+      const data = await apiService.get('/products/my/');
+      console.log('Products data:', data);
+      // apiService.get уже возвращает response.data
+      setProducts(Array.isArray(data) ? data : data.results || []);
+    } catch (error: any) {
+      console.error('Error loading products:', error);
       
-      setProducts(mockProducts);
-      setCategories(mockCategories);
-    } catch (error) {
-      toast.error('Ошибка загрузки данных');
-      console.error('Load error:', error);
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.error || 
+                          'Ошибка загрузки товаров';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleSave = async () => {
-    if (!formData.title.trim()) {
-      toast.error('Введите название товара');
-      return;
-    }
-
-    if (!formData.description.trim()) {
-      toast.error('Введите описание товара');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Prepare data for save
-      const dataToSave = {
-        ...formData,
-        category: typeof formData.category === 'object' && formData.category ? formData.category.id : formData.category,
-        price: formData.price || null,
-        created_at: new Date().toISOString(),
-      };
-      
-      let savedProduct: Product;
-      if (editingProduct?.id) {
-        // Update existing product
-        savedProduct = { ...dataToSave, id: editingProduct.id };
-        toast.success('Товар обновлен');
-        
-        // Update products list
-        setProducts(prev => prev.map(p => p.id === editingProduct.id ? savedProduct : p));
-      } else {
-        // Create new product
-        savedProduct = { ...dataToSave, id: Date.now() };
-        toast.success('Товар создан');
-        
-        // Add to products list
-        setProducts(prev => [savedProduct, ...prev]);
-      }
-      
-      // Reset form
-      resetForm();
-      
-    } catch (error: any) {
-      let errorMessage = 'Ошибка сохранения товара';
-      
-      if (error?.response?.status === 403) {
-        errorMessage = 'У вас нет прав для редактирования этого товара';
-      } else if (error?.response?.status === 404) {
-        errorMessage = 'Товар не найден';
-      } else if (error?.response?.status === 400) {
-        errorMessage = 'У вас должна быть одобренная компания для создания товаров';
-      } else {
-        errorMessage = error?.response?.data?.message || 
-                      error?.response?.data?.detail ||
-                      Object.values(error?.response?.data || {}).flat().join('; ') ||
-                      'Ошибка сохранения товара';
-      }
-      
-      toast.error(errorMessage);
-      console.error('Save error:', error);
-      console.error('Error response:', error?.response?.data);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async (product: Product) => {
-    if (!product.id) {
-return;
-}
+  // Компонент карточки товара
+  const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
+    const [imageError, setImageError] = useState(false);
     
-    if (!confirm(`Вы уверены, что хотите удалить товар "${product.title}"?`)) {
-      return;
-    }
+    // Получаем первые 3 изображения
+    const displayImages = product.images?.slice(0, 3) || [];
+    const primaryImage = product.primary_image || displayImages[0];
+    
+    // Ограничиваем описание до 2 строк
+    const shortDescription = product.description.length > 100 
+      ? product.description.substring(0, 100) + '...'
+      : product.description;
+    
+    // Конвертация цены в разные валюты
+    const priceConversions = product.price ? {
+      kzt: convertPrice(product.price, product.currency, 'KZT'),
+      rub: convertPrice(product.price, product.currency, 'RUB'),
+      usd: convertPrice(product.price, product.currency, 'USD')
+    } : null;
 
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setProducts(prev => prev.filter(p => p.id !== product.id));
-      toast.success('Товар удален');
-    } catch (error: any) {
-      toast.error('Ошибка удаления товара');
-      console.error('Delete error:', error);
-    }
+    return (
+      <div className="group bg-dark-800 rounded-xl border border-dark-700 overflow-hidden hover:border-primary-500 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
+        {/* Изображения */}
+        <div className="relative h-48 bg-dark-700">
+          {primaryImage && !imageError ? (
+            <img
+              src={primaryImage}
+              alt={product.title}
+              className="w-full h-full object-cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ImageIcon className="w-16 h-16 text-dark-500" />
+            </div>
+          )}
+          
+          {/* Статус товара */}
+          <div className="absolute top-3 left-3">
+            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
+              product.in_stock 
+                ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                : 'bg-red-500/20 text-red-400 border border-red-500/30'
+            }`}>
+              {product.in_stock ? (
+                <CheckCircle className="w-3 h-3" />
+              ) : (
+                <XCircle className="w-3 h-3" />
+              )}
+              <span>{product.in_stock ? 'В наличии' : 'Нет в наличии'}</span>
+            </div>
+          </div>
+
+          {/* Тип товара */}
+          <div className="absolute top-3 right-3">
+            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
+              product.is_service 
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+            }`}>
+              {product.is_service ? (
+                <Tag className="w-3 h-3" />
+              ) : (
+                <Package className="w-3 h-3" />
+              )}
+              <span>{product.is_service ? 'Услуга' : 'Товар'}</span>
+            </div>
+          </div>
+
+          {/* Количество изображений */}
+          {displayImages.length > 1 && (
+            <div className="absolute bottom-3 right-3 bg-dark-900/80 text-white px-2 py-1 rounded text-xs">
+              <ImageIcon className="w-3 h-3 inline mr-1" />
+              {displayImages.length}
+            </div>
+          )}
+        </div>
+
+        {/* Контент карточки */}
+        <div className="p-4">
+          {/* Заголовок */}
+          <h3 className="text-lg font-semibold text-white mb-2 line-clamp-1 group-hover:text-primary-400 transition-colors">
+            {product.title}
+          </h3>
+          
+          {/* SKU */}
+          {product.sku && (
+            <p className="text-sm text-dark-400 mb-2">
+              Артикул: {product.sku}
+            </p>
+          )}
+
+          {/* Категория */}
+          {product.category && (
+            <div className="mb-3">
+              <span className="inline-block px-2 py-1 text-xs bg-primary-500/20 text-primary-400 rounded-full">
+                {product.category.name}
+              </span>
+            </div>
+          )}
+
+          {/* Описание */}
+          <p className="text-dark-300 text-sm mb-4 line-clamp-2 leading-relaxed">
+            {shortDescription}
+          </p>
+
+          {/* Цена и конвертация */}
+          {priceConversions && (
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center space-x-2">
+                <DollarSign className="w-4 h-4 text-green-400" />
+                <span className="text-white font-semibold">
+                  {product.price?.toLocaleString()} {product.currency}
+                </span>
+              </div>
+              <div className="text-xs text-dark-400 space-y-1">
+                <div>≈ {priceConversions.kzt.toLocaleString()} KZT</div>
+                <div>≈ {priceConversions.rub.toLocaleString()} RUB</div>
+                <div>≈ {priceConversions.usd.toLocaleString()} USD</div>
+              </div>
+            </div>
+          )}
+
+          {/* Дата создания */}
+          {product.created_at && (
+            <div className="text-xs text-dark-500">
+              Создано: {new Date(product.created_at).toLocaleDateString('ru-RU')}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      ...product,
-      price: product.price || undefined,
-    });
-    setShowCreateForm(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      sku: '',
-      description: '',
-      price: undefined,
-      currency: 'RUB',
-      is_service: false,
-      category: undefined,
-      images: [],
-      in_stock: true,
-      is_active: true,
-    });
-    setEditingProduct(null);
-    setShowCreateForm(false);
-  };
-
-  const getCategoryName = (categoryId: number | undefined) => {
-    if (!categoryId) {
-return 'Без категории';
-}
-    const category = categories.find(cat => cat.id === categoryId);
-    return category ? category.name : 'Без категории';
-  };
-
+  // Фильтрация товаров по поиску
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+    if (!searchTerm) return true;
     
-    const matchesCategory = !filterCategory || 
-                           (typeof product.category === 'object' ? product.category?.id === filterCategory : product.category === filterCategory);
-    
-    const matchesService = filterService === '' || product.is_service === filterService;
-    
-    return matchesSearch && matchesCategory && matchesService;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      product.title.toLowerCase().includes(searchLower) ||
+      product.description.toLowerCase().includes(searchLower) ||
+      (product.sku && product.sku.toLowerCase().includes(searchLower)) ||
+      (product.category && product.category.name.toLowerCase().includes(searchLower))
+    );
   });
 
+  // Состояние загрузки
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <Loader className="w-8 h-8 animate-spin text-primary-400" />
+      <div className="flex justify-center items-center py-20">
+        <div className="text-center">
+          <Loader className="w-12 h-12 animate-spin text-primary-400 mx-auto mb-4" />
+          <p className="text-dark-300">Загружаем ваши товары...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Состояние ошибки
+  if (error) {
+    const isAuthError = error.includes('не были предоставлены') || error.includes('credential');
+    
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">
+            {isAuthError ? 'Требуется авторизация' : 'Ошибка загрузки'}
+          </h2>
+          <p className="text-dark-300 mb-6">
+            {isAuthError 
+              ? 'Для просмотра товаров необходимо войти в систему'
+              : error
+            }
+          </p>
+          <div className="space-x-4">
+            {isAuthError && (
+              <button
+                onClick={handleQuickLogin}
+                className="btn-primary inline-flex items-center space-x-2"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Быстрый вход</span>
+              </button>
+            )}
+            <button
+              onClick={loadProducts}
+              className="btn-outline"
+            >
+              Попробовать снова
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -288,330 +299,86 @@ return 'Без категории';
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Мои товары</h1>
           <p className="text-dark-300">
-            Управляйте товарами и услугами вашей компании
+            Товары и услуги вашей компании
           </p>
         </div>
         
-        <button
-          onClick={() => setShowCreateForm(true)}
+        <Link
+          to="/dashboard/products/create"
           className="btn-primary flex items-center space-x-2"
         >
           <Plus className="w-4 h-4" />
           <span>Добавить товар</span>
-        </button>
+        </Link>
       </div>
 
-      {/* Filters */}
-      <div className="card p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
-            <input
-              type="text"
-              placeholder="Поиск товаров..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input pl-10"
-            />
-          </div>
-          
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value ? Number(e.target.value) : '')}
-            className="input"
-          >
-            <option value="">Все категории</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-          
-          <select
-            value={filterService.toString()}
-            onChange={(e) => setFilterService(e.target.value === '' ? '' : e.target.value === 'true')}
-            className="input"
-          >
-            <option value="">Товары и услуги</option>
-            <option value="false">Только товары</option>
-            <option value="true">Только услуги</option>
-          </select>
-          
-          <div className="flex items-center text-sm text-dark-300">
-            <Package className="w-4 h-4 mr-2" />
-            {filteredProducts.length} из {products.length}
-          </div>
+      {/* Search */}
+      <div className="bg-dark-800 rounded-xl border border-dark-700 p-4">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+          <input
+            type="text"
+            placeholder="Поиск по названию, описанию, артикулу..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-dark-700 border border-dark-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 transition-colors"
+          />
         </div>
-      </div>
-
-      {/* Create/Edit Form */}
-      {showCreateForm && (
-        <div className="card p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-white">
-              {editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}
-            </h2>
-            <button
-              onClick={resetForm}
-              className="text-dark-400 hover:text-white"
-            >
-              <X className="w-6 h-6" />
-            </button>
+        
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center space-x-2 text-sm text-dark-300">
+            <Package className="w-4 h-4" />
+            <span>
+              {filteredProducts.length} 
+              {filteredProducts.length !== products.length && ` из ${products.length}`} 
+              товаров
+            </span>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-dark-200 mb-2">
-                Название товара *
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                className="input"
-                placeholder="Введите название товара"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-dark-200 mb-2">
-                Артикул
-              </label>
-              <input
-                type="text"
-                value={formData.sku || ''}
-                onChange={(e) => handleInputChange('sku', e.target.value)}
-                className="input"
-                placeholder="ART-001"
-              />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-dark-200 mb-2">
-                Описание *
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className="input resize-none"
-                rows={4}
-                placeholder="Подробное описание товара или услуги"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-dark-200 mb-2">
-                Цена
-              </label>
-              <div className="flex space-x-2">
-                <input
-                  type="number"
-                  value={formData.price || ''}
-                  onChange={(e) => handleInputChange('price', e.target.value ? Number(e.target.value) : undefined)}
-                  className="input flex-1"
-                  placeholder="0"
-                  min="0"
-                  step="0.01"
-                />
-                <select
-                  value={formData.currency}
-                  onChange={(e) => handleInputChange('currency', e.target.value)}
-                  className="input w-24"
-                >
-                  {currencies.map(currency => (
-                    <option key={currency.value} value={currency.value}>
-                      {currency.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-dark-200 mb-2">
-                Категория
-              </label>
-              <select
-                value={typeof formData.category === 'object' && formData.category ? formData.category.id : formData.category || ''}
-                onChange={(e) => handleInputChange('category', e.target.value ? Number(e.target.value) : undefined)}
-                className="input"
-              >
-                <option value="">Выберите категорию</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="md:col-span-2">
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_service}
-                    onChange={(e) => handleInputChange('is_service', e.target.checked)}
-                    className="checkbox"
-                  />
-                  <span className="text-sm text-dark-200">Это услуга</span>
-                </label>
-                
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.in_stock}
-                    onChange={(e) => handleInputChange('in_stock', e.target.checked)}
-                    className="checkbox"
-                  />
-                  <span className="text-sm text-dark-200">В наличии</span>
-                </label>
-                
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => handleInputChange('is_active', e.target.checked)}
-                    className="checkbox"
-                  />
-                  <span className="text-sm text-dark-200">Активный</span>
-                </label>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex space-x-4 mt-6">
+          {searchTerm && (
             <button
-              onClick={resetForm}
-              className="btn-outline"
-              disabled={isSaving}
+              onClick={() => setSearchTerm('')}
+              className="text-dark-400 hover:text-white text-sm"
             >
-              Отмена
-            </button>
-            <button
-              onClick={handleSave}
-              className="btn-primary flex items-center space-x-2"
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              <span>Сохранить</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Products List */}
-      {filteredProducts.length === 0 ? (
-        <div className="text-center py-12">
-          <Package className="w-16 h-16 mx-auto text-dark-400 mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">
-            {products.length === 0 ? 'У вас пока нет товаров' : 'Товары не найдены'}
-          </h2>
-          <p className="text-dark-300 mb-6">
-            {products.length === 0 
-              ? 'Добавьте свой первый товар или услугу, чтобы начать продавать'
-              : 'Попробуйте изменить параметры поиска'
-            }
-          </p>
-          {products.length === 0 && (
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="btn-primary flex items-center space-x-2 mx-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Добавить товар</span>
+              Очистить поиск
             </button>
           )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredProducts.map(product => (
-            <div key={product.id} className="card p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center space-x-2">
-                  {product.is_service ? (
-                    <Tag className="w-5 h-5 text-blue-400" />
-                  ) : (
-                    <Package className="w-5 h-5 text-green-400" />
-                  )}
-                  <span className="text-sm text-dark-300">
-                    {product.is_service ? 'Услуга' : 'Товар'}
-                  </span>
-                </div>
-                
-                <div className="flex items-center space-x-1">
-                  {product.in_stock ? (
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                  ) : (
-                    <XCircle className="w-4 h-4 text-red-400" />
-                  )}
-                  <span className={`text-sm ${product.in_stock ? 'text-green-400' : 'text-red-400'}`}>
-                    {product.in_stock ? 'В наличии' : 'Нет в наличии'}
-                  </span>
-                </div>
-              </div>
-              
-              <h3 className="text-lg font-semibold text-white mb-2 truncate">
-                {product.title}
-              </h3>
-              
-              {product.sku && (
-                <p className="text-sm text-dark-400 mb-2">
-                  Артикул: {product.sku}
-                </p>
-              )}
+      </div>
 
-              <div className="flex items-center space-x-2 mb-2">
-                <span className="text-xs px-2 py-1 bg-primary-600/20 text-primary-400 rounded">
-                  {getCategoryName(product.category as number)}
-                </span>
-              </div>
-              
-              <p className="text-dark-300 mb-4 text-sm line-clamp-3">
-                {product.description}
-              </p>
-              
-              {product.price && (
-                <div className="flex items-center space-x-2 mb-4">
-                  <DollarSign className="w-4 h-4 text-green-400" />
-                  <span className="text-white font-medium">
-                    {product.price.toLocaleString()} {product.currency}
-                  </span>
-                </div>
-              )}
-              
-              <div className="flex justify-between items-center">
-                <div className="text-xs text-dark-400">
-                  {new Date(product.created_at || '').toLocaleDateString()}
-                </div>
-                
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEdit(product)}
-                    className="text-blue-400 hover:text-blue-300"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(product)}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
+      {/* Products Grid */}
+      {filteredProducts.length === 0 ? (
+        <div className="text-center py-16">
+          <Package className="w-20 h-20 mx-auto text-dark-400 mb-6" />
+          <h2 className="text-2xl font-bold text-white mb-3">
+            {products.length === 0 ? 'У вас пока нет товаров' : 'Товары не найдены'}
+          </h2>
+          <p className="text-dark-300 mb-8 max-w-md mx-auto">
+            {products.length === 0 
+              ? 'Добавьте свой первый товар или услугу, чтобы начать продавать'
+              : searchTerm 
+                ? `По запросу "${searchTerm}" ничего не найдено. Попробуйте изменить поисковый запрос.`
+                : 'Попробуйте изменить параметры поиска'
+            }
+          </p>
+          {products.length === 0 && (
+            <Link
+              to="/dashboard/products/create"
+              className="btn-primary inline-flex items-center space-x-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Добавить товар</span>
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+          {filteredProducts.map(product => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       )}

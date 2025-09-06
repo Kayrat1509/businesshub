@@ -42,7 +42,7 @@ class ApiService {
     this.api.interceptors.request.use(
       (config) => {
         // Add auth token if available
-        const token = localStorage.getItem('access_token');
+        const token = localStorage.getItem('accessToken');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -62,7 +62,7 @@ class ApiService {
     // Response interceptor for handling common errors
     this.api.interceptors.response.use(
       (response: AxiosResponse) => {
-        return response.data;
+        return response;
       },
       (error: AxiosError<ApiErrorResponse>) => {
         // Handle different types of errors
@@ -72,8 +72,8 @@ class ApiService {
           switch (status) {
             case 401:
               // Unauthorized - clear token and redirect to login
-              localStorage.removeItem('access_token');
-              localStorage.removeItem('refresh_token');
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
               if (window.location.pathname !== '/login') {
                 window.location.href = '/login';
               }
@@ -130,32 +130,32 @@ class ApiService {
   }
 
   // Generic GET request
-  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.api.get(url, config);
   }
 
   // Generic POST request
-  async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.api.post(url, data, config);
   }
 
   // Generic PUT request
-  async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.api.put(url, data, config);
   }
 
   // Generic PATCH request
-  async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.api.patch(url, data, config);
   }
 
   // Generic DELETE request
-  async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.api.delete(url, config);
   }
 
   // Upload file
-  async upload<T = any>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<T> {
+  async upload<T = any>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.api.post(url, formData, {
       ...config,
       headers: {
@@ -189,18 +189,18 @@ class ApiService {
 
   // Set auth token
   setAuthToken(token: string): void {
-    localStorage.setItem('access_token', token);
+    localStorage.setItem('accessToken', token);
   }
 
   // Remove auth token
   removeAuthToken(): void {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
   }
 
   // Get current auth token
   getAuthToken(): string | null {
-    return localStorage.getItem('access_token');
+    return localStorage.getItem('accessToken');
   }
 
   // Check if user is authenticated

@@ -91,6 +91,7 @@ class Company(models.Model):
     def __str__(self):
         return self.name
 
+
     def update_rating(self):
         reviews = self.reviews.filter(status="APPROVED")
         if reviews.exists():

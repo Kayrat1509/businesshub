@@ -29,7 +29,7 @@ const mockStore = configureStore({
   },
   preloadedState: {
     auth: {
-      user: { id: 1, email: 'admin@example.com', role: 'ROLE_ADMIN' },
+      user: { id: 1, email: 'demo@demo.com', role: 'ROLE_ADMIN' },
       isAuthenticated: true,
       accessToken: 'token',
       refreshToken: 'refresh',

@@ -177,22 +177,12 @@ const DiagnosticPage: React.FC = () => {
       </div>
 
       <div style={{ marginBottom: '20px', padding: '15px', background: '#1e293b', borderRadius: '8px' }}>
-        <h3 style={{ marginBottom: '10px', color: '#8b5cf6' }}>👤 Тестовые аккаунты:</h3>
+        <h3 style={{ marginBottom: '10px', color: '#8b5cf6' }}>👤 Демо-аккаунт:</h3>
         <div style={{ marginTop: '10px' }}>
           <div style={{ marginBottom: '10px', padding: '8px', background: '#374151', borderRadius: '4px' }}>
-            <strong>👑 Администратор:</strong><br/>
-            Email: admin@example.com<br/>
-            Пароль: Admin123!
-          </div>
-          <div style={{ marginBottom: '10px', padding: '8px', background: '#374151', borderRadius: '4px' }}>
-            <strong>🏢 Поставщик:</strong><br/>
-            Email: supplier@example.com<br/>
-            Пароль: Supplier123!
-          </div>
-          <div style={{ marginBottom: '10px', padding: '8px', background: '#374151', borderRadius: '4px' }}>
-            <strong>🔍 Соискатель:</strong><br/>
-            Email: seeker@example.com<br/>
-            Пароль: Seeker123!
+            <strong>🧪 Демо-пользователь:</strong><br/>
+            Email: demo@demo.com<br/>
+            Пароль: demo123
           </div>
         </div>
       </div>

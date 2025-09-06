@@ -4,3 +4,6 @@ venv
 __pycache__
 .DS_Store
 staticfiles
+*.sqlite3
+node_modules
+build

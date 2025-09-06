@@ -28,9 +28,11 @@ const Register: React.FC = () => {
     }
 
     try {
-      await dispatch(register(formData)).unwrap();
-      toast.success('Регистрация успешна! Добро пожаловать!');
-      navigate('/dashboard');
+      const { password_confirm, ...registerData } = formData;
+      const dataToSend = { ...registerData, password_confirm };
+      await dispatch(register(dataToSend)).unwrap();
+      toast.success('Регистрация прошла успешно. Добро пожаловать!');
+      navigate('/');
     } catch (error: any) {
       // Format error message for better readability
       let errorMessage = error || 'Ошибка регистрации';

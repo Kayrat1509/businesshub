@@ -56,6 +56,19 @@ class CompanyListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+        
+    def create(self, request, *args, **kwargs):
+        # Use the create serializer for validation and saving
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        # Return full data using detail serializer
+        detail_serializer = CompanyDetailSerializer(
+            serializer.instance, context={"request": request}
+        )
+        headers = self.get_success_headers(detail_serializer.data)
+        return Response(detail_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class CompanyRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):

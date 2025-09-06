@@ -51,11 +51,11 @@ export interface UpdateProfileRequest {
 }
 
 class AuthService {
-  private readonly BASE_URL = '/auth';
+  private readonly BASE_URL = '/api/auth';
 
   // Login
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await apiService.post<AuthResponse>(`${this.BASE_URL}/login/`, credentials);
+    const response = await apiService.post<AuthResponse>(`${this.BASE_URL}/token/`, credentials);
     
     if (response.access) {
       this.setTokens(response.access, response.refresh);
@@ -80,7 +80,7 @@ class AuthService {
     try {
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
-        await apiService.post(`${this.BASE_URL}/logout/`, { refresh: refreshToken });
+        await apiService.post(`${this.BASE_URL}/token/blacklist/`, { refresh: refreshToken });
       }
     } catch (error) {
       console.error('Error during logout:', error);
@@ -98,7 +98,7 @@ class AuthService {
     }
 
     try {
-      const response = await apiService.post<AuthResponse>(`${this.BASE_URL}/refresh/`, {
+      const response = await apiService.post<AuthResponse>(`${this.BASE_URL}/token/refresh/`, {
         refresh: refreshToken
       });
       

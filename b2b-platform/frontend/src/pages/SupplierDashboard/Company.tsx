@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAppSelector } from '../../store/hooks';
+import { useAppSelector, useAppDispatch } from '../../store/hooks';
+import { login } from '../../store/slices/authSlice';
 import { toast } from 'react-hot-toast';
 import {
   Building2, Save, Edit3, MapPin, Phone, Mail, Globe,
   Users, Clock, Star, AlertCircle, Upload, X, Plus,
   CheckCircle, XCircle, Loader, ArrowRight, Home,
 } from 'lucide-react';
-import apiService from '../../api';
+import apiService from '../../services/apiService';
 
 interface Company {
   id?: number
@@ -20,6 +21,9 @@ interface Company {
     phone?: string
     email?: string
     website?: string
+    social?: {
+      [key: string]: string
+    }
   }
   legal_info: {
     inn?: string
@@ -51,6 +55,7 @@ interface Category {
 
 const DashboardCompany: React.FC = () => {
   const { user } = useAppSelector(state => state.auth);
+  const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -100,7 +105,9 @@ const DashboardCompany: React.FC = () => {
 
   useEffect(() => {
     console.log('Current user:', user);
-    loadData();
+    // Don't auto-load data, let user manually create company
+    setIsLoading(false);
+    setIsEditing(true); // Start in editing mode for new company
   }, []);
 
   const loadData = async (preserveEditingState = false) => {
@@ -118,7 +125,8 @@ const DashboardCompany: React.FC = () => {
       
       let companiesResponse: Company[] = [];
       try {
-        companiesResponse = await apiService.get<Company[]>('/companies/my/');
+        const response = await apiService.get<Company[]>('/companies/my/');
+        companiesResponse = response.data;
         console.log('Loaded user companies:', companiesResponse);
       } catch (error) {
         console.error('Failed to load user companies:', error);
@@ -126,7 +134,8 @@ const DashboardCompany: React.FC = () => {
         companiesResponse = [];
       }
       
-      const categoriesResponse = await apiService.get<Category[]>('/categories/');
+      const categoriesResponseObj = await apiService.get<Category[]>('/categories/');
+      const categoriesResponse = categoriesResponseObj.data;
       
       console.log('User companies response:', companiesResponse);
       console.log('Categories response:', categoriesResponse);
@@ -199,7 +208,7 @@ const DashboardCompany: React.FC = () => {
     setFormData(prev => ({
       ...prev,
       [parent]: {
-        ...prev[parent as keyof Company],
+        ...(prev[parent as keyof Company] as any),
         [field]: value,
       },
     }));
@@ -239,95 +248,87 @@ const DashboardCompany: React.FC = () => {
     });
   };
 
-  const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast.error('Введите название компании');
-      return;
+const handleSave = async () => {
+  if (!formData.name.trim()) {
+    toast.error('Введите название компании');
+    return;
+  }
+
+  const token = localStorage.getItem('accessToken');
+  if (!token) {
+    toast.error('Необходимо войти в систему');
+    return;
+  }
+
+  setIsSaving(true);
+  try {
+    const dataToSave = {
+      ...formData,
+      categories: Array.isArray(formData.categories)
+        ? (formData.categories as number[])
+        : [],
+    };
+
+    console.log('Saving company data:', dataToSave);
+
+    let response;
+
+    if (company?.id) {
+      // обновляем существующую компанию
+      console.log('Updating company', company.id);
+      response = await apiService.put<Company>(`/companies/${company.id}/`, dataToSave);
+      toast.success('Компания обновлена');
+    } else {
+      // создаём новую компанию
+      console.log('Creating new company');
+      response = await apiService.post<Company>('/companies/', dataToSave);
+      toast.success('Компания создана');
     }
 
-    setIsSaving(true);
-    try {
-      // Prepare data for API - ensure categories are numbers
-      const dataToSave = {
-        ...formData,
-        categories: Array.isArray(formData.categories) ? formData.categories as number[] : [],
-      };
-      
-      console.log('Saving company data:', dataToSave);
-      
-      let savedCompany;
-      if (company?.id) {
-        // Update existing company
-        console.log('Updating company with ID:', company.id);
-        savedCompany = await apiService.put<Company>(`/companies/${company.id}/`, dataToSave);
-        console.log('Updated company response:', savedCompany);
-        toast.success('Компания обновлена');
-      } else {
-        // Create new company
-        console.log('Creating new company');
-        savedCompany = await apiService.post<Company>('/companies/', dataToSave);
-        console.log('Created company response:', savedCompany);
-        toast.success('Компания создана');
-      }
-      
-      // Process saved company data
-      const processedSavedCompany = {
-        ...savedCompany,
-        categories: Array.isArray(savedCompany.categories) && savedCompany.categories.length > 0
-          ? typeof savedCompany.categories[0] === 'object' 
-            ? (savedCompany.categories as Category[]).map(cat => cat.id)
-            : savedCompany.categories as number[]
-          : [],
-        rating: savedCompany.rating || 0,
-        staff_count: savedCompany.staff_count || 1,
-        branches_count: savedCompany.branches_count || 1,
-      };
-      
-      setCompany(processedSavedCompany);
-      setFormData(processedSavedCompany);
-      setIsEditing(false);
-      
-      console.log('Company data saved and updated successfully');
-      
-      // Show success message with actions
-      setTimeout(() => {
-        toast.success(
-          <div className="flex flex-col space-y-2">
-            <span>Компания успешно сохранена!</span>
-            <div className="flex space-x-2 text-sm">
-              <Link to="/dashboard" className="text-primary-300 hover:text-primary-200 underline">
-                Перейти в панель
-              </Link>
-              <span className="text-dark-500">|</span>
-              <Link to="/dashboard/products" className="text-primary-300 hover:text-primary-200 underline">
-                Добавить товары
-              </Link>
-            </div>
-          </div>,
-          { duration: 5000 },
-        );
-      }, 500);
-    } catch (error: any) {
-      let errorMessage = 'Ошибка сохранения';
-      
-      if (error?.response?.status === 403) {
-        errorMessage = 'У вас нет прав для редактирования этой компании. Вы можете редактировать только свои компании.';
-      } else if (error?.response?.status === 404) {
-        errorMessage = 'Компания не найдена';
-      } else {
-        errorMessage = error?.response?.data?.message || 
-                      error?.response?.data?.detail ||
-                      Object.values(error?.response?.data || {}).flat().join('; ') ||
-                      'Ошибка сохранения';
-      }
-      
-      toast.error(errorMessage);
-      console.error('Save error:', error);
-      console.error('Error response:', error?.response?.data);
-    } finally {
-      setIsSaving(false);
+    const savedCompany: Company = response.data; // ✅ берём именно response.data
+
+    const processedSavedCompany = {
+      ...savedCompany,
+      categories: Array.isArray(savedCompany.categories) && savedCompany.categories.length > 0
+        ? typeof savedCompany.categories[0] === 'object'
+          ? (savedCompany.categories as Category[]).map((cat) => cat.id)
+          : (savedCompany.categories as number[])
+        : [],
+      rating: savedCompany.rating || 0,
+      staff_count: savedCompany.staff_count || 1,
+      branches_count: savedCompany.branches_count || 1,
+    };
+
+    setCompany(processedSavedCompany);   // ✅ теперь точно будет id
+    setFormData(processedSavedCompany);
+    setIsEditing(false);
+
+    console.log('Company data saved and updated successfully');
+  } catch (error: any) {
+    let errorMessage = 'Ошибка сохранения';
+
+    if (error?.response?.status === 403) {
+      errorMessage =
+        'У вас нет прав для редактирования этой компании. Вы можете редактировать только свои компании.';
+    } else if (error?.response?.status === 404) {
+      errorMessage = 'Компания не найдена';
+    } else {
+      errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail ||
+        Object.values(error?.response?.data || {})
+          .flat()
+          .join('; ') ||
+        'Ошибка сохранения';
     }
-  };
+
+    toast.error(errorMessage);
+    console.error('Save error:', error);
+    console.error('Error response:', error?.response?.data);
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   const handleCancel = () => {
     if (company) {
@@ -354,30 +355,7 @@ const DashboardCompany: React.FC = () => {
     );
   }
 
-  // Show message if user has no companies and we're not in editing mode
-  if (!company && !isEditing) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center py-12">
-          <Building2 className="w-16 h-16 mx-auto text-dark-400 mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">У вас пока нет компании</h2>
-          <p className="text-dark-300 mb-6 max-w-md mx-auto">
-            Создайте профиль своей компании, чтобы начать работу с платформой и привлекать новых клиентов.
-          </p>
-          <div className="text-sm text-dark-400 mb-6">
-            Примечание: Вы можете редактировать только свои собственные компании. Если вы видели компании других пользователей ранее, вам нужно создать свою.
-          </div>
-          <button
-            onClick={() => setIsEditing(true)}
-            className="btn-primary flex items-center space-x-2 mx-auto"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Создать компанию</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
+
 
   const statusConfig = getStatusConfig(formData.status);
 
@@ -386,9 +364,9 @@ const DashboardCompany: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Моя компания</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Создать компанию</h1>
           <p className="text-dark-300">
-            {company ? 'Управляйте профилем вашей компании' : 'Создайте профиль вашей компании'}
+            Создайте профиль вашей компании
           </p>
         </div>
         
@@ -514,32 +492,32 @@ const DashboardCompany: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-dark-200 mb-2">
-              Телефоны (через запятую)
+              Телефон
             </label>
             <input
               type="text"
-              value={formData.contacts.phones?.join(', ') || ''}
-              onChange={(e) => handleNestedChange('contacts', 'phones', e.target.value.split(',').map(p => p.trim()).filter(p => p))}
+              value={formData.contacts.phone || ''}
+              onChange={(e) => handleNestedChange('contacts', 'phone', e.target.value)}
               className="input"
-              placeholder="+7 (999) 123-45-67, +7 (999) 123-45-68"
+              placeholder="+7 (999) 123-45-67"
               disabled={!isEditing}
             />
-            <p className="text-xs text-dark-400 mt-1">Укажите несколько номеров через запятую</p>
+            <p className="text-xs text-dark-400 mt-1">Основной номер телефона</p>
           </div>
           
           <div>
             <label className="block text-sm font-medium text-dark-200 mb-2">
-              Email адреса (через запятую)
+              Email адрес
             </label>
             <input
               type="text"
-              value={formData.contacts.emails?.join(', ') || ''}
-              onChange={(e) => handleNestedChange('contacts', 'emails', e.target.value.split(',').map(e => e.trim()).filter(e => e))}
+              value={formData.contacts.email || ''}
+              onChange={(e) => handleNestedChange('contacts', 'email', e.target.value)}
               className="input"
-              placeholder="info@company.com, sales@company.com"
+              placeholder="info@company.com"
               disabled={!isEditing}
             />
-            <p className="text-xs text-dark-400 mt-1">Укажите несколько email через запятую</p>
+            <p className="text-xs text-dark-400 mt-1">Основной email адрес</p>
           </div>
           
           <div>
@@ -569,10 +547,13 @@ const DashboardCompany: React.FC = () => {
                 <input
                   type="url"
                   value={formData.contacts.social?.[platform] || ''}
-                  onChange={(e) => handleNestedChange('contacts', 'social', {
-                    ...formData.contacts.social,
-                    [platform]: e.target.value
-                  })}
+                  onChange={(e) => {
+                    const currentSocial = formData.contacts.social || {};
+                    handleNestedChange('contacts', 'social', {
+                      ...currentSocial,
+                      [platform]: e.target.value
+                    });
+                  }}
                   className="input"
                   placeholder={`https://${platform}.com/yourcompany`}
                   disabled={!isEditing}

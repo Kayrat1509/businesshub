@@ -1,4 +1,5 @@
 from django.db import models
+from decimal import Decimal
 
 
 def product_image_upload_path(instance, filename):
@@ -43,12 +44,12 @@ class Product(models.Model):
             return None
             
         # Temporary simple conversion with fallback rates
-        rates = {'KZT': 450.0, 'RUB': 90.0, 'USD': 1.0}
+        rates = {'KZT': Decimal('450.0'), 'RUB': Decimal('90.0'), 'USD': Decimal('1.0')}
         if self.currency == target_currency:
             return self.price
         
-        usd_amount = self.price / rates.get(self.currency, 1)
-        converted_price = usd_amount * rates.get(target_currency, 1)
+        usd_amount = self.price / rates.get(self.currency, Decimal('1'))
+        converted_price = usd_amount * rates.get(target_currency, Decimal('1'))
         return round(converted_price, 2)
     
     def get_price_display_with_conversions(self):

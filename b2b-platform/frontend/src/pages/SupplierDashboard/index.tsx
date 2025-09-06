@@ -29,16 +29,8 @@ const SupplierDashboard = () => {
   }, [user]);
 
   const loadMockData = () => {
-    // Simulate loading with mock companies and products
-    const mockCompanies = [
-      {
-        id: 1,
-        name: 'ТОО АДАЛ САУДА',
-        status: 'APPROVED',
-        city: 'Алматы',
-        rating: 4.8,
-      },
-    ];
+    // Don't load mock companies - user should add their own
+    const mockCompanies: any[] = [];
 
     const mockProducts = [
       {
@@ -83,7 +75,7 @@ const SupplierDashboard = () => {
       icon: Building2,
       color: 'from-primary-600 to-primary-500',
       link: '/dashboard/company',
-      value: userCompany?.name || 'Не создана',
+      value: 'Добавить компанию',
       status: userCompany?.status,
     },
     {

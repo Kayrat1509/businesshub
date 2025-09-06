@@ -183,9 +183,17 @@ const DashboardLayout = () => {
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <h1 className="text-2xl font-bold text-white">
-                Кабинет поставщика
-              </h1>
+              <div className="flex items-center space-x-4">
+                <Link 
+                  to="/dashboard"
+                  className="text-blue-400 hover:text-blue-300 hover:underline transition-all duration-200 font-medium text-lg"
+                >
+                  Кабинет поставщика
+                </Link>
+                {location.pathname !== '/dashboard' && (
+                  <span className="text-dark-500">→</span>
+                )}
+              </div>
             </div>
             
             <div className="flex items-center space-x-4">

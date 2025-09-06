@@ -111,8 +111,9 @@ class CompanyAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
         if self.instance and self.instance.pk:
-            # Заполнение полей из JSON данных при редактировании
+            # Редактирование существующей компании - заполнение полей из JSON данных
             contacts = self.instance.contacts or {}
             legal_info = self.instance.legal_info or {}
             payment_methods = self.instance.payment_methods or []
@@ -141,6 +142,9 @@ class CompanyAdminForm(forms.ModelForm):
             self.fields['accepts_crypto'].initial = 'CRYPTO' in payment_methods
             
             self.fields['work_hours'].initial = work_schedule.get('description', '')
+        else:
+            # Создание новой компании - устанавливаем дефолтное значение для телефона
+            self.fields['phone_numbers'].initial = '+7 (777) 123-45-67'
 
     def save(self, commit=True):
         instance = super().save(commit=False)

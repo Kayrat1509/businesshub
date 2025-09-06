@@ -18,9 +18,16 @@ class ApiService {
     // Request interceptor to add auth token
     this.api.interceptors.request.use(
       (config) => {
-        // Skip auth token for public endpoints
-        const publicEndpoints = ['/auth/register/', '/auth/token/', '/auth/token/refresh/', '/companies/', '/categories/', '/products/', '/tenders/'];
-        const isPublicEndpoint = publicEndpoints.some(endpoint => config.url?.includes(endpoint));
+        // Skip auth token for public endpoints - only GET requests to these endpoints are public
+        const publicEndpoints = ['/auth/register/', '/auth/token/', '/auth/token/refresh/'];
+        const publicGetEndpoints = ['/categories/', '/products/', '/tenders/'];
+        const privateEndpoints = ['/products/my/']; // Эти endpoints всегда требуют авторизацию
+        
+        const isPrivateEndpoint = privateEndpoints.some(endpoint => config.url?.includes(endpoint));
+        const isPublicEndpoint = !isPrivateEndpoint && (
+          publicEndpoints.some(endpoint => config.url?.includes(endpoint)) ||
+          (config.method === 'get' && publicGetEndpoints.some(endpoint => config.url?.includes(endpoint)))
+        );
         
         if (!isPublicEndpoint) {
           const state = store.getState();

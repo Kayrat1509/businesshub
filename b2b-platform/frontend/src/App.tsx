@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { useAppDispatch } from './store/hooks';
-import { initializeAuth } from './store/slices/authSlice';
+import { useAppDispatch, useAppSelector } from './store/hooks';
+import { initializeAuth, fetchUserProfile } from './store/slices/authSlice';
 
 // Layout components
 import Layout from './components/Layout';
@@ -44,10 +44,18 @@ import DiagnosticPage from './DiagnosticPage';
 
 function App() {
   const dispatch = useAppDispatch();
+  const { isAuthenticated, accessToken, user } = useAppSelector(state => state.auth);
 
   useEffect(() => {
     dispatch(initializeAuth());
   }, [dispatch]);
+
+  // Load user profile if authenticated but user data is missing
+  useEffect(() => {
+    if (isAuthenticated && accessToken && !user) {
+      dispatch(fetchUserProfile());
+    }
+  }, [dispatch, isAuthenticated, accessToken, user]);
 
   return (
     <div className="min-h-screen bg-dark-900 text-white">

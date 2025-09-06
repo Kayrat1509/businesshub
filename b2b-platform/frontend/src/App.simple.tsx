@@ -42,17 +42,11 @@ function App() {
 
           <div className="bg-dark-800 p-6 rounded-lg border border-dark-700">
             <h3 className="text-md font-semibold mb-2 text-yellow-400">
-              👤 Тестовые аккаунты:
+              👤 Демо-аккаунт:
             </h3>
             <div className="text-left text-sm text-dark-300 space-y-2">
               <div>
-                <strong>Админ:</strong> admin@example.com / Admin123!
-              </div>
-              <div>
-                <strong>Поставщик:</strong> supplier@example.com / Supplier123!
-              </div>
-              <div>
-                <strong>Соискатель:</strong> seeker@example.com / Seeker123!
+                <strong>Демо-пользователь:</strong> demo@demo.com / demo123
               </div>
             </div>
           </div>

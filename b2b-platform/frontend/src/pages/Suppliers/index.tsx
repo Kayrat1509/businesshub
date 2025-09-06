@@ -1,99 +1,117 @@
-import { useEffect, useState, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { fetchCompanies } from '../../store/slices/companiesSlice';
-import { fetchCategories } from '../../store/slices/categoriesSlice';
 import CompanyCard from '../../components/CompanyCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import apiService from '../../api';
+import { Company } from '../../types';
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  children?: Category[];
+}
 
 const Suppliers = () => {
-  const dispatch = useAppDispatch();
-  const [searchParams] = useSearchParams();
-  const { companies, isLoading } = useAppSelector(state => state.companies);
-  const { categories, isLoading: categoriesLoading } = useAppSelector(state => state.categories);
-  
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCity, setSelectedCity] = useState<string>('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Load initial data
   useEffect(() => {
-    // Fetch all companies and categories
-    dispatch(fetchCompanies({ page: 1, filters: {} }));
-    dispatch(fetchCategories());
-    // Also fetch parent categories for dropdown
-    fetchParentCategories();
-  }, [dispatch]);
+    const loadInitialData = async () => {
+      setIsLoading(true);
+      try {
+        // Load companies
+        await loadCompanies();
+        
+        // Load categories
+        const categoriesResponse = await apiService.get('/categories/tree/');
+        setCategories(Array.isArray(categoriesResponse) ? categoriesResponse : []);
+        
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        setCompanies([]);
+        setCategories([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const [parentCategories, setParentCategories] = useState<any[]>([]);
+    loadInitialData();
+  }, []);
 
-  const fetchParentCategories = async () => {
+  // Extract cities from companies whenever companies change
+  useEffect(() => {
+    if (companies.length > 0) {
+      const uniqueCities = [...new Set(companies.map(company => company.city).filter(Boolean))];
+      setCities(uniqueCities.sort());
+    } else {
+      setCities([]);
+    }
+  }, [companies]);
+
+  const loadCompanies = async (categoryFilter = '', cityFilter = '') => {
     try {
-      const data = await apiService.get('/categories/tree/');
-      setParentCategories(data);
+      const params = new URLSearchParams();
+      if (categoryFilter) params.append('category', categoryFilter);
+      if (cityFilter) params.append('city', cityFilter);
+      
+      const queryString = params.toString();
+      const endpoint = `/companies/${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await apiService.get(endpoint);
+      const companiesData = response?.results || response?.data || response || [];
+      
+      setCompanies(Array.isArray(companiesData) ? companiesData : []);
     } catch (error) {
-      console.error('Error fetching parent categories:', error);
+      console.error('Error loading companies:', error);
+      setCompanies([]);
     }
   };
 
+  const handleCategoryChange = async (categoryName: string) => {
+    setSelectedCategory(categoryName);
+    setIsDropdownOpen(false);
+    setIsLoading(true);
+    
+    try {
+      await loadCompanies(categoryName, selectedCity);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCityChange = async (city: string) => {
+    setSelectedCity(city);
+    setIsLoading(true);
+    
+    try {
+      await loadCompanies(selectedCategory, city);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Close dropdown when clicking outside
   useEffect(() => {
-    // Close dropdown when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const dropdown = document.getElementById('category-dropdown');
+      if (dropdown && !dropdown.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  const filteredCompanies = selectedCategory 
-    ? companies.filter(company => 
-        company.categories?.some(cat => {
-          // Direct match by category name
-          if (cat.name === selectedCategory) return true;
-          
-          // Check if this is a child category of the selected parent category
-          const selectedParent = parentCategories.find(p => p.name === selectedCategory);
-          if (selectedParent) {
-            // Check if company's category is a child of the selected parent
-            return selectedParent.children?.some((child: any) => child.name === cat.name);
-          }
-          
-          return false;
-        }),
-      )
-    : companies;
-
-  const getCompaniesForCategory = (categoryName: string) => {
-    return companies.filter(company => 
-      company.categories?.some(cat => {
-        // Direct match by category name
-        if (cat.name === categoryName) return true;
-        
-        // Check if this is a child category of the selected parent category
-        const selectedParent = parentCategories.find(p => p.name === categoryName);
-        if (selectedParent) {
-          // Check if company's category is a child of the selected parent
-          return selectedParent.children?.some((child: any) => child.name === cat.name);
-        }
-        
-        return false;
-      }),
-    );
-  };
-
-  // Parent categories are loaded separately from the tree endpoint
-  
-  const handleCategorySelect = (categoryName: string) => {
-    setSelectedCategory(categoryName);
-    setIsDropdownOpen(false);
-  };
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isDropdownOpen]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -112,15 +130,16 @@ const Suppliers = () => {
         </p>
       </motion.div>
 
-      {/* Category Filter */}
+      {/* Filters */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
         className="mb-8"
       >
-        <div className="flex justify-center mb-6">
-          <div className="relative" ref={dropdownRef}>
+        <div className="flex justify-center mb-6 space-x-4">
+          {/* Category Filter */}
+          <div className="relative" id="category-dropdown">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center space-x-2 px-6 py-3 bg-dark-800 text-white rounded-lg hover:bg-dark-700 transition-colors min-w-[250px] justify-between"
@@ -137,7 +156,7 @@ const Suppliers = () => {
               <div className="absolute top-full left-0 mt-2 w-full bg-dark-800 rounded-lg border border-dark-700 shadow-xl z-50 max-h-80 overflow-y-auto">
                 <div className="py-2">
                   <button
-                    onClick={() => handleCategorySelect('')}
+                    onClick={() => handleCategoryChange('')}
                     className={`w-full text-left px-4 py-2 hover:bg-dark-700 transition-colors ${
                       selectedCategory === '' 
                         ? 'bg-primary-600 text-white' 
@@ -147,10 +166,10 @@ const Suppliers = () => {
                     Все категории
                   </button>
                   
-                  {parentCategories.map((category) => (
+                  {categories.map((category) => (
                     <button
                       key={category.id}
-                      onClick={() => handleCategorySelect(category.name)}
+                      onClick={() => handleCategoryChange(category.name)}
                       className={`w-full text-left px-4 py-2 hover:bg-dark-700 transition-colors ${
                         selectedCategory === category.name 
                           ? 'bg-primary-600 text-white' 
@@ -164,6 +183,20 @@ const Suppliers = () => {
               </div>
             )}
           </div>
+
+          {/* City Filter */}
+          <select
+            value={selectedCity}
+            onChange={(e) => handleCityChange(e.target.value)}
+            className="px-6 py-3 bg-dark-800 text-white rounded-lg hover:bg-dark-700 transition-colors min-w-[200px] border border-dark-700"
+          >
+            <option value="">Все города</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
         </div>
       </motion.div>
 
@@ -172,7 +205,7 @@ const Suppliers = () => {
         <div className="flex justify-center py-12">
           <LoadingSpinner />
         </div>
-      ) : filteredCompanies.length === 0 ? (
+      ) : companies.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -180,62 +213,38 @@ const Suppliers = () => {
         >
           <div className="text-6xl mb-4">🏢</div>
           <h3 className="text-xl font-semibold text-white mb-2">
-            {selectedCategory ? 'Нет поставщиков в этой категории' : 'Нет поставщиков'}
+            {selectedCategory || selectedCity ? 'Нет поставщиков по выбранным фильтрам' : 'Нет компаний'}
           </h3>
           <p className="text-dark-300">
-            {selectedCategory ? 'Попробуйте выбрать другую категорию' : 'Поставщики появятся в ближайшее время'}
+            {selectedCategory || selectedCity ? 'Попробуйте изменить фильтры' : 'Компании появятся в ближайшее время'}
           </p>
         </motion.div>
-      ) : selectedCategory ? (
-        // Show filtered companies in 5-column grid when category is selected
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"
-        >
-          {filteredCompanies.map((company, index) => (
-            <motion.div
-              key={company.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-            >
-              <CompanyCard company={company} />
-            </motion.div>
-          ))}
-        </motion.div>
       ) : (
-        // Show all companies in a single grid
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="space-y-12"
+          className="space-y-6"
         >
-          {/* Show all companies in one grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="space-y-6"
-          >
-            <h3 className="text-2xl font-bold text-white border-b border-dark-700 pb-4">
-              Все поставщики ({companies.length})
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {companies.map((company, index) => (
-                <motion.div
-                  key={company.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.05 }}
-                >
-                  <CompanyCard company={company} />
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+          <h3 className="text-2xl font-bold text-white border-b border-dark-700 pb-4">
+            {selectedCategory || selectedCity ? 
+              `Поставщики (${companies.length})` : 
+              `Все поставщики (${companies.length})`
+            }
+          </h3>
+          
+          <div className="grid grid-cols-6 gap-4">
+            {companies.map((company, index) => (
+              <motion.div
+                key={company.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.05 }}
+              >
+                <CompanyCard company={company} />
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
       )}
 
