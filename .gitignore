@@ -7,3 +7,5 @@ staticfiles
 *.sqlite3
 node_modules
 build
+.vscode
+.pytest_cache
