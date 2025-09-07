@@ -20,6 +20,7 @@ class Tender(models.Model):
     ]
 
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tenders", verbose_name="Автор")
+    company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="tenders", verbose_name="Компания", null=True, blank=True)
     title = models.CharField(max_length=200, verbose_name="Название")
     description = models.TextField(verbose_name="Описание")
     attachments = models.JSONField(

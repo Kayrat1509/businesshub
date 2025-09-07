@@ -65,14 +65,17 @@ export const toggleFavorite = createAsyncThunk<{ message: string }, number>(
   },
 );
 
+// Асинхронный thunk для загрузки тендеров конкретной компании
 export const fetchCompanyTenders = createAsyncThunk<Tender[], number>(
   'companies/fetchCompanyTenders',
   async (companyId, { rejectWithValue }) => {
     try {
-      const response = await apiService.get<PaginatedResponse<Tender>>(`/companies/${companyId}/tenders/`);
-      return response.results;
+      // Используем единый API слой с фильтрацией по ID компании
+      // Автоматически обрабатывается повтор запроса при 401 ошибке
+      const response = await apiService.get<PaginatedResponse<Tender>>('/tenders/', { company: companyId });
+      return response.results; // Возвращаем только массив тендеров из пагинированного ответа
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.detail || 'Failed to fetch company tenders');
+      return rejectWithValue(error.response?.data?.detail || 'Ошибка загрузки тендеров компании');
     }
   },
 );

@@ -1,12 +1,13 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import apiService from '../../api';
+import apiService from '../../api'; // Единый API слой с автоматическим управлением токенами
 import { Tender, TenderFilters, PaginatedResponse } from '../../types';
 
+// Состояние для управления тендерами в Redux store
 interface TendersState {
-  tenders: Tender[]
-  totalCount: number
-  isLoading: boolean
-  error: string | null
+  tenders: Tender[] // Массив загруженных тендеров
+  totalCount: number // Общее количество тендеров (для пагинации)
+  isLoading: boolean // Флаг загрузки данных
+  error: string | null // Сообщение об ошибке
 }
 
 const initialState: TendersState = {
@@ -16,6 +17,7 @@ const initialState: TendersState = {
   error: null,
 };
 
+// Асинхронный thunk для загрузки публичных тендеров с пагинацией и фильтрами
 export const fetchTenders = createAsyncThunk<
   PaginatedResponse<Tender>,
   { page?: number; filters?: TenderFilters }
@@ -24,14 +26,16 @@ export const fetchTenders = createAsyncThunk<
   async ({ page = 1, filters = {} }, { rejectWithValue }) => {
     try {
       const params = { page, ...filters };
+      // Используем единый API слой - автоматически обрабатывает токены и 401 ошибки
       const response = await apiService.get<PaginatedResponse<Tender>>('/tenders/', params);
       return response;
     } catch (error: any) {
-      return rejectWithValue(error?.message || 'Failed to fetch tenders');
+      return rejectWithValue(error?.message || 'Ошибка загрузки тендеров');
     }
   },
 );
 
+// Асинхронный thunk для загрузки тендеров текущего пользователя (требует авторизации)
 export const fetchMyTenders = createAsyncThunk<
   PaginatedResponse<Tender>,
   { page?: number; filters?: TenderFilters }
@@ -40,10 +44,11 @@ export const fetchMyTenders = createAsyncThunk<
   async ({ page = 1, filters = {} }, { rejectWithValue }) => {
     try {
       const params = { page, ...filters };
+      // Приватный endpoint - автоматически добавится Bearer токен через interceptor
       const response = await apiService.get<PaginatedResponse<Tender>>('/tenders/my/', params);
       return response;
     } catch (error: any) {
-      return rejectWithValue(error?.message || 'Failed to fetch my tenders');
+      return rejectWithValue(error?.message || 'Ошибка загрузки моих тендеров');
     }
   },
 );

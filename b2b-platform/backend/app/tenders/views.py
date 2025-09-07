@@ -12,6 +12,7 @@ from .serializers import (TenderCreateUpdateSerializer, TenderDetailSerializer,
 
 
 class TenderFilter(filters.FilterSet):
+    company = filters.NumberFilter(field_name="company__id")
     category = filters.CharFilter(field_name="categories__slug")
     city = filters.CharFilter(field_name="city", lookup_expr="icontains")
     budget_min = filters.NumberFilter(field_name="budget_max", lookup_expr="gte")
@@ -20,7 +21,7 @@ class TenderFilter(filters.FilterSet):
 
     class Meta:
         model = Tender
-        fields = ["category", "city", "budget_min", "budget_max", "status"]
+        fields = ["company", "category", "city", "budget_min", "budget_max", "status"]
 
 
 class TenderListCreateView(generics.ListCreateAPIView):
@@ -49,7 +50,35 @@ class TenderListCreateView(generics.ListCreateAPIView):
         return [permissions.AllowAny()]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        """
+        Автоматическое присваивание компании при создании тендера.
+        Компания определяется через Company.objects.get(owner=request.user)
+        """
+        try:
+            from app.companies.models import Company
+            
+            # Суперпользователи могут создавать тендеры для любой компании
+            if self.request.user.is_superuser:
+                # Если company_id передан в запросе, используем его
+                company_id = self.request.data.get('company_id')
+                if company_id:
+                    try:
+                        company = Company.objects.get(id=company_id)
+                        serializer.save(author=self.request.user, company=company)
+                        return
+                    except Company.DoesNotExist:
+                        pass
+            
+            # Для обычных пользователей получаем компанию автоматически
+            user_company = Company.objects.get(owner=self.request.user)
+            serializer.save(author=self.request.user, company=user_company)
+            
+        except Company.DoesNotExist:
+            # Если у пользователя нет компании, возвращаем ошибку
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError(
+                {"error": "У вас нет компании для создания тендеров"}
+            )
 
 
 class TenderRetrieveUpdateView(generics.RetrieveUpdateAPIView):
@@ -95,4 +124,11 @@ class MyTendersView(generics.ListAPIView):
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        return Tender.objects.filter(author=self.request.user)
+        # Фильтруем тендеры по компании пользователя
+        try:
+            from app.companies.models import Company
+            user_company = Company.objects.get(owner=self.request.user)
+            return Tender.objects.filter(company=user_company)
+        except Company.DoesNotExist:
+            # Если у пользователя нет компании, возвращаем пустой queryset
+            return Tender.objects.none()

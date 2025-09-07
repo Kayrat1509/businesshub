@@ -5,48 +5,60 @@ import { Calendar, MapPin, DollarSign, Package, Save, ArrowLeft } from 'lucide-r
 import { useAppSelector } from '../../store/hooks';
 import { toast } from 'react-hot-toast';
 import apiService from '../../api';
+import { Category } from '../../types';
 
 interface TenderForm {
   title: string
   description: string
-  category: string
-  quantity: string
-  unit: string
-  delivery_city: string
-  delivery_deadline: string
+  categories: number[]
+  city: string
+  deadline_date: string
   budget_min: string
   budget_max: string
-  requirements: string
 }
 
 const CreateTender = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector(state => state.auth);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [categories] = useState([
-    'Сантехника',
-    'Электрика',
-    'Лакокрасочные материалы',
-    'Кровельные материалы',
-    'Железобетонные изделия',
-  ]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
   const [formData, setFormData] = useState<TenderForm>({
     title: '',
     description: '',
-    category: '',
-    quantity: '',
-    unit: '',
-    delivery_city: '',
-    delivery_deadline: '',
+    categories: [],
+    city: '',
+    deadline_date: '',
     budget_min: '',
     budget_max: '',
-    requirements: '',
   });
 
-  const units = [
-    'шт', 'кг', 'г', 'т', 'л', 'м', 'м²', 'м³', 'компл', 'упак', 'рул', 'пач',
-  ];
+  // Загрузка категорий при инициализации компонента
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      setIsLoadingCategories(true);
+      const data = await apiService.get<{ results: Category[] }>('/categories/');
+      // API возвращает объект с пагинацией, категории находятся в поле results
+      if (data && Array.isArray(data.results)) {
+        setCategories(data.results);
+      } else {
+        console.error('Получены некорректные данные категорий:', data);
+        setCategories([]); // Устанавливаем пустой массив если данные некорректны
+        toast.error('Получены некорректные данные категорий');
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки категорий:', error);
+      setCategories([]); // Устанавливаем пустой массив при ошибке
+      toast.error('Ошибка загрузки категорий');
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
 
   const cities = [
     'Алматы', 'Нур-Султан', 'Шымкент', 'Караганда', 'Актобе', 
@@ -54,16 +66,31 @@ const CreateTender = () => {
   ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value, type } = e.target;
+    
+    if (name === 'categories' && type === 'checkbox') {
+      // Обрабатываем множественный выбор категорий через checkbox
+      const categoryId = Number(value);
+      const isChecked = (e.target as HTMLInputElement).checked;
+      
+      setFormData({
+        ...formData,
+        categories: isChecked
+          ? [...formData.categories, categoryId] // Добавляем если выбран
+          : formData.categories.filter(id => id !== categoryId) // Удаляем если снят
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title.trim() || !formData.description.trim() || !formData.category) {
+    if (!formData.title.trim() || !formData.description.trim() || formData.categories.length === 0) {
       toast.error('Заполните все обязательные поля');
       return;
     }
@@ -71,25 +98,37 @@ const CreateTender = () => {
     setIsSubmitting(true);
     
     try {
-      // Simulate API call - replace with actual API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      // Подготавливаем данные тендера для отправки на сервер
       const tenderData = {
-        ...formData,
-        author: user?.id,
-        status: 'PENDING',
-        created_at: new Date().toISOString(),
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        categories: formData.categories, // Массив ID выбранных категорий
+        city: formData.city,
+        deadline_date: formData.deadline_date || undefined,
+        budget_min: formData.budget_min ? parseFloat(formData.budget_min) : undefined,
+        budget_max: formData.budget_max ? parseFloat(formData.budget_max) : undefined,
       };
       
-      console.log('Creating tender:', tenderData);
+      console.log('Создание тендера через единый API слой:', tenderData);
       
+      // Отправляем POST запрос через единый apiService с автоматическим управлением токенами
+      // При 401 ошибке автоматически выполнится refresh токена и повтор запроса
+      // Компания и автор будут назначены автоматически на backend через request.user
+      const createdTender = await apiService.post('/tenders/', tenderData);
+      
+      console.log('Тендер успешно создан:', createdTender);
       toast.success('Тендер успешно создан и отправлен на модерацию');
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error('Ошибка при создании тендера');
-      console.error('Create tender error:', error);
+      navigate('/dashboard'); // Перенаправляем в дашборд после успешного создания
+    } catch (error: any) {
+      console.error('Ошибка создания тендера:', error);
+      
+      // Обрабатываем различные типы ошибок от сервера
+      const errorMessage = error?.response?.data?.error || 
+                          error?.response?.data?.detail || 
+                          'Ошибка при создании тендера';
+      toast.error(errorMessage);
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // Всегда сбрасываем флаг загрузки
     }
   };
 
@@ -140,65 +179,36 @@ const CreateTender = () => {
             />
           </div>
 
-          {/* Category and Unit */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-dark-200 mb-2">
-                Категория *
-              </label>
-              <select
-                name="category"
-                id="category"
-                required
-                className="input"
-                value={formData.category}
-                onChange={handleChange}
-              >
-                <option value="">Выберите категорию</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="unit" className="block text-sm font-medium text-dark-200 mb-2">
-                Единица измерения
-              </label>
-              <select
-                name="unit"
-                id="unit"
-                className="input"
-                value={formData.unit}
-                onChange={handleChange}
-              >
-                <option value="">Выберите единицу</option>
-                {units.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Quantity */}
+          {/* Categories */}
           <div>
-            <label htmlFor="quantity" className="block text-sm font-medium text-dark-200 mb-2">
-              Количество
+            <label className="block text-sm font-medium text-dark-200 mb-2">
+              Категории *
             </label>
-            <input
-              type="text"
-              name="quantity"
-              id="quantity"
-              className="input"
-              placeholder="Например: 50"
-              value={formData.quantity}
-              onChange={handleChange}
-            />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {isLoadingCategories ? (
+                <p className="text-dark-400 col-span-full">Загрузка категорий...</p>
+              ) : Array.isArray(categories) && categories.length > 0 ? (
+                // Рендерим категории только если они представляют собой массив с элементами
+                categories.map((category) => (
+                  <label key={category.id} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="categories"
+                      value={category.id}
+                      checked={formData.categories.includes(category.id)}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-primary-600 bg-dark-800 border-dark-600 rounded focus:ring-primary-500 mr-2"
+                    />
+                    <span className="text-white text-sm">{category.name}</span>
+                  </label>
+                ))
+              ) : (
+                // Показываем сообщение если категории не загрузились
+                <p className="text-dark-400 col-span-full">Категории не найдены</p>
+              )}
+            </div>
           </div>
+
 
           {/* Description */}
           <div>
@@ -220,14 +230,14 @@ const CreateTender = () => {
           {/* Location and Deadline */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="delivery_city" className="block text-sm font-medium text-dark-200 mb-2">
+              <label htmlFor="city" className="block text-sm font-medium text-dark-200 mb-2">
                 Город поставки
               </label>
               <select
-                name="delivery_city"
-                id="delivery_city"
+                name="city"
+                id="city"
                 className="input"
-                value={formData.delivery_city}
+                value={formData.city}
                 onChange={handleChange}
               >
                 <option value="">Выберите город</option>
@@ -240,15 +250,15 @@ const CreateTender = () => {
             </div>
 
             <div>
-              <label htmlFor="delivery_deadline" className="block text-sm font-medium text-dark-200 mb-2">
+              <label htmlFor="deadline_date" className="block text-sm font-medium text-dark-200 mb-2">
                 Срок поставки
               </label>
               <input
                 type="date"
-                name="delivery_deadline"
-                id="delivery_deadline"
+                name="deadline_date"
+                id="deadline_date"
                 className="input"
-                value={formData.delivery_deadline}
+                value={formData.deadline_date}
                 onChange={handleChange}
               />
             </div>
@@ -279,21 +289,6 @@ const CreateTender = () => {
             </div>
           </div>
 
-          {/* Requirements */}
-          <div>
-            <label htmlFor="requirements" className="block text-sm font-medium text-dark-200 mb-2">
-              Дополнительные требования
-            </label>
-            <textarea
-              name="requirements"
-              id="requirements"
-              rows={3}
-              className="input"
-              placeholder="Сертификаты качества, опыт работы, гарантии и т.д."
-              value={formData.requirements}
-              onChange={handleChange}
-            />
-          </div>
 
           {/* Submit Button */}
           <div className="flex justify-end space-x-4">

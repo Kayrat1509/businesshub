@@ -34,17 +34,13 @@ class TenderListSerializer(serializers.ModelSerializer):
         ]
 
     def get_company(self, obj):
-        try:
-            company = obj.author.companies.filter(status="APPROVED").first()
-            if company:
-                return {
-                    "id": company.id,
-                    "name": company.name,
-                    "logo": company.logo.url if company.logo else None,
-                }
-            return None
-        except:
-            return None
+        if obj.company:
+            return {
+                "id": obj.company.id,
+                "name": obj.company.name,
+                "logo": obj.company.logo.url if obj.company.logo else None,
+            }
+        return None
 
 
 class TenderDetailSerializer(serializers.ModelSerializer):
@@ -75,17 +71,13 @@ class TenderDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_company(self, obj):
-        try:
-            company = obj.author.companies.filter(status="APPROVED").first()
-            if company:
-                return {
-                    "id": company.id,
-                    "name": company.name,
-                    "logo": company.logo.url if company.logo else None,
-                }
-            return None
-        except:
-            return None
+        if obj.company:
+            return {
+                "id": obj.company.id,
+                "name": obj.company.name,
+                "logo": obj.company.logo.url if obj.company.logo else None,
+            }
+        return None
 
 
 class TenderCreateUpdateSerializer(serializers.ModelSerializer):
