@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiService from '../../api';
+import { tenderService } from '../../services/tenderService'; // Используем новый сервис для тендеров
 import { Company, CompanyFilters, PaginatedResponse, Tender } from '../../types';
 
 interface CompaniesState {
@@ -65,15 +66,14 @@ export const toggleFavorite = createAsyncThunk<{ message: string }, number>(
   },
 );
 
-// Асинхронный thunk для загрузки тендеров конкретной компании
+// Асинхронный thunk для загрузки тендеров конкретной компании через единый сервис
 export const fetchCompanyTenders = createAsyncThunk<Tender[], number>(
   'companies/fetchCompanyTenders',
   async (companyId, { rejectWithValue }) => {
     try {
-      // Используем единый API слой с фильтрацией по ID компании
-      // Автоматически обрабатывается повтор запроса при 401 ошибке
-      const response = await apiService.get<PaginatedResponse<Tender>>('/tenders/', { company: companyId });
-      return response.results; // Возвращаем только массив тендеров из пагинированного ответа
+      // Используем новый tenderService, который инкапсулирует всю логику работы с тендерами
+      // Автоматически обрабатывается авторизация, обновление токенов и фильтрация по компании
+      return await tenderService.fetchCompanyTenders(companyId);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.detail || 'Ошибка загрузки тендеров компании');
     }

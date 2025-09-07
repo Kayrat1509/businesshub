@@ -2,23 +2,28 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, MapPin, DollarSign, Package, Save, ArrowLeft } from 'lucide-react';
-import { useAppSelector } from '../../store/hooks';
+import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { toast } from 'react-hot-toast';
-import apiService from '../../api';
+import apiService from '../../api'; // Для загрузки категорий
+import { tenderService } from '../../services/tenderService'; // Новый сервис для создания тендеров
+import { fetchMyTenders } from '../../store/slices/tendersSlice'; // Для обновления списка после создания
 import { Category } from '../../types';
 
+// Интерфейс формы создания тендера - соответствует полям backend модели Tender
 interface TenderForm {
-  title: string
-  description: string
-  categories: number[]
-  city: string
-  deadline_date: string
-  budget_min: string
-  budget_max: string
+  title: string // Название тендера (обязательное поле)
+  description: string // Подробное описание требований (обязательное поле)
+  categories: number[] // Массив ID категорий (обязательное поле)
+  city: string // Город поставки (опциональное поле)
+  deadline_date: string // Крайний срок в формате YYYY-MM-DD (опциональное поле)
+  budget_min: string // Минимальный бюджет - снято ограничение на количество цифр (опциональное поле)
+  budget_max: string // Максимальный бюджет - снято ограничение на количество цифр (опциональное поле)
+  // Поля author и company НЕ включены - назначаются автоматически на backend
 }
 
 const CreateTender = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch(); // Для обновления Redux state после создания тендера
   const { user } = useAppSelector(state => state.auth);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -39,13 +44,16 @@ const CreateTender = () => {
     loadCategories();
   }, []);
 
+  // Функция загрузки категорий через единый API слой
   const loadCategories = async () => {
     try {
       setIsLoadingCategories(true);
+      // Загружаем категории через единый API слой с автоматическим управлением токенами
       const data = await apiService.get<{ results: Category[] }>('/categories/');
-      // API возвращает объект с пагинацией, категории находятся в поле results
+      
+      // API возвращает пагинированный ответ, категории находятся в поле results
       if (data && Array.isArray(data.results)) {
-        setCategories(data.results);
+        setCategories(data.results); // Сохраняем только массив категорий
       } else {
         console.error('Получены некорректные данные категорий:', data);
         setCategories([]); // Устанавливаем пустой массив если данные некорректны
@@ -56,7 +64,7 @@ const CreateTender = () => {
       setCategories([]); // Устанавливаем пустой массив при ошибке
       toast.error('Ошибка загрузки категорий');
     } finally {
-      setIsLoadingCategories(false);
+      setIsLoadingCategories(false); // Всегда сбрасываем флаг загрузки
     }
   };
 
@@ -109,15 +117,18 @@ const CreateTender = () => {
         budget_max: formData.budget_max ? parseFloat(formData.budget_max) : undefined,
       };
       
-      console.log('Создание тендера через единый API слой:', tenderData);
+      console.log('Создание тендера через новый tenderService:', tenderData);
       
-      // Отправляем POST запрос через единый apiService с автоматическим управлением токенами
-      // При 401 ошибке автоматически выполнится refresh токена и повтор запроса
-      // Компания и автор будут назначены автоматически на backend через request.user
-      const createdTender = await apiService.post('/tenders/', tenderData);
+      // Используем новый tenderService для создания тендера
+      // Автоматически обрабатывается авторизация, обновление токенов и назначение компании
+      const createdTender = await tenderService.createTender(tenderData);
       
       console.log('Тендер успешно создан:', createdTender);
       toast.success('Тендер успешно создан и отправлен на модерацию');
+      
+      // Обновляем список тендеров пользователя в Redux store
+      dispatch(fetchMyTenders({ page: 1 }));
+      
       navigate('/dashboard'); // Перенаправляем в дашборд после успешного создания
     } catch (error: any) {
       console.error('Ошибка создания тендера:', error);
@@ -264,25 +275,29 @@ const CreateTender = () => {
             </div>
           </div>
 
-          {/* Budget */}
+          {/* Budget - снято ограничение на количество цифр */}
           <div>
             <label className="block text-sm font-medium text-dark-200 mb-2">
-              Бюджет (₸)
+              Бюджет (₸) - любая сумма
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 type="number"
                 name="budget_min"
-                placeholder="От"
+                placeholder="От (любая сумма)"
                 className="input"
+                min="0"
+                step="0.01"
                 value={formData.budget_min}
                 onChange={handleChange}
               />
               <input
                 type="number"
                 name="budget_max"
-                placeholder="До"
+                placeholder="До (любая сумма)"
                 className="input"
+                min="0"
+                step="0.01"
                 value={formData.budget_max}
                 onChange={handleChange}
               />

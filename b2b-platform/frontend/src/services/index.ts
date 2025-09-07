@@ -1,9 +1,10 @@
-// Main services export file
+// Main services export file - все сервисы используют единый API слой
 export { apiService, ApiService } from './apiService';
 export { currencyService } from './currencyService';
 export { productService } from './productService';
 export { companyService } from './companyService';
 export { authService } from './authService';
+export { tenderService } from './tenderService'; // Новый сервис для работы с тендерами
 
 // Types
 export type { 
@@ -42,3 +43,10 @@ export type {
   ChangePasswordRequest,
   UpdateProfileRequest
 } from './authService';
+
+export type {
+  CreateTenderRequest,
+  UpdateTenderRequest,
+  TendersResponse,
+  TenderResponse
+} from './tenderService'; // Типы для работы с тендерами

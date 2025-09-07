@@ -31,11 +31,12 @@ class Tender(models.Model):
     )
     categories = models.ManyToManyField("categories.Category", blank=True, verbose_name="Категории")
     city = models.CharField(max_length=100, verbose_name="Город")
+    # Увеличено max_digits до 30 - практически снимает ограничение на количество цифр в бюджете
     budget_min = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Минимальный бюджет"
+        max_digits=30, decimal_places=2, null=True, blank=True, verbose_name="Минимальный бюджет"
     )
     budget_max = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Максимальный бюджет"
+        max_digits=30, decimal_places=2, null=True, blank=True, verbose_name="Максимальный бюджет"
     )
     deadline_date = models.DateField(null=True, blank=True, verbose_name="Крайний срок")
     admin_comment = models.TextField(
