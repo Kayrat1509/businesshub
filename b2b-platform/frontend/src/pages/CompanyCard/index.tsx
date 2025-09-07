@@ -46,7 +46,8 @@ const CompanyProfile = () => {
   useEffect(() => {
     if (id) {
       dispatch(fetchCompanyById(Number(id)));
-      dispatch(fetchProducts({ page: 1, filters: { company_id: Number(id) } }));
+      // Загружаем товары только для текущей компании, используя параметр company
+      dispatch(fetchProducts({ page: 1, filters: { company: Number(id) } }));
       dispatch(fetchCompanyTenders(Number(id)));
     }
   }, [dispatch, id]);

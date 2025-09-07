@@ -78,7 +78,7 @@ const DashboardProducts: React.FC = () => {
     setError(null);
     
     console.log('Current user:', user);
-    console.log('Auth state:', { isAuthenticated: !!user, hasToken: !!localStorage.getItem('accessToken') });
+    console.log('Auth state:', { isAuthenticated: !!user, hasToken: !!localStorage.getItem('access_token') });
     
     try {
       const data = await apiService.get('/products/my/');

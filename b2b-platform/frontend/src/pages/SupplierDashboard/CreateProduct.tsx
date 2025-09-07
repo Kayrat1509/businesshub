@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Package, Save, ArrowLeft, Upload, DollarSign, Tag } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import { toast } from 'react-hot-toast';
+import apiService from '../../api';
+import { Category } from '../../types';
 
 interface ProductForm {
   title: string
@@ -12,7 +14,7 @@ interface ProductForm {
   price: string
   currency: string
   is_service: boolean
-  category: string
+  category: number | ''
   in_stock: boolean
   is_active: boolean
 }
@@ -21,25 +23,38 @@ const CreateProduct = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector(state => state.auth);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [categories] = useState([
-    'Сантехника',
-    'Электрика',
-    'Лакокрасочные материалы',
-    'Кровельные материалы',
-    'Железобетонные изделия',
-  ]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
   const [formData, setFormData] = useState<ProductForm>({
     title: '',
     sku: '',
     description: '',
     price: '',
-    currency: 'RUB',
+    currency: 'KZT',
     is_service: false,
     category: '',
     in_stock: true,
     is_active: true,
   });
+
+  // Загрузка категорий при инициализации компонента
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      setIsLoadingCategories(true);
+      const data = await apiService.get<Category[]>('/categories/');
+      setCategories(data);
+    } catch (error) {
+      console.error('Ошибка загрузки категорий:', error);
+      toast.error('Ошибка загрузки категорий');
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -48,6 +63,12 @@ const CreateProduct = () => {
       setFormData({
         ...formData,
         [name]: (e.target as HTMLInputElement).checked,
+      });
+    } else if (name === 'category') {
+      // Конвертируем значение в число для категории
+      setFormData({
+        ...formData,
+        [name]: value ? Number(value) : '',
       });
     } else {
       setFormData({
@@ -68,23 +89,34 @@ const CreateProduct = () => {
     setIsSubmitting(true);
     
     try {
-      // Simulate API call - replace with actual API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      // Подготавливаем данные для отправки на backend
       const productData = {
-        ...formData,
-        price: formData.price ? parseFloat(formData.price) : null,
-        company: user?.company_id || 1,
-        created_at: new Date().toISOString(),
+        title: formData.title.trim(),
+        sku: formData.sku.trim() || undefined,
+        description: formData.description.trim(),
+        price: formData.price ? parseFloat(formData.price) : undefined,
+        currency: formData.currency,
+        is_service: formData.is_service,
+        category: formData.category, // ID категории
+        in_stock: formData.in_stock,
+        is_active: formData.is_active,
       };
       
-      console.log('Creating product:', productData);
+      console.log('Создание товара:', productData);
       
+      // Отправляем запрос на backend - компания будет присвоена автоматически
+      const createdProduct = await apiService.post('/products/', productData);
+      
+      console.log('Товар создан:', createdProduct);
       toast.success('Товар успешно добавлен');
       navigate('/dashboard/products');
-    } catch (error) {
-      toast.error('Ошибка при добавлении товара');
-      console.error('Create product error:', error);
+    } catch (error: any) {
+      console.error('Ошибка создания товара:', error);
+      
+      const errorMessage = error?.response?.data?.error || 
+                          error?.response?.data?.detail || 
+                          'Ошибка при добавлении товара';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -193,14 +225,17 @@ const CreateProduct = () => {
                 name="category"
                 id="category"
                 required
-                className="input"
+                disabled={isLoadingCategories}
+                className="input disabled:opacity-50"
                 value={formData.category}
                 onChange={handleChange}
               >
-                <option value="">Выберите категорию</option>
+                <option value="">
+                  {isLoadingCategories ? 'Загрузка категорий...' : 'Выберите категорию'}
+                </option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                  <option key={category.id} value={category.id}>
+                    {category.name}
                   </option>
                 ))}
               </select>
@@ -249,9 +284,9 @@ const CreateProduct = () => {
                   value={formData.currency}
                   onChange={handleChange}
                 >
+                  <option value="KZT">₸ KZT</option>
                   <option value="RUB">₽ RUB</option>
                   <option value="USD">$ USD</option>
-                  <option value="EUR">€ EUR</option>
                 </select>
               </div>
             </div>
