@@ -46,13 +46,23 @@ const CreateProduct = () => {
   const loadCategories = async () => {
     try {
       setIsLoadingCategories(true);
-      const data = await apiService.get<Category[]>('/categories/');
-      setCategories(data);
+      // Загружаем категории через единый API слой с автоматическим управлением токенами
+      const data = await apiService.get<{ results: Category[] }>('/categories/');
+      
+      // API возвращает пагинированный ответ, категории находятся в поле results
+      if (data && Array.isArray(data.results)) {
+        setCategories(data.results); // Сохраняем только массив категорий
+      } else {
+        console.error('Получены некорректные данные категорий:', data);
+        setCategories([]); // Устанавливаем пустой массив если данные некорректны
+        toast.error('Получены некорректные данные категорий');
+      }
     } catch (error) {
       console.error('Ошибка загрузки категорий:', error);
+      setCategories([]); // Устанавливаем пустой массив при ошибке
       toast.error('Ошибка загрузки категорий');
     } finally {
-      setIsLoadingCategories(false);
+      setIsLoadingCategories(false); // Всегда сбрасываем флаг загрузки
     }
   };
 
@@ -233,11 +243,19 @@ const CreateProduct = () => {
                 <option value="">
                   {isLoadingCategories ? 'Загрузка категорий...' : 'Выберите категорию'}
                 </option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
+                {Array.isArray(categories) && categories.length > 0 ? (
+                  // Рендерим категории только если они представляют собой массив с элементами
+                  categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))
+                ) : (
+                  // Показываем сообщение если категории не загрузились
+                  !isLoadingCategories && (
+                    <option value="" disabled>Категории не найдены</option>
+                  )
+                )}
               </select>
             </div>
           </div>

@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import apiService from '../../api'; // Единый API слой для загрузки реальных данных
+import { toast } from 'react-hot-toast';
 
 const SupplierDashboard = () => {
   const { user } = useAppSelector(state => state.auth);
@@ -22,48 +24,42 @@ const SupplierDashboard = () => {
   });
 
   useEffect(() => {
-    // Load mock data for demonstration
+    // Загружаем реальные данные пользователя через API
     if (user) {
-      loadMockData();
+      loadUserData();
     }
   }, [user]);
 
-  const loadMockData = () => {
-    // Don't load mock companies - user should add their own
-    const mockCompanies: any[] = [];
+  const loadUserData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Загружаем реальные товары пользователя через API
+      const productsData = await apiService.get<{ results: any[] }>('/products/my/');
+      if (productsData && Array.isArray(productsData.results)) {
+        setProducts(productsData.results);
+      } else {
+        console.error('Получены некорректные данные товаров:', productsData);
+        setProducts([]);
+      }
 
-    const mockProducts = [
-      {
-        id: 1,
-        title: 'Смеситель для кухни',
-        description: 'Качественный смеситель из нержавеющей стали',
-        category: { name: 'Сантехника' },
-        price: 15000,
-        is_active: true,
-        images: [],
-      },
-      {
-        id: 2,
-        title: 'Кабель ВВГ 3x2.5',
-        description: 'Медный кабель для электропроводки',
-        category: { name: 'Электрика' },
-        price: 250,
-        is_active: true,
-        images: [],
-      },
-      {
-        id: 3,
-        title: 'Краска водоэмульсионная',
-        description: 'Краска для внутренних работ, белая',
-        category: { name: 'Лакокрасочные материалы' },
-        price: 800,
-        is_active: true,
-        images: [],
-      },
-    ];
-
-    setCompanies(mockCompanies);
-    setProducts(mockProducts);
+      // Загружаем компании пользователя
+      const companiesData = await apiService.get<{ results: any[] }>('/companies/my/');
+      if (companiesData && Array.isArray(companiesData.results)) {
+        setCompanies(companiesData.results);
+      } else {
+        console.error('Получены некорректные данные компаний:', companiesData);
+        setCompanies([]);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки данных пользователя:', error);
+      toast.error('Ошибка загрузки данных');
+      // Устанавливаем пустые массивы при ошибке
+      setProducts([]);
+      setCompanies([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const userCompany = companies.find(company => company.owner_name === user?.username) || companies[0];
