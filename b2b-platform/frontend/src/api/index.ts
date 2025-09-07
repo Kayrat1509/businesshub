@@ -43,13 +43,21 @@ class ApiService {
       (error) => Promise.reject(error),
     );
 
-    // Response interceptor to handle token refresh
+    // Response interceptor to handle token refresh - перехватчик для автоматического обновления токенов
     this.api.interceptors.response.use(
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Проверяем условия для обновления токена:
+        // 1. Получили 401 ошибку (неавторизован)
+        // 2. Это не повторная попытка (избегаем бесконечного цикла) 
+        // 3. Это не сам запрос на обновление токена (важно!)
+        if (
+          error.response?.status === 401 && 
+          !originalRequest._retry && 
+          !originalRequest.url?.includes('/auth/token/refresh/')
+        ) {
           originalRequest._retry = true;
 
           try {
@@ -57,10 +65,20 @@ class ApiService {
             const refreshTokenValue = state.auth.refreshToken;
 
             if (refreshTokenValue) {
+              // Обновляем токен через Redux action
               await store.dispatch(refreshToken(refreshTokenValue));
-              return this.api(originalRequest);
+              
+              // Получаем обновленный токен из store
+              const newState = store.getState();
+              if (newState.auth.accessToken) {
+                // Обновляем заголовок Authorization в оригинальном запросе
+                originalRequest.headers.Authorization = `Bearer ${newState.auth.accessToken}`;
+                return this.api(originalRequest);
+              }
             }
           } catch (refreshError) {
+            // Если обновление токена не удалось - выполняем logout
+            console.error('Token refresh failed:', refreshError);
             store.dispatch(logout());
             window.location.href = '/auth/login';
           }

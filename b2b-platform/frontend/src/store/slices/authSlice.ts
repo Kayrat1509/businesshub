@@ -13,9 +13,9 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  accessToken: localStorage.getItem('accessToken'),
-  refreshToken: localStorage.getItem('refreshToken'),
-  isAuthenticated: !!localStorage.getItem('accessToken'),
+  accessToken: localStorage.getItem('access_token'),
+  refreshToken: localStorage.getItem('refresh_token'),
+  isAuthenticated: !!localStorage.getItem('access_token'),
   isLoading: false,
   error: null,
 };
@@ -92,17 +92,17 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.isAuthenticated = false;
       state.error = null;
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
     },
     clearError: (state) => {
       state.error = null;
     },
     initializeAuth: (state) => {
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem('access_token');
       if (token) {
         state.accessToken = token;
-        state.refreshToken = localStorage.getItem('refreshToken');
+        state.refreshToken = localStorage.getItem('refresh_token');
         state.isAuthenticated = true;
       }
     },
@@ -119,7 +119,7 @@ const authSlice = createSlice({
       };
       state.accessToken = 'test-token';
       state.isAuthenticated = true;
-      localStorage.setItem('accessToken', 'test-token');
+      localStorage.setItem('access_token', 'test-token');
     },
   },
   extraReducers: (builder) => {
@@ -135,8 +135,8 @@ const authSlice = createSlice({
         state.accessToken = action.payload.access;
         state.refreshToken = action.payload.refresh;
         state.isAuthenticated = true;
-        localStorage.setItem('accessToken', action.payload.access);
-        localStorage.setItem('refreshToken', action.payload.refresh);
+        localStorage.setItem('access_token', action.payload.access);
+        localStorage.setItem('refresh_token', action.payload.refresh);
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -154,8 +154,8 @@ const authSlice = createSlice({
         state.accessToken = action.payload.access;
         state.refreshToken = action.payload.refresh;
         state.isAuthenticated = true;
-        localStorage.setItem('accessToken', action.payload.access);
-        localStorage.setItem('refreshToken', action.payload.refresh);
+        localStorage.setItem('access_token', action.payload.access);
+        localStorage.setItem('refresh_token', action.payload.refresh);
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
@@ -165,7 +165,7 @@ const authSlice = createSlice({
       // Refresh token
       .addCase(refreshToken.fulfilled, (state, action) => {
         state.accessToken = action.payload.access;
-        localStorage.setItem('accessToken', action.payload.access);
+        localStorage.setItem('access_token', action.payload.access);
       })
       
       // User profile

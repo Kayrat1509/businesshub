@@ -1,4 +1,4 @@
-import { apiService } from './apiService';
+import { apiService } from '../api';
 import { User } from '../types';
 
 export interface LoginRequest {
@@ -53,11 +53,12 @@ export interface UpdateProfileRequest {
 class AuthService {
   private readonly BASE_URL = '/api/auth';
 
-  // Login
+  // Login - вход пользователя в систему
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response = await apiService.post<AuthResponse>(`${this.BASE_URL}/token/`, credentials);
     
     if (response.access) {
+      // Сохраняем токены в localStorage для дальнейшего использования
       this.setTokens(response.access, response.refresh);
     }
     
@@ -89,7 +90,7 @@ class AuthService {
     }
   }
 
-  // Refresh token
+  // Refresh token - обновление access токена используя refresh токен
   async refreshToken(): Promise<AuthResponse> {
     const refreshToken = localStorage.getItem('refresh_token');
     
@@ -98,16 +99,19 @@ class AuthService {
     }
 
     try {
+      // Отправляем POST запрос для обновления токена с refresh токеном в теле запроса
       const response = await apiService.post<AuthResponse>(`${this.BASE_URL}/token/refresh/`, {
         refresh: refreshToken
       });
       
       if (response.access) {
+        // Обновляем сохраненные токены новыми значениями
         this.setTokens(response.access, response.refresh || refreshToken);
       }
       
       return response;
     } catch (error) {
+      // В случае ошибки очищаем все токены (токен истек или недействителен)
       this.clearTokens();
       throw error;
     }
@@ -148,17 +152,17 @@ class AuthService {
     return apiService.post<{ message: string }>(`${this.BASE_URL}/resend-verification/`);
   }
 
-  // Token management helpers
+  // Token management helpers - вспомогательные методы для работы с токенами
   private setTokens(accessToken: string, refreshToken: string): void {
+    // Сохраняем токены в localStorage для постоянного хранения
     localStorage.setItem('access_token', accessToken);
     localStorage.setItem('refresh_token', refreshToken);
-    apiService.setAuthToken(accessToken);
   }
 
   private clearTokens(): void {
+    // Полностью очищаем все токены из localStorage
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    apiService.removeAuthToken();
   }
 
   // Check if user is authenticated

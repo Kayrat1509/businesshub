@@ -1,4 +1,5 @@
-import { apiService, PaginatedApiResponse } from './apiService';
+import { apiService } from '../api';
+import { PaginatedApiResponse } from './apiService';
 import { Company, CompanyFilters, Branch, Employee } from '../types';
 
 export interface CreateCompanyRequest {
@@ -79,7 +80,7 @@ class CompanyService {
         }
       });
 
-      return apiService.upload<Company>(`${this.BASE_URL}/`, formData);
+      return apiService.post<Company>(`${this.BASE_URL}/`, formData);
     }
 
     return apiService.post<Company>(`${this.BASE_URL}/`, data);
@@ -105,7 +106,7 @@ class CompanyService {
         }
       });
 
-      return apiService.upload<Company>(`${this.BASE_URL}/${id}/`, formData);
+      return apiService.patch<Company>(`${this.BASE_URL}/${id}/`, formData);
     }
 
     return apiService.patch<Company>(`${this.BASE_URL}/${id}/`, data);
@@ -202,7 +203,7 @@ class CompanyService {
     const formData = new FormData();
     formData.append('logo', logoFile);
 
-    return apiService.upload<{ logo: string }>(`${this.BASE_URL}/${companyId}/logo/`, formData);
+    return apiService.post<{ logo: string }>(`${this.BASE_URL}/${companyId}/logo/`, formData);
   }
 
   async deleteLogo(companyId: number): Promise<void> {
@@ -256,7 +257,7 @@ class CompanyService {
     
     params.append('format', format);
     
-    return apiService.download(`${this.BASE_URL}/export/?${params.toString()}`);
+    return apiService.get(`${this.BASE_URL}/export/?${params.toString()}`);
   }
 
   // Get nearby companies (if geolocation is implemented)

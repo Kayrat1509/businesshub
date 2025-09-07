@@ -8,7 +8,7 @@ import {
   Users, Clock, Star, AlertCircle, Upload, X, Plus,
   CheckCircle, XCircle, Loader, ArrowRight, Home,
 } from 'lucide-react';
-import apiService from '../../services/apiService';
+import apiService from '../../api';
 
 interface Company {
   id?: number
@@ -126,7 +126,7 @@ const DashboardCompany: React.FC = () => {
       let companiesResponse: Company[] = [];
       try {
         const response = await apiService.get<Company[]>('/companies/my/');
-        companiesResponse = response.data;
+        companiesResponse = response;
         console.log('Loaded user companies:', companiesResponse);
       } catch (error) {
         console.error('Failed to load user companies:', error);
@@ -135,7 +135,7 @@ const DashboardCompany: React.FC = () => {
       }
       
       const categoriesResponseObj = await apiService.get<Category[]>('/categories/');
-      const categoriesResponse = categoriesResponseObj.data;
+      const categoriesResponse = categoriesResponseObj;
       
       console.log('User companies response:', companiesResponse);
       console.log('Categories response:', categoriesResponse);
@@ -254,7 +254,7 @@ const handleSave = async () => {
     return;
   }
 
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem('access_token');
   if (!token) {
     toast.error('Необходимо войти в систему');
     return;
@@ -285,7 +285,7 @@ const handleSave = async () => {
       toast.success('Компания создана');
     }
 
-    const savedCompany: Company = response.data; // ✅ берём именно response.data
+    const savedCompany: Company = response; // ✅ новый API сервис возвращает данные напрямую
 
     const processedSavedCompany = {
       ...savedCompany,

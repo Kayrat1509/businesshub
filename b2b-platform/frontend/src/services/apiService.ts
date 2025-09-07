@@ -42,7 +42,7 @@ class ApiService {
     this.api.interceptors.request.use(
       (config) => {
         // Add auth token if available
-        const token = localStorage.getItem('accessToken');
+        const token = localStorage.getItem('access_token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -72,8 +72,8 @@ class ApiService {
           switch (status) {
             case 401:
               // Unauthorized - clear token and redirect to login
-              localStorage.removeItem('accessToken');
-              localStorage.removeItem('refreshToken');
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
               if (window.location.pathname !== '/login') {
                 window.location.href = '/login';
               }
@@ -189,18 +189,18 @@ class ApiService {
 
   // Set auth token
   setAuthToken(token: string): void {
-    localStorage.setItem('accessToken', token);
+    localStorage.setItem('access_token', token);
   }
 
   // Remove auth token
   removeAuthToken(): void {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
   }
 
   // Get current auth token
   getAuthToken(): string | null {
-    return localStorage.getItem('accessToken');
+    return localStorage.getItem('access_token');
   }
 
   // Check if user is authenticated

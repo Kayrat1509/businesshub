@@ -294,12 +294,21 @@ const CompanyProfile = () => {
                     <span>График работы</span>
                   </h3>
                   <div className="space-y-2">
-                    {Object.entries(company.work_schedule).map(([day, hours]) => (
-                      <div key={day} className="flex justify-between">
-                        <span className="text-dark-300 capitalize">{day}:</span>
-                        <span className="text-white">{hours as string}</span>
-                      </div>
-                    ))}
+                    {Object.entries(company.work_schedule).map(([day, hours]) => {
+                      // Обрабатываем случай когда hours это объект с open, close, is_working
+                      const displayHours = typeof hours === 'object' && hours !== null 
+                        ? (hours as any).is_working 
+                          ? `${(hours as any).open} - ${(hours as any).close}`
+                          : 'Выходной'
+                        : hours as string;
+                      
+                      return (
+                        <div key={day} className="flex justify-between">
+                          <span className="text-dark-300 capitalize">{day}:</span>
+                          <span className="text-white">{displayHours}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -310,29 +319,33 @@ const CompanyProfile = () => {
               <div className="card p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Быстрая связь</h3>
                 <div className="space-y-3">
-                  {company.contacts?.phones?.map((phone: string, index: number) => (
-                    <a
-                      key={index}
-                      href={`tel:${phone}`}
-                      className="flex items-center space-x-3 p-3 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors"
-                    >
-                      <Phone className="w-4 h-4 text-primary-400" />
-                      <span className="text-white">{phone}</span>
-                    </a>
-                  )) || (
+                  {company.contacts?.phones && company.contacts.phones.length > 0 ? (
+                    company.contacts.phones.map((phone: string, index: number) => (
+                      <a
+                        key={index}
+                        href={`tel:${phone}`}
+                        className="flex items-center space-x-3 p-3 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors"
+                      >
+                        <Phone className="w-4 h-4 text-primary-400" />
+                        <span className="text-white">{phone}</span>
+                      </a>
+                    ))
+                  ) : (
                     <div className="text-dark-400 text-sm">Телефоны не указаны</div>
                   )}
                   
-                  {company.contacts?.emails?.map((email: string, index: number) => (
-                    <a
-                      key={index}
-                      href={`mailto:${email}`}
-                      className="flex items-center space-x-3 p-3 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors"
-                    >
-                      <Mail className="w-4 h-4 text-primary-400" />
-                      <span className="text-white">{email}</span>
-                    </a>
-                  )) || (
+                  {company.contacts?.emails && company.contacts.emails.length > 0 ? (
+                    company.contacts.emails.map((email: string, index: number) => (
+                      <a
+                        key={index}
+                        href={`mailto:${email}`}
+                        className="flex items-center space-x-3 p-3 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors"
+                      >
+                        <Mail className="w-4 h-4 text-primary-400" />
+                        <span className="text-white">{email}</span>
+                      </a>
+                    ))
+                  ) : (
                     <div className="text-dark-400 text-sm">Email не указан</div>
                   )}
                   
@@ -470,7 +483,7 @@ const CompanyProfile = () => {
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-white mb-4">Контактная информация</h3>
               <div className="space-y-4">
-                {company.contacts?.phones?.length > 0 ? (
+                {company.contacts?.phones && company.contacts.phones.length > 0 ? (
                   <div>
                     <div className="text-dark-400 text-sm mb-2">Телефоны:</div>
                     {company.contacts.phones.map((phone: string, index: number) => (
@@ -488,7 +501,7 @@ const CompanyProfile = () => {
                   <div className="text-dark-400 text-sm">Телефоны не указаны</div>
                 )}
                 
-                {company.contacts?.emails?.length > 0 ? (
+                {company.contacts?.emails && company.contacts.emails.length > 0 ? (
                   <div>
                     <div className="text-dark-400 text-sm mb-2">Email:</div>
                     {company.contacts.emails.map((email: string, index: number) => (
