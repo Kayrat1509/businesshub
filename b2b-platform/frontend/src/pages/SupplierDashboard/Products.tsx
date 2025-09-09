@@ -322,6 +322,8 @@ const DashboardProducts: React.FC = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
           <input
             type="text"
+            id="product-search"
+            name="productSearch"
             placeholder="Поиск по названию, описанию, артикулу..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

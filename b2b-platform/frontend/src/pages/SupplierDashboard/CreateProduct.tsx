@@ -90,24 +90,19 @@ const CreateProduct = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.title.trim() || !formData.description.trim() || !formData.category) {
-      toast.error('Заполните все обязательные поля');
-      return;
-    }
 
     setIsSubmitting(true);
     
     try {
       // Подготавливаем данные для отправки на backend
       const productData = {
-        title: formData.title.trim(),
+        title: formData.title.trim() || 'Без названия',
         sku: formData.sku.trim() || undefined,
-        description: formData.description.trim(),
+        description: formData.description.trim() || 'Описание отсутствует',
         price: formData.price ? parseFloat(formData.price) : undefined,
         currency: formData.currency,
         is_service: formData.is_service,
-        category: formData.category, // ID категории
+        category: formData.category || undefined, // ID категории
         in_stock: formData.in_stock,
         is_active: formData.is_active,
       };
@@ -171,6 +166,7 @@ const CreateProduct = () => {
               <label className="flex items-center">
                 <input
                   type="radio"
+                  id="type-product"
                   name="is_service"
                   value="false"
                   checked={!formData.is_service}
@@ -182,6 +178,7 @@ const CreateProduct = () => {
               <label className="flex items-center">
                 <input
                   type="radio"
+                  id="type-service"
                   name="is_service"
                   value="true"
                   checked={formData.is_service}
@@ -196,13 +193,12 @@ const CreateProduct = () => {
           {/* Title */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-dark-200 mb-2">
-              Название {formData.is_service ? 'услуги' : 'товара'} *
+              Название {formData.is_service ? 'услуги' : 'товара'}
             </label>
             <input
               type="text"
               name="title"
               id="title"
-              required
               className="input"
               placeholder={formData.is_service ? 'Например: Монтаж сантехники' : 'Например: Смеситель для кухни'}
               value={formData.title}
@@ -229,12 +225,11 @@ const CreateProduct = () => {
 
             <div>
               <label htmlFor="category" className="block text-sm font-medium text-dark-200 mb-2">
-                Категория *
+                Категория
               </label>
               <select
                 name="category"
                 id="category"
-                required
                 disabled={isLoadingCategories}
                 className="input disabled:opacity-50"
                 value={formData.category}
@@ -263,12 +258,11 @@ const CreateProduct = () => {
           {/* Description */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-dark-200 mb-2">
-              Описание *
+              Описание
             </label>
             <textarea
               name="description"
               id="description"
-              required
               rows={4}
               className="input"
               placeholder={formData.is_service ? 'Подробно опишите услугу, процесс выполнения, сроки' : 'Подробно опишите товар, его характеристики, материалы'}
@@ -286,6 +280,7 @@ const CreateProduct = () => {
               <div className="flex-1">
                 <input
                   type="number"
+                  id="price"
                   name="price"
                   step="0.01"
                   min="0"
@@ -319,6 +314,7 @@ const CreateProduct = () => {
               <label className="flex items-center">
                 <input
                   type="checkbox"
+                  id="in_stock"
                   name="in_stock"
                   checked={formData.in_stock}
                   onChange={handleChange}
@@ -334,6 +330,7 @@ const CreateProduct = () => {
             <label className="flex items-center">
               <input
                 type="checkbox"
+                id="is_active"
                 name="is_active"
                 checked={formData.is_active}
                 onChange={handleChange}

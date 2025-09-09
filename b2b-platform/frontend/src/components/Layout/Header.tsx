@@ -66,7 +66,20 @@ return '/dashboard';
 
 
           {/* Navigation - Desktop */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center justify-center flex-1">
+            <button 
+              onClick={() => {
+                const element = document.getElementById('what-is-orbiz');
+                element?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="text-primary-400 hover:text-primary-300 transition-colors font-medium underline"
+            >
+              Что такое ORBIZ.ASIA?
+            </button>
+          </nav>
+
+          {/* Right side navigation */}
+          <div className="hidden md:flex items-center space-x-6">
             <Link 
               to="/" 
               className="text-primary-400 hover:text-primary-300 transition-colors font-medium"
@@ -127,7 +140,7 @@ return '/dashboard';
                 </Link>
               </div>
             )}
-          </nav>
+          </div>
 
           {/* Mobile Menu Toggle */}
           <button
@@ -150,6 +163,16 @@ return '/dashboard';
             className="md:hidden bg-dark-800 border-t border-dark-700"
           >
             <nav className="container mx-auto px-4 py-4 space-y-3">
+              <button 
+                onClick={() => {
+                  const element = document.getElementById('what-is-orbiz');
+                  element?.scrollIntoView({ behavior: 'smooth' });
+                  setIsMenuOpen(false);
+                }}
+                className="block text-primary-400 hover:text-primary-300 transition-colors font-medium underline text-left"
+              >
+                Что такое ORBIZ.ASIA?
+              </button>
               <Link 
                 to="/" 
                 className="block text-primary-400 hover:text-primary-300 transition-colors font-medium"

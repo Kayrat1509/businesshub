@@ -9,6 +9,7 @@ import {
   CheckCircle, XCircle, Loader, ArrowRight, Home,
 } from 'lucide-react';
 import apiService from '../../api';
+import CategoryAutocomplete from '../../components/CategoryAutocomplete';
 
 interface Company {
   id?: number
@@ -236,17 +237,28 @@ const DashboardCompany: React.FC = () => {
     }));
   };
 
-  const handleCategoryToggle = (categoryId: number) => {
-    setFormData(prev => {
-      const currentCategories = Array.isArray(prev.categories) ? prev.categories as number[] : [];
-      return {
-        ...prev,
-        categories: currentCategories.includes(categoryId)
-          ? currentCategories.filter(c => c !== categoryId)
-          : [...currentCategories, categoryId],
-      };
-    });
+  // Создание новой категории
+  const handleCreateCategory = async (categoryName: string): Promise<Category> => {
+    try {
+      const newCategory = await apiService.post<Category>('/categories/', {
+        name: categoryName,
+        is_active: true,
+      });
+      
+      // Обновляем локальный список категорий
+      setCategories(prev => [...prev, newCategory]);
+      
+      toast.success(`Категория "${categoryName}" создана и добавлена`);
+      return newCategory;
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.name?.[0] || 
+                          error?.response?.data?.detail || 
+                          'Ошибка создания категории';
+      toast.error(errorMessage);
+      throw error;
+    }
   };
+
 
 const handleSave = async () => {
   if (!formData.name.trim()) {
@@ -428,12 +440,13 @@ const handleSave = async () => {
             </label>
             <input
               type="text"
+              id="company-name"
+              name="companyName"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               className="input"
               placeholder="Введите название компании"
               disabled={!isEditing}
-              required
             />
           </div>
           
@@ -443,12 +456,13 @@ const handleSave = async () => {
             </label>
             <input
               type="text"
+              id="company-city"
+              name="companyCity"
               value={formData.city}
               onChange={(e) => handleInputChange('city', e.target.value)}
               className="input"
               placeholder="Москва"
               disabled={!isEditing}
-              required
             />
           </div>
         </div>
@@ -473,6 +487,8 @@ const handleSave = async () => {
           </label>
           <input
             type="text"
+            id="company-address"
+            name="companyAddress"
             value={formData.address}
             onChange={(e) => handleInputChange('address', e.target.value)}
             className="input"
@@ -496,6 +512,8 @@ const handleSave = async () => {
             </label>
             <input
               type="text"
+              id="company-phone"
+              name="companyPhone"
               value={formData.contacts.phone || ''}
               onChange={(e) => handleNestedChange('contacts', 'phone', e.target.value)}
               className="input"
@@ -510,7 +528,9 @@ const handleSave = async () => {
               Email адрес
             </label>
             <input
-              type="text"
+              type="email"
+              id="company-email"
+              name="companyEmail"
               value={formData.contacts.email || ''}
               onChange={(e) => handleNestedChange('contacts', 'email', e.target.value)}
               className="input"
@@ -570,50 +590,24 @@ const handleSave = async () => {
           Категории деятельности
         </h2>
         
-        {isEditing ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {categories.map((category) => (
-              <label
-                key={category.id}
-                className="flex items-center p-3 rounded-lg border border-dark-600 hover:border-primary-500 cursor-pointer transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={Array.isArray(formData.categories) && (formData.categories as number[]).includes(category.id)}
-                  onChange={() => handleCategoryToggle(category.id)}
-                  className="sr-only"
-                />
-                <div className={`w-4 h-4 rounded border mr-3 flex items-center justify-center ${
-                  Array.isArray(formData.categories) && (formData.categories as number[]).includes(category.id) 
-                    ? 'bg-primary-600 border-primary-600' 
-                    : 'border-dark-500'
-                }`}>
-                  {Array.isArray(formData.categories) && (formData.categories as number[]).includes(category.id) && (
-                    <CheckCircle className="w-3 h-3 text-white" />
-                  )}
-                </div>
-                <span className="text-sm text-white">{category.name}</span>
-              </label>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {Array.isArray(formData.categories) && formData.categories.length > 0 ? (
-              (formData.categories as number[]).map((categoryId) => {
-                const category = categories.find(c => c.id === categoryId);
-                return category ? (
-                  <span
-                    key={category.id}
-                    className="px-3 py-1 bg-primary-600/20 text-primary-300 rounded-full text-sm"
-                  >
-                    {category.name}
-                  </span>
-                ) : null;
-              })
-            ) : (
-              <span className="text-dark-400">Категории не выбраны</span>
-            )}
-          </div>
+        <CategoryAutocomplete
+          categories={categories}
+          selectedCategories={Array.isArray(formData.categories) ? (formData.categories as number[]) : []}
+          onCategoriesChange={(categoryIds) => {
+            setFormData(prev => ({
+              ...prev,
+              categories: categoryIds,
+            }));
+          }}
+          onCreateCategory={isEditing ? handleCreateCategory : undefined}
+          disabled={!isEditing}
+          placeholder="Введите название категории (мин. 3 символа)..."
+        />
+        
+        {isEditing && (
+          <p className="text-dark-400 text-sm mt-2">
+            💡 Начните вводить название категории для поиска. После ввода минимум 3 символов появятся варианты для выбора. Если нужной категории нет в списке, вы можете создать новую.
+          </p>
         )}
       </div>
 

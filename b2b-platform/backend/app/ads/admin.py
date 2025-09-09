@@ -19,13 +19,35 @@ class AdAdminForm(forms.ModelForm):
         }
         help_texts = {
             'title': 'Название рекламного объявления (будет отображаться в центре баннера)',
-            'image': 'Загрузите изображение для рекламы (будет отображаться как фон в безопасной зоне баннера)',
+            'image': 'Загрузите изображение для рекламы любого размера и формата (JPG, PNG, GIF, WEBP и др.)',
             'url': 'Ссылка, на которую будет переходить пользователь при клике на баннер',
             'position': 'Позиция показа рекламы (все рекламы отображаются как полноширинные баннеры на главной странице)',
-            'starts_at': 'Дата и время начала показа рекламы',
-            'ends_at': 'Дата и время окончания показа рекламы',
+            'starts_at': 'Дата и время начала показа рекламы (если не указано, будет установлена текущая дата)',
+            'ends_at': 'Дата и время окончания показа рекламы (если не указано, будет +30 дней от даты начала)',
             'is_active': 'Отметьте для активации рекламы',
         }
+
+    def clean(self):
+        # Убираем все валидации для изображения рекламы
+        cleaned_data = super().clean()
+        
+        # Проверяем и исправляем даты
+        starts_at = cleaned_data.get('starts_at')
+        ends_at = cleaned_data.get('ends_at')
+        
+        # Если дата начала не указана, устанавливаем текущую дату
+        if not starts_at:
+            from django.utils import timezone
+            cleaned_data['starts_at'] = timezone.now()
+        
+        # Если дата окончания не указана или раньше даты начала, устанавливаем +30 дней
+        if not ends_at or (starts_at and ends_at <= starts_at):
+            from django.utils import timezone
+            from datetime import timedelta
+            start_date = starts_at or timezone.now()
+            cleaned_data['ends_at'] = start_date + timedelta(days=30)
+        
+        return cleaned_data
 
 
 class ActionAdminForm(forms.ModelForm):

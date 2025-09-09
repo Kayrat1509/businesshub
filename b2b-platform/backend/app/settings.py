@@ -16,7 +16,7 @@ SECRET_KEY = config("SECRET_KEY", default="django-insecure-change-me")
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 # Список разрешенных хостов для обращения к приложению
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1,orbiz.asia,api.orbiz.asia").split(",")
 
 # Стандартные приложения Django (админка, аутентификация, сессии и т.д.)
 DJANGO_APPS = [
@@ -176,9 +176,18 @@ CORS_ALLOWED_ORIGINS = [  # Разрешенные домены для CORS за
     "http://127.0.0.1:3000",  # Альтернативный localhost
     "http://localhost:5173",  # Vite development server
     "http://127.0.0.1:5173",  # Альтернативный localhost для Vite
+    "https://orbiz.asia",  # Продакшн frontend домен
+    "https://www.orbiz.asia",  # Продакшн frontend домен с www
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # Разрешить отправку cookies и других credentials
+
+# Настройки CSRF для безопасной работы с продакшн доменами
+CSRF_TRUSTED_ORIGINS = [
+    "https://orbiz.asia",  # Продакшн frontend домен
+    "https://www.orbiz.asia",  # Продакшн frontend домен с www
+    "https://api.orbiz.asia",  # Продакшн API домен
+]
 
 # Настройки для автогенерации документации API через drf-spectacular
 SPECTACULAR_SETTINGS = {
@@ -190,10 +199,13 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Настройки загрузки файлов
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # Максимальный размер файла в памяти (5MB)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # Максимальный размер данных в памяти (5MB)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # Максимальный размер файла в памяти (50MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # Максимальный размер данных в памяти (50MB)
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240  # Максимальное количество полей
 
-# Настройки валидации логотипов компаний
-LOGO_MAX_SIZE = (600, 600)  # Максимальный размер изображения 600x600 пикселей
-LOGO_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png"]  # Разрешенные форматы изображений
+# Настройки валидации изображений
+LOGO_MAX_SIZE = (600, 600)  # Максимальный размер логотипа компании 600x600 пикселей
+LOGO_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "bmp", "webp"]  # Разрешенные форматы изображений
+# Для рекламных изображений разрешены любые размеры и форматы
+AD_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "bmp", "webp"]  # Все популярные форматы для рекламы
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

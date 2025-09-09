@@ -82,6 +82,7 @@ const Login = () => {
           <div className="relative">
             <input
               type="email"
+              id="email"
               {...register('email')}
               className={`input pl-10 ${errors.email ? 'border-red-500' : ''}`}
               placeholder="Введите ваш email"
@@ -101,6 +102,7 @@ const Login = () => {
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
+              id="password"
               {...register('password')}
               className={`input pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
               placeholder="Введите ваш пароль"

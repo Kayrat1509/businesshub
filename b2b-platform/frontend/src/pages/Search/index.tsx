@@ -53,6 +53,8 @@ const Search: React.FC = () => {
             <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-dark-400" />
             <input
               type="text"
+              id="search-companies"
+              name="searchCompanies"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Поиск по названию компании, услугам или товарам..."

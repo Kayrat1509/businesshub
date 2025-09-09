@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Search</title>
+</head>
+<body>
+    <h1>Debug Search Test</h1>
+    <p>Откройте консоль разработчика (F12) и перейдите на <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></p>
+    <p>Затем в поисковой строке введите "Цемент" и посмотрите логи в консоли.</p>
+    
+    <h2>Ожидаемые логи:</h2>
+    <pre>
+=== STARTING NEW SEARCH ===
+Query: Цемент
+SearchResults cleared
+Starting search for query: Цемент
+Raw companies response: {count: 0, results: []}
+Raw products response: {count: 3, results: [...]}
+Extracted companies: 0 []
+Extracted products: 3 [...]
+Combined results: [3 items]
+SearchResults SET to: [3 items]
+SearchResults length: 3
+=== RENDERING PRODUCTS DEBUG ===
+Total searchResults: 3
+Product results count: 3
+Product results: ["Цемент М500 мешок 50кг", "Цемент М400 мешок 50кг", "Цемент М400 (50 кг)"]
+    </pre>
+    
+    <p><strong>Если видите больше 3 товаров в логах, значит есть проблема в коде.</strong></p>
+</body>
+</html>

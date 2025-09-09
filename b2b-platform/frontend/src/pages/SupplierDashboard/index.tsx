@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Building2, Package, Star, TrendingUp, Users, Eye,
-  Plus, Calendar, ArrowUpRight, Activity,
+  Plus, Calendar, ArrowUpRight, Activity, FileText,
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -14,6 +14,7 @@ const SupplierDashboard = () => {
   const { user } = useAppSelector(state => state.auth);
   const [companies, setCompanies] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [tenders, setTenders] = useState<any[]>([]); // Состояние для тендеров пользователя
   const [isLoading, setIsLoading] = useState(false);
 
   const [stats] = useState({
@@ -51,14 +52,67 @@ const SupplierDashboard = () => {
         console.error('Получены некорректные данные компаний:', companiesData);
         setCompanies([]);
       }
+
+      // Загружаем тендеры пользователя через API
+      const tendersData = await apiService.get<{ results: any[] }>('/tenders/my/');
+      if (tendersData && Array.isArray(tendersData.results)) {
+        setTenders(tendersData.results);
+      } else if (tendersData && Array.isArray(tendersData)) {
+        // На случай если API возвращает массив напрямую, а не в поле results
+        setTenders(tendersData);
+      } else {
+        console.error('Получены некорректные данные тендеров:', tendersData);
+        setTenders([]);
+      }
     } catch (error) {
       console.error('Ошибка загрузки данных пользователя:', error);
       toast.error('Ошибка загрузки данных');
       // Устанавливаем пустые массивы при ошибке
       setProducts([]);
       setCompanies([]);
+      setTenders([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Обработчик удаления товара
+  const handleDeleteProduct = async (productId: number) => {
+    if (!window.confirm('Вы уверены, что хотите удалить этот товар?')) {
+      return;
+    }
+
+    try {
+      await apiService.delete(`/products/${productId}/`);
+      toast.success('Товар успешно удален');
+      // Обновляем список товаров после удаления
+      loadUserData();
+    } catch (error: any) {
+      console.error('Ошибка удаления товара:', error);
+      const errorMessage = error?.response?.data?.error || 
+                          error?.response?.data?.detail || 
+                          'Ошибка при удалении товара';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Обработчик удаления тендера
+  const handleDeleteTender = async (tenderId: number) => {
+    if (!window.confirm('Вы уверены, что хотите удалить этот тендер?')) {
+      return;
+    }
+
+    try {
+      await apiService.delete(`/tenders/${tenderId}/`);
+      toast.success('Тендер успешно удален');
+      // Обновляем список тендеров после удаления
+      loadUserData();
+    } catch (error: any) {
+      console.error('Ошибка удаления тендера:', error);
+      const errorMessage = error?.response?.data?.error || 
+                          error?.response?.data?.detail || 
+                          'Ошибка при удалении тендера';
+      toast.error(errorMessage);
     }
   };
 
@@ -416,13 +470,16 @@ return null;
                     <td className="py-3">
                       <div className="flex items-center space-x-2">
                         <Link 
-                          to={`/dashboard/products/${product.id}/edit`}
+                          to="/dashboard/products"
                           className="text-primary-400 hover:text-primary-300 text-sm"
                         >
-                          Редактировать
+                          Управление
                         </Link>
                         <span className="text-dark-600">|</span>
-                        <button className="text-red-400 hover:text-red-300 text-sm">
+                        <button 
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="text-red-400 hover:text-red-300 text-sm hover:bg-red-500/10 px-1 py-0.5 rounded transition-colors"
+                        >
                           Удалить
                         </button>
                       </div>
@@ -449,6 +506,112 @@ return null;
             </p>
             <Link to="/dashboard/products/create" className="btn-primary">
               Добавить товар
+            </Link>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Tenders Table - Список добавленных тендеров */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.1 }}
+        className="card p-6"
+      >
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+          <FileText className="w-5 h-5 mr-2 text-green-400" />
+          Список добавленных тендеров
+        </h3>
+
+        {tenders.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-dark-700">
+                  <th className="pb-3 text-dark-300 font-medium">Название</th>
+                  <th className="pb-3 text-dark-300 font-medium">Город</th>
+                  <th className="pb-3 text-dark-300 font-medium">Бюджет</th>
+                  <th className="pb-3 text-dark-300 font-medium">Дедлайн</th>
+                  <th className="pb-3 text-dark-300 font-medium">Статус</th>
+                  <th className="pb-3 text-dark-300 font-medium">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tenders.slice(0, 10).map((tender: any) => (
+                  <tr key={tender.id} className="border-b border-dark-800">
+                    <td className="py-3">
+                      <div>
+                        <p className="text-white font-medium">{tender.title}</p>
+                        <p className="text-dark-400 text-sm">{tender.description?.slice(0, 50)}...</p>
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <span className="text-white">
+                        {tender.city || 'Не указан'}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <span className="text-white font-medium">
+                        {tender.budget_min && tender.budget_max 
+                          ? `₸${tender.budget_min.toLocaleString()} - ₸${tender.budget_max.toLocaleString()}`
+                          : tender.budget_min
+                            ? `от ₸${tender.budget_min.toLocaleString()}`
+                            : tender.budget_max
+                              ? `до ₸${tender.budget_max.toLocaleString()}`
+                              : 'По договоренности'
+                        }
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <span className="text-white">
+                        {tender.deadline_date 
+                          ? new Date(tender.deadline_date).toLocaleDateString('ru-RU')
+                          : 'Не указан'
+                        }
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      {getStatusBadge(tender.status || 'PENDING')}
+                    </td>
+                    <td className="py-3">
+                      <div className="flex items-center space-x-2">
+                        <Link 
+                          to="/dashboard/tenders"
+                          className="text-primary-400 hover:text-primary-300 text-sm"
+                        >
+                          Управление
+                        </Link>
+                        <span className="text-dark-600">|</span>
+                        <button 
+                          onClick={() => handleDeleteTender(tender.id)}
+                          className="text-red-400 hover:text-red-300 text-sm hover:bg-red-500/10 px-1 py-0.5 rounded transition-colors"
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {tenders.length > 10 && (
+              <div className="mt-4 text-center">
+                <Link to="/dashboard/tenders" className="btn-outline px-6 py-2">
+                  Посмотреть все {tenders.length} тендеров
+                </Link>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <FileText className="w-16 h-16 text-dark-400 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-white mb-2">Тендеры не добавлены</h4>
+            <p className="text-dark-300 mb-6">
+              Создайте ваш первый тендер для поиска поставщиков
+            </p>
+            <Link to="/dashboard/tenders/create" className="btn-primary">
+              Создать тендер
             </Link>
           </div>
         )}

@@ -1,0 +1,105 @@
+# Nginx конфигурация для orbiz.asia
+# Этот файл должен быть размещен на сервере в /etc/nginx/sites-available/orbiz.asia
+
+# Frontend (https://orbiz.asia)
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name orbiz.asia www.orbiz.asia;
+
+    # SSL сертификаты
+    ssl_certificate /etc/ssl/certs/orbiz.asia.crt;
+    ssl_private_key /etc/ssl/private/orbiz.asia.key;
+
+    # SSL настройки для безопасности
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+
+    # Корневая директория для статических файлов React
+    root /var/www/orbiz.asia/dist;
+    index index.html;
+
+    # Gzip сжатие
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    # Настройки для SPA (Single Page Application)
+    location / {
+        try_files $uri $uri/ /index.html;
+        
+        # Заголовки безопасности
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer-when-downgrade" always;
+        add_header Content-Security-Policy "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'" always;
+    }
+
+    # Кеширование статических файлов
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+
+# Backend API (https://api.orbiz.asia)
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.orbiz.asia;
+
+    # SSL сертификаты
+    ssl_certificate /etc/ssl/certs/api.orbiz.asia.crt;
+    ssl_private_key /etc/ssl/private/api.orbiz.asia.key;
+
+    # SSL настройки
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+
+    # Максимальный размер загружаемых файлов
+    client_max_body_size 10M;
+
+    # CORS заголовки для всех запросов к API
+    add_header 'Access-Control-Allow-Origin' 'https://orbiz.asia' always;
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS, PATCH' always;
+    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+    add_header 'Access-Control-Allow-Credentials' 'true' always;
+
+    # Обработка preflight OPTIONS запросов
+    if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Allow-Origin' 'https://orbiz.asia';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS, PATCH';
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization';
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        add_header 'Access-Control-Max-Age' 1728000;
+        add_header 'Content-Type' 'text/plain charset=UTF-8';
+        add_header 'Content-Length' 0;
+        return 204;
+    }
+
+    # Проксирование запросов к Django приложению
+    location / {
+        proxy_pass http://127.0.0.1:8000;  # Локальный Django сервер
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Таймауты
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
+
+# Редирект с HTTP на HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name orbiz.asia www.orbiz.asia api.orbiz.asia;
+    return 301 https://$server_name$request_uri;
+}

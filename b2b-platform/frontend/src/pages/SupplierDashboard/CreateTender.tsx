@@ -97,20 +97,15 @@ const CreateTender = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.title.trim() || !formData.description.trim() || formData.categories.length === 0) {
-      toast.error('Заполните все обязательные поля');
-      return;
-    }
 
     setIsSubmitting(true);
     
     try {
       // Подготавливаем данные тендера для отправки на сервер
       const tenderData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        categories: formData.categories, // Массив ID выбранных категорий
+        title: formData.title.trim() || 'Без названия',
+        description: formData.description.trim() || 'Описание отсутствует',
+        categories: formData.categories.length > 0 ? formData.categories : [], // Массив ID выбранных категорий
         city: formData.city,
         deadline_date: formData.deadline_date || undefined,
         budget_min: formData.budget_min ? parseFloat(formData.budget_min) : undefined,
@@ -176,13 +171,11 @@ const CreateTender = () => {
           {/* Title */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-dark-200 mb-2">
-              Название тендера *
-            </label>
+              Название тендера            </label>
             <input
               type="text"
               name="title"
               id="title"
-              required
               className="input"
               placeholder="Например: Требуется поставка сантехники для офиса"
               value={formData.title}
@@ -193,8 +186,7 @@ const CreateTender = () => {
           {/* Categories */}
           <div>
             <label className="block text-sm font-medium text-dark-200 mb-2">
-              Категории *
-            </label>
+              Категории            </label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {isLoadingCategories ? (
                 <p className="text-dark-400 col-span-full">Загрузка категорий...</p>
@@ -224,12 +216,10 @@ const CreateTender = () => {
           {/* Description */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-dark-200 mb-2">
-              Описание *
-            </label>
+              Описание            </label>
             <textarea
               name="description"
               id="description"
-              required
               rows={4}
               className="input"
               placeholder="Подробно опишите ваши требования к товару или услуге"

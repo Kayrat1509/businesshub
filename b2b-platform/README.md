@@ -53,26 +53,34 @@ A full-stack B2B platform for finding suppliers of goods and services, built wit
 b2b-platform/
 ├── backend/
 │   ├── app/
-│   │   ├── companies/    # Company models and views
-│   │   ├── products/     # Product/service management
+│   │   ├── ads/          # Advertisement system
 │   │   ├── categories/   # Category hierarchy
+│   │   ├── common/       # Shared utilities
+│   │   ├── companies/    # Company models and views
+│   │   ├── logs/         # Activity logging
+│   │   ├── products/     # Product/service management
 │   │   ├── reviews/      # Reviews and ratings
 │   │   ├── tenders/      # Tender management
-│   │   ├── users/        # Authentication and users
-│   │   ├── ads/          # Advertisement system
-│   │   ├── logs/         # Activity logging
-│   │   └── common/       # Shared utilities
-│   ├── tests/
+│   │   └── users/        # Authentication and users
+│   ├── media/           # User uploaded files
+│   ├── staticfiles/     # Static assets
+│   ├── tests/           # Test files
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── pages/        # Route components
-│   │   ├── components/   # Reusable UI components
 │   │   ├── api/          # API integration
-│   │   └── store/        # State management
+│   │   ├── components/   # Reusable UI components
+│   │   ├── mocks/        # Mock data for testing
+│   │   ├── pages/        # Route components
+│   │   ├── services/     # Business logic services
+│   │   ├── store/        # State management
+│   │   ├── styles/       # CSS styles
+│   │   ├── test/         # Test utilities
+│   │   └── types/        # TypeScript type definitions
 │   ├── package.json
 │   └── vite.config.ts
-└── docker-compose.yml
+├── docker-compose.yml    # Docker services configuration
+└── nginx.conf.example    # Nginx configuration template
 ```
 
 ## 🎭 User Roles

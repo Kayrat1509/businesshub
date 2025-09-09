@@ -13,12 +13,16 @@ class Ad(models.Model):
     ]
 
     title = models.CharField(max_length=200, verbose_name="Название")
-    image = models.ImageField(upload_to=ad_image_upload_path, verbose_name="Изображение")
+    image = models.ImageField(
+        upload_to=ad_image_upload_path, 
+        verbose_name="Изображение",
+        help_text="Загрузите изображение для рекламного баннера (поддерживаются все популярные форматы: JPG, PNG, GIF, WEBP)"
+    )
     url = models.URLField(verbose_name="Ссылка")
     position = models.CharField(max_length=20, choices=POSITION_CHOICES, verbose_name="Позиция показа")
     is_active = models.BooleanField(default=True, verbose_name="Активна")
-    starts_at = models.DateTimeField(verbose_name="Начало показа")
-    ends_at = models.DateTimeField(verbose_name="Окончание показа")
+    starts_at = models.DateTimeField(verbose_name="Начало показа", null=True, blank=True)
+    ends_at = models.DateTimeField(verbose_name="Окончание показа", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
@@ -35,6 +39,9 @@ class Ad(models.Model):
         from django.utils import timezone
 
         now = timezone.now()
+        # Если даты не установлены, считаем рекламу активной если is_active=True
+        if not self.starts_at or not self.ends_at:
+            return self.is_active
         return self.is_active and self.starts_at <= now <= self.ends_at
 
 
