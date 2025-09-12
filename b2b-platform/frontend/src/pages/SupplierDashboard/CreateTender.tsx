@@ -18,6 +18,7 @@ interface TenderForm {
   deadline_date: string // Крайний срок в формате YYYY-MM-DD (опциональное поле)
   budget_min: string // Минимальный бюджет - снято ограничение на количество цифр (опциональное поле)
   budget_max: string // Максимальный бюджет - снято ограничение на количество цифр (опциональное поле)
+  currency: string // Валюта бюджета (KZT, USD, RUB)
   // Поля author и company НЕ включены - назначаются автоматически на backend
 }
 
@@ -37,6 +38,7 @@ const CreateTender = () => {
     deadline_date: '',
     budget_min: '',
     budget_max: '',
+    currency: 'KZT', // По умолчанию KZT
   });
 
   // Загрузка категорий при инициализации компонента
@@ -71,6 +73,12 @@ const CreateTender = () => {
   const cities = [
     'Алматы', 'Нур-Султан', 'Шымкент', 'Караганда', 'Актобе', 
     'Тараз', 'Павлодар', 'Усть-Каменогорск', 'Семей', 'Атырау',
+  ];
+
+  const currencies = [
+    { value: 'KZT', label: 'KZT', symbol: '₸' },
+    { value: 'USD', label: 'USD', symbol: '$' },
+    { value: 'RUB', label: 'RUB', symbol: '₽' },
   ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -110,6 +118,7 @@ const CreateTender = () => {
         deadline_date: formData.deadline_date || undefined,
         budget_min: formData.budget_min ? parseFloat(formData.budget_min) : undefined,
         budget_max: formData.budget_max ? parseFloat(formData.budget_max) : undefined,
+        currency: formData.currency, // Добавляем валюту
       };
       
       console.log('Создание тендера через новый tenderService:', tenderData);
@@ -228,6 +237,27 @@ const CreateTender = () => {
             />
           </div>
 
+          {/* Currency */}
+          <div>
+            <label htmlFor="currency" className="block text-sm font-medium text-dark-200 mb-2">
+              Валюта <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="currency"
+              id="currency"
+              className="input"
+              value={formData.currency}
+              onChange={handleChange}
+              required
+            >
+              {currencies.map((currency) => (
+                <option key={currency.value} value={currency.value}>
+                  {currency.label} ({currency.symbol})
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Location and Deadline */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -268,7 +298,7 @@ const CreateTender = () => {
           {/* Budget - снято ограничение на количество цифр */}
           <div>
             <label className="block text-sm font-medium text-dark-200 mb-2">
-              Бюджет (₸) - любая сумма
+              Бюджет ({currencies.find(c => c.value === formData.currency)?.symbol || '₸'}) - любая сумма
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input

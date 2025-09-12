@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, TrendingUp, Users, Award, ArrowRight, Building2, X } from 'lucide-react';
+import { Search, ArrowRight, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchCategories, fetchCategoryTree } from '../../store/slices/categoriesSlice';
 import { fetchCompanies } from '../../store/slices/companiesSlice';
@@ -202,12 +202,6 @@ return;
     console.log('Search cleared - should be 0 results now');
   };
 
-  const stats = [
-    { icon: Building2, label: 'Компаний', value: '800+', color: 'text-primary-400' },
-    { icon: Users, label: 'Пользователей', value: '20,000+', color: 'text-secondary-400' },
-    { icon: TrendingUp, label: 'Сделок', value: '100,000+', color: 'text-green-400' },
-    { icon: Award, label: 'Категорий', value: '100+', color: 'text-purple-400' },
-  ];
 
   return (
     <div className="min-h-screen">
@@ -225,13 +219,13 @@ return;
             className="text-center"
           >
 
-            <h1 className="text-2xl md:text-3xl font-bold mb-6 text-gradient leading-tight">
+            <h1 className="text-4xl md:text-5xl xl:text-6xl font-bold mb-6 text-gradient leading-tight">
               Поиск товаров от
               <br />
               производителей и дилеров
             </h1>
             <p className="text-xl md:text-2xl text-dark-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-              Оптовые поставщики и производители с широким ассортиментом товаров
+              Оптовые поставщики и производители
               <br />
               из России, Казахстана, Узбекистана, Кыргызстана.
             </p>
@@ -573,33 +567,6 @@ return;
       )}
 
 
-      {/* Stats Section */}
-      <section className={`py-8 bg-dark-800/50 ${hasSearched ? 'border-t border-dark-700' : ''}`}>
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="text-center"
-              >
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-dark-700 mb-4">
-                  <stat.icon className={`w-8 h-8 ${stat.color}`} />
-                </div>
-                <div className="text-3xl font-bold text-white mb-2">{stat.value}</div>
-                <div className="text-dark-300">{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
 
 
 

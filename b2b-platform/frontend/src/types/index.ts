@@ -148,6 +148,7 @@ export interface Tender {
   city: string
   budget_min?: number
   budget_max?: number
+  currency: 'KZT' | 'USD' | 'RUB'
   deadline_date?: string
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
   attachments: string[]

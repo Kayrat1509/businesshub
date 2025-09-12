@@ -15,18 +15,29 @@ const TenderCard = ({ tender }: TenderCardProps) => {
       navigate(`/company/${tender.company.id}?tab=tenders`);
     }
   };
-  const formatBudget = (min?: number, max?: number) => {
+  const getCurrencySymbol = (currency?: string) => {
+    switch (currency) {
+      case 'USD': return '$';
+      case 'RUB': return '₽';
+      case 'KZT':
+      default: return '₸';
+    }
+  };
+
+  const formatBudget = (min?: number, max?: number, currency?: string) => {
+    const symbol = getCurrencySymbol(currency);
+    
     if (!min && !max) {
 return 'Бюджет не указан';
 }
     if (min && max) {
-return `${min.toLocaleString()} - ${max.toLocaleString()} ₽`;
+return `${min.toLocaleString()} - ${max.toLocaleString()} ${symbol}`;
 }
     if (min) {
-return `от ${min.toLocaleString()} ₽`;
+return `от ${min.toLocaleString()} ${symbol}`;
 }
     if (max) {
-return `до ${max.toLocaleString()} ₽`;
+return `до ${max.toLocaleString()} ${symbol}`;
 }
   };
 
@@ -134,7 +145,7 @@ return `${diffDays} дня`;
             <span className="text-dark-300 text-sm">Бюджет:</span>
           </div>
           <span className="text-white font-medium text-sm">
-            {formatBudget(tender.budget_min, tender.budget_max)}
+            {formatBudget(tender.budget_min, tender.budget_max, tender.currency)}
           </span>
         </div>
 

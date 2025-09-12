@@ -19,6 +19,12 @@ class Tender(models.Model):
         (STATUS_REJECTED, "Отклонен"),
     ]
 
+    CURRENCY_CHOICES = [
+        ("KZT", "KZT"),
+        ("USD", "USD"),
+        ("RUB", "RUB"),
+    ]
+
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tenders", verbose_name="Автор")
     company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="tenders", verbose_name="Компания", null=True, blank=True)
     title = models.CharField(max_length=200, verbose_name="Название")
@@ -37,6 +43,12 @@ class Tender(models.Model):
     )
     budget_max = models.DecimalField(
         max_digits=30, decimal_places=2, null=True, blank=True, verbose_name="Максимальный бюджет"
+    )
+    currency = models.CharField(
+        max_length=3,
+        choices=CURRENCY_CHOICES,
+        default="KZT",
+        verbose_name="Валюта"
     )
     deadline_date = models.DateField(null=True, blank=True, verbose_name="Крайний срок")
     admin_comment = models.TextField(
