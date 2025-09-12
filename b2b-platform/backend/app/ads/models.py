@@ -11,6 +11,11 @@ class Ad(models.Model):
         ("SIDEBAR", "Боковая панель"),
         ("BANNER", "Полноширинный баннер"),
     ]
+    
+    STATUS_CHOICES = [
+        ("active", "Активно"),
+        ("stopped", "Остановлено"),
+    ]
 
     title = models.CharField(max_length=200, verbose_name="Название")
     image = models.ImageField(
@@ -21,6 +26,12 @@ class Ad(models.Model):
     url = models.URLField(verbose_name="Ссылка")
     position = models.CharField(max_length=20, choices=POSITION_CHOICES, verbose_name="Позиция показа")
     is_active = models.BooleanField(default=True, verbose_name="Активна")
+    status = models.CharField(
+        max_length=20, 
+        choices=STATUS_CHOICES, 
+        default="active", 
+        verbose_name="Статус"
+    )
     starts_at = models.DateTimeField(verbose_name="Начало показа", null=True, blank=True)
     ends_at = models.DateTimeField(verbose_name="Окончание показа", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")

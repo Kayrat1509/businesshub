@@ -13,8 +13,8 @@ class AdAdminForm(forms.ModelForm):
             'title': TextInput(attrs={'size': '60'}),
             'url': TextInput(attrs={'size': '80', 'placeholder': 'https://example.com'}),
             'position': Select(attrs={'style': 'width: 200px;'}),
+            'status': Select(attrs={'style': 'width: 150px;'}),
             'starts_at': DateTimeInput(attrs={'type': 'datetime-local'}),
-            'ends_at': DateTimeInput(attrs={'type': 'datetime-local'}),
             'is_active': CheckboxInput(),
         }
         help_texts = {
@@ -22,8 +22,8 @@ class AdAdminForm(forms.ModelForm):
             'image': 'Загрузите изображение для рекламы любого размера и формата (JPG, PNG, GIF, WEBP и др.)',
             'url': 'Ссылка, на которую будет переходить пользователь при клике на баннер',
             'position': 'Позиция показа рекламы (все рекламы отображаются как полноширинные баннеры на главной странице)',
+            'status': 'Статус объявления: активно или остановлено',
             'starts_at': 'Дата и время начала показа рекламы (если не указано, будет установлена текущая дата)',
-            'ends_at': 'Дата и время окончания показа рекламы (если не указано, будет +30 дней от даты начала)',
             'is_active': 'Отметьте для активации рекламы',
         }
 
@@ -71,22 +71,39 @@ class ActionAdminForm(forms.ModelForm):
         }
 
 
+def stop_ads(modeladmin, request, queryset):
+    """Остановить выбранные объявления"""
+    updated = queryset.update(status='stopped')
+    modeladmin.message_user(request, f'Остановлено объявлений: {updated}')
+stop_ads.short_description = "Остановить объявления"
+
+
+def resume_ads(modeladmin, request, queryset):
+    """Возобновить выбранные объявления"""
+    updated = queryset.update(status='active')
+    modeladmin.message_user(request, f'Возобновлено объявлений: {updated}')
+resume_ads.short_description = "Возобновить объявления"
+
+
 @admin.register(Ad)
 class AdAdmin(admin.ModelAdmin):
     form = AdAdminForm
     list_display = [
         "title",
         "position",
+        "status",
         "is_active",
         "is_current",
         "starts_at",
         "ends_at",
     ]
-    list_filter = ["position", "is_active", "starts_at", "ends_at"]
+    list_filter = ["position", "status", "is_active", "starts_at", "ends_at"]
     search_fields = ["title", "url"]
-    list_editable = ["is_active"]
+    list_editable = ["is_active", "status"]
     readonly_fields = ["created_at", "updated_at"]
     list_per_page = 25
+    actions = [stop_ads, resume_ads]
+    exclude = ['ends_at']
 
     fieldsets = (
         (
@@ -95,11 +112,11 @@ class AdAdmin(admin.ModelAdmin):
         ),
         (
             "Настройки показа",
-            {"fields": ("position", "is_active")},
+            {"fields": ("position", "status", "is_active")},
         ),
         (
             "Период действия",
-            {"fields": ("starts_at", "ends_at")},
+            {"fields": ("starts_at",)},
         ),
         (
             "Служебная информация",

@@ -217,18 +217,6 @@ return;
         <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
         
         <div className="container mx-auto max-w-6xl relative z-10">
-          {/* Top navigation links - moved outside main content */}
-          <div className="text-center pt-4 pb-8">
-            <button 
-              onClick={() => {
-                const element = document.getElementById('what-is-orbiz');
-                element?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="text-primary-400 hover:text-primary-300 transition-colors font-medium underline text-xl"
-            >
-              Что такое ORBIZ.ASIA?
-            </button>
-          </div>
 
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -584,87 +572,6 @@ return;
         </section>
       )}
 
-      {/* What is ORBIZ.ASIA Section - Center placement */}
-      {!hasSearched && (
-        <section id="what-is-orbiz" className="py-20 px-4 bg-dark-800/30">
-          <div className="container mx-auto max-w-4xl">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="text-center"
-            >
-              <h2 className="text-4xl font-bold text-primary-400 mb-8">
-                Что такое ORBIZ.ASIA?
-              </h2>
-              
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="max-w-3xl mx-auto space-y-6"
-              >
-                <p className="text-xl text-dark-200 leading-relaxed">
-                  <strong className="text-primary-400">ORBIZ.ASIA</strong> — это современная B2B веб-платформа, 
-                  объединяющая производителей, поставщиков и покупателей из стран СНГ.
-                </p>
-                
-                <div className="grid md:grid-cols-2 gap-8 mt-12">
-                  <motion.div
-                    initial={{ opacity: 0, x: -30 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8, delay: 0.4 }}
-                    className="card p-6 hover:border-primary-500 transition-colors"
-                  >
-                    <h3 className="text-primary-300 font-semibold text-xl mb-4 flex items-center">
-                      🏢 Для поставщиков
-                    </h3>
-                    <ul className="space-y-3 text-dark-300">
-                      <li className="flex items-start">
-                        <span className="text-primary-400 mr-2">•</span>
-                        Создание каталога товаров и услуг
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-primary-400 mr-2">•</span>
-                        Управление компанией и контактами
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-primary-400 mr-2">•</span>
-                        Участие в тендерах
-                      </li>
-                    </ul>
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0, x: 30 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8, delay: 0.6 }}
-                    className="card p-6 hover:border-primary-500 transition-colors"
-                  >
-                    <h3 className="text-primary-300 font-semibold text-xl mb-4 flex items-center">
-                      🛒 Для покупателей
-                    </h3>
-                    <ul className="space-y-3 text-dark-300">
-                      <li className="flex items-start">
-                        <span className="text-primary-400 mr-2">•</span>
-                        Поиск товаров от производителей
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-primary-400 mr-2">•</span>
-                        Размещение тендеров
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-primary-400 mr-2">•</span>
-                        Прямая связь с поставщиками
-                      </li>
-                    </ul>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
-      )}
 
       {/* Stats Section */}
       <section className={`py-8 bg-dark-800/50 ${hasSearched ? 'border-t border-dark-700' : ''}`}>
