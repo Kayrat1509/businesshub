@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, ArrowRight, X } from 'lucide-react';
+import { Search, ArrowRight, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchCategories, fetchCategoryTree } from '../../store/slices/categoriesSlice';
 import { fetchCompanies } from '../../store/slices/companiesSlice';
@@ -48,6 +48,10 @@ const Home = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(!!searchParams.get('q'));
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [currentCompanyIndex, setCurrentCompanyIndex] = useState(0);
+  const [isCompanyCarouselHovered, setIsCompanyCarouselHovered] = useState(false);
+  const [currentTenderIndex, setCurrentTenderIndex] = useState(0);
+  const [isTenderCarouselHovered, setIsTenderCarouselHovered] = useState(false);
   
   const { categoryTree } = useAppSelector(state => state.categories);
   const { companies, isLoading: companiesLoading } = useAppSelector(state => state.companies);
@@ -58,7 +62,8 @@ const Home = () => {
   useEffect(() => {
     // Fetch data for homepage
     dispatch(fetchCategoryTree());
-    dispatch(fetchCompanies({ page: 1, filters: { is_popular: true } }));
+    // Загружаем все компании для карусели без ограничений по страницам
+    dispatch(fetchCompanies({ page: 1, filters: {} }));
     dispatch(fetchTenders({ page: 1, filters: { status: 'APPROVED' } }));
     dispatch(fetchAds({ is_current: true }));
   }, [dispatch]);
@@ -73,6 +78,34 @@ const Home = () => {
       return () => clearInterval(interval);
     }
   }, [ads.length]);
+
+  // Автоматическая смена карусели компаний каждые 6 секунд
+  const companiesPerPage = 6; // Количество компаний на одной странице карусели
+  const totalCompanyPages = Math.ceil(companies.length / companiesPerPage);
+  
+  useEffect(() => {
+    if (totalCompanyPages > 1 && !isCompanyCarouselHovered && !hasSearched) {
+      const interval = setInterval(() => {
+        setCurrentCompanyIndex((prev) => (prev + 1) % totalCompanyPages);
+      }, 6000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [totalCompanyPages, isCompanyCarouselHovered, hasSearched]);
+
+  // Автоматическая смена карусели тендеров каждые 6 секунд
+  const tendersPerPage = 6; // Количество тендеров на одной странице карусели
+  const totalTenderPages = Math.ceil(tenders.length / tendersPerPage);
+  
+  useEffect(() => {
+    if (totalTenderPages > 1 && !isTenderCarouselHovered && !hasSearched) {
+      const interval = setInterval(() => {
+        setCurrentTenderIndex((prev) => (prev + 1) % totalTenderPages);
+      }, 6000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [totalTenderPages, isTenderCarouselHovered, hasSearched]);
 
   // Perform search if URL contains search query
   useEffect(() => {
@@ -200,6 +233,32 @@ return;
     setHasSearched(false);
     setSearchParams({});
     console.log('Search cleared - should be 0 results now');
+  };
+
+  // Функции управления каруселью компаний
+  const nextCompanyPage = () => {
+    setCurrentCompanyIndex((prev) => (prev + 1) % totalCompanyPages);
+  };
+
+  const prevCompanyPage = () => {
+    setCurrentCompanyIndex((prev) => (prev - 1 + totalCompanyPages) % totalCompanyPages);
+  };
+
+  const handleCompanyClick = (companyId: number) => {
+    navigate(`/suppliers/${companyId}`);
+  };
+
+  // Функции управления каруселью тендеров
+  const nextTenderPage = () => {
+    setCurrentTenderIndex((prev) => (prev + 1) % totalTenderPages);
+  };
+
+  const prevTenderPage = () => {
+    setCurrentTenderIndex((prev) => (prev - 1 + totalTenderPages) % totalTenderPages);
+  };
+
+  const handleTenderClick = (tenderId: number) => {
+    navigate(`/tenders/${tenderId}`);
   };
 
 
@@ -608,40 +667,98 @@ return;
                 <p className="text-dark-300">В системе пока нет зарегистрированных поставщиков</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {companies.slice(0, 12).map((company, index) => (
-                <motion.div
-                  key={company.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="card p-4 hover:border-primary-500 transition-colors"
-                >
-                  <div className="space-y-3">
-                    {/* Название компании */}
-                    <h3 className="text-sm font-semibold text-white line-clamp-2">
-                      {company.name}
-                    </h3>
-                    
-                    {/* Город */}
-                    <div className="flex items-center text-dark-400 text-xs">
-                      📍 {company.city}
-                    </div>
-                    
-                    {/* Телефон */}
-                    <div className="flex items-center text-dark-400 text-xs">
-                      📞 {company.contacts?.phones?.[0] || company.contacts?.phone || 'Телефон не указан'}
-                    </div>
-                    
-                    {/* Категории деятельности */}
-                    <div className="flex items-center text-dark-400 text-xs">
-                      🏷️ {company.categories && company.categories.length > 0 
-                        ? company.categories[0].name 
-                        : 'Категория не указана'}
-                    </div>
+              <div 
+                className="relative"
+                onMouseEnter={() => setIsCompanyCarouselHovered(true)}
+                onMouseLeave={() => setIsCompanyCarouselHovered(false)}
+              >
+                {/* Карусель */}
+                <div className="overflow-hidden">
+                  <motion.div
+                    key={currentCompanyIndex}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -50 }}
+                    transition={{ duration: 0.6 }}
+                    className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4"
+                  >
+                    {companies
+                      .slice(
+                        currentCompanyIndex * companiesPerPage,
+                        (currentCompanyIndex + 1) * companiesPerPage
+                      )
+                      .map((company, index) => (
+                        <motion.div
+                          key={company.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.6, delay: index * 0.1 }}
+                          className="card p-4 hover:border-primary-500 transition-colors cursor-pointer"
+                          onClick={() => handleCompanyClick(company.id)}
+                        >
+                          <div className="space-y-3">
+                            {/* Название компании */}
+                            <h3 className="text-sm font-semibold text-white line-clamp-2">
+                              {company.name}
+                            </h3>
+                            
+                            {/* Город */}
+                            <div className="flex items-center text-dark-400 text-xs">
+                              📍 {company.city}
+                            </div>
+                            
+                            {/* Телефон */}
+                            <div className="flex items-center text-dark-400 text-xs">
+                              📞 {company.contacts?.phones?.[0] || company.contacts?.phone || 'Телефон не указан'}
+                            </div>
+                            
+                            {/* Категории деятельности */}
+                            <div className="flex items-center text-dark-400 text-xs">
+                              🏷️ {company.categories && company.categories.length > 0 
+                                ? company.categories[0].name 
+                                : 'Категория не указана'}
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                  </motion.div>
+                </div>
+
+                {/* Стрелки управления */}
+                {totalCompanyPages > 1 && (
+                  <>
+                    <button
+                      onClick={prevCompanyPage}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 bg-dark-700 hover:bg-dark-600 border border-dark-600 hover:border-primary-500 rounded-full flex items-center justify-center transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5 text-white" />
+                    </button>
+                    <button
+                      onClick={nextCompanyPage}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 bg-dark-700 hover:bg-dark-600 border border-dark-600 hover:border-primary-500 rounded-full flex items-center justify-center transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5 text-white" />
+                    </button>
+                  </>
+                )}
+
+                {/* Индикаторы */}
+                {totalCompanyPages > 1 && (
+                  <div className="flex justify-center mt-8 space-x-2">
+                    {Array.from({ length: totalCompanyPages }, (_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentCompanyIndex(index)}
+                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                          index === currentCompanyIndex
+                            ? 'bg-primary-500 scale-110'
+                            : 'bg-dark-600 hover:bg-dark-500'
+                        }`}
+                        aria-label={`Показать группу поставщиков ${index + 1}`}
+                      />
+                    ))}
                   </div>
-                </motion.div>
-                ))}
+                )}
               </div>
             )}
           </div>
@@ -675,58 +792,137 @@ return;
               </Link>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tenders.slice(0, 6).map((tender, index) => (
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsTenderCarouselHovered(true)}
+              onMouseLeave={() => setIsTenderCarouselHovered(false)}
+            >
+              {/* Карусель тендеров */}
+              <div className="overflow-hidden">
                 <motion.div
-                  key={tender.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="card p-4 hover:border-primary-500 transition-colors cursor-pointer group"
-                  onClick={() => tender.company?.id && navigate(`/company/${tender.company.id}?tab=tenders`)}
+                  key={currentTenderIndex}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.6 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 >
-                  <div className="space-y-3">
-                    {/* Название тендера */}
-                    <h3 className="text-sm font-semibold text-white line-clamp-2 group-hover:text-primary-400 transition-colors">
-                      {tender.title}
-                    </h3>
-                    
-                    {/* Город поставки */}
-                    <div className="flex items-center text-dark-400 text-xs">
-                      📍 {tender.city}
-                    </div>
-                    
-                    {/* Статус - показываем только если активный */}
-                    {tender.status === 'APPROVED' && (
-                      <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400">
-                        активный
-                      </span>
-                    )}
-                    
-                    {/* Бюджет */}
-                    <div className="space-y-1">
-                      <div className="text-dark-400 text-xs">Бюджет:</div>
-                      <div className="text-primary-400 font-bold text-sm">
-                        {tender.budget_min && tender.budget_max 
-                          ? `${tender.budget_min.toLocaleString()} - ${tender.budget_max.toLocaleString()} ₽`
-                          : tender.budget_min 
-                            ? `от ${tender.budget_min.toLocaleString()} ₽`
-                            : tender.budget_max
-                              ? `до ${tender.budget_max.toLocaleString()} ₽`
-                              : 'Бюджет не указан'
-                        }
-                      </div>
-                    </div>
-                    
-                    {/* Ссылка на компанию */}
-                    {tender.company?.id && (
-                      <div className="text-primary-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        Смотреть компанию →
-                      </div>
-                    )}
-                  </div>
+                  {tenders
+                    .slice(
+                      currentTenderIndex * tendersPerPage,
+                      (currentTenderIndex + 1) * tendersPerPage
+                    )
+                    .map((tender, index) => (
+                      <motion.div
+                        key={tender.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: index * 0.1 }}
+                        className="card p-4 hover:border-primary-500 transition-colors cursor-pointer group"
+                        onClick={() => handleTenderClick(tender.id)}
+                      >
+                        <div className="space-y-3">
+                          {/* Название тендера */}
+                          <h3 className="text-sm font-semibold text-white line-clamp-2 group-hover:text-primary-400 transition-colors">
+                            {tender.title}
+                          </h3>
+                          
+                          {/* Город поставки */}
+                          <div className="flex items-center text-dark-400 text-xs">
+                            📍 {tender.city}
+                          </div>
+                          
+                          {/* Статус - показываем только если активный */}
+                          {tender.status === 'APPROVED' && (
+                            <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400">
+                              активный
+                            </span>
+                          )}
+                          
+                          {/* Бюджет с валютой */}
+                          <div className="space-y-1">
+                            <div className="text-dark-400 text-xs">Бюджет:</div>
+                            <div className="text-primary-400 font-bold text-sm">
+                              {(() => {
+                                const getCurrencySymbol = (currency?: string) => {
+                                  switch (currency) {
+                                    case 'USD': return '$';
+                                    case 'RUB': return '₽';
+                                    case 'KZT':
+                                    default: return '₸';
+                                  }
+                                };
+                                const symbol = getCurrencySymbol(tender.currency);
+                                
+                                if (tender.budget_min && tender.budget_max) {
+                                  return `${tender.budget_min.toLocaleString()} - ${tender.budget_max.toLocaleString()} ${symbol}`;
+                                }
+                                if (tender.budget_min) {
+                                  return `от ${tender.budget_min.toLocaleString()} ${symbol}`;
+                                }
+                                if (tender.budget_max) {
+                                  return `до ${tender.budget_max.toLocaleString()} ${symbol}`;
+                                }
+                                return 'Бюджет не указан';
+                              })()}
+                            </div>
+                          </div>
+                          
+                          {/* Срок поставки */}
+                          {tender.deadline_date && (
+                            <div className="space-y-1">
+                              <div className="text-dark-400 text-xs">Крайний срок:</div>
+                              <div className="text-white text-sm">
+                                {new Date(tender.deadline_date).toLocaleDateString('ru-RU')}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Ссылка на тендер */}
+                          <div className="text-primary-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            Смотреть тендер →
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
                 </motion.div>
-              ))}
+              </div>
+
+              {/* Стрелки управления */}
+              {totalTenderPages > 1 && (
+                <>
+                  <button
+                    onClick={prevTenderPage}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 bg-dark-700 hover:bg-dark-600 border border-dark-600 hover:border-primary-500 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <button
+                    onClick={nextTenderPage}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 bg-dark-700 hover:bg-dark-600 border border-dark-600 hover:border-primary-500 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5 text-white" />
+                  </button>
+                </>
+              )}
+
+              {/* Индикаторы */}
+              {totalTenderPages > 1 && (
+                <div className="flex justify-center mt-8 space-x-2">
+                  {Array.from({ length: totalTenderPages }, (_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentTenderIndex(index)}
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                        index === currentTenderIndex
+                          ? 'bg-primary-500 scale-110'
+                          : 'bg-dark-600 hover:bg-dark-500'
+                      }`}
+                      aria-label={`Показать группу тендеров ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </section>
