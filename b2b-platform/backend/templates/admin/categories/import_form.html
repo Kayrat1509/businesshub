@@ -1,0 +1,71 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block title %}{{ title|default:"Импорт категорий из Excel" }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Главная</a>
+    &rsaquo; <a href="{% url 'admin:categories_category_changelist' %}">Категории</a>
+    &rsaquo; {{ title|default:"Импорт из Excel" }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module aligned wide">
+        <h1>{{ title|default:"Импорт категорий из Excel" }}</h1>
+        
+        <!-- Показываем сообщения об ошибках и успехе -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <form enctype="multipart/form-data" action="" method="post" id="import-form">
+            {% csrf_token %}
+            <div class="form-row">
+                <div>
+                    <label for="{{ form.excel_file.id_for_label }}" class="required">{{ form.excel_file.label }}:</label>
+                    {{ form.excel_file }}
+                    {% if form.excel_file.help_text %}
+                        <p class="help">{{ form.excel_file.help_text }}</p>
+                    {% endif %}
+                    {% if form.excel_file.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.excel_file.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="submit-row">
+                <input type="submit" value="Импортировать категории" class="default" name="_save" />
+                <p class="deletelink-box">
+                    <a href="{% url 'admin:categories_category_changelist' %}" class="deletelink">Отмена</a>
+                </p>
+            </div>
+        </form>
+        
+        <div class="form-row">
+            <div class="help">
+                <h3>Формат Excel файла:</h3>
+                <p>Файл должен содержать следующие колонки:</p>
+                <ul>
+                    <li><strong>name</strong> - Название категории (обязательно)</li>
+                    <li><strong>slug</strong> - Слаг категории (обязательно)</li>
+                    <li><strong>parent</strong> - Родительская категория (необязательно)</li>
+                </ul>
+                <p>Первая строка должна содержать заголовки колонок.</p>
+                <p><strong>Поддерживаемый формат:</strong> .xlsx</p>
+                <p><strong>Максимальный размер файла:</strong> 10MB</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

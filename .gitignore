@@ -1,11 +1,79 @@
+# Claude Code AI работа
 .claude
+
+# Виртуальные окружения Python
 venv
+env
+.venv
 .env
-__pycache__
+
+# Кэш Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Системные файлы
 .DS_Store
-staticfiles
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Django
 *.sqlite3
-node_modules
-build
-.vscode
-.pytest_cache
+*.db
+staticfiles/
+media/
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+build/
+dist/
+
+# IDE файлы
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Тестирование
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+# Документация и примеры (временные)
+*.md
+!README.md
+!CHANGELOG.md
+!CONTRIBUTING.md
+!LICENSE.md
+
+# Миграции тестовые
+**/migrations/0*_test*.py
+**/migrations/0*_temp*.py
+
+# Логи и отчеты
+logs/
+reports/
+
+# Временные файлы
+*.tmp
+*.temp
+.temporary/

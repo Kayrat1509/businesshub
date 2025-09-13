@@ -1,26 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import CompanyCard from '../../components/CompanyCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import apiService from '../../api';
-import { Company } from '../../types';
+import { Company, SupplierType } from '../../types';
 
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  children?: Category[];
-}
 
 const Suppliers = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [cities, setCities] = useState<string[]>([]);
+  const [supplierTypes, setSupplierTypes] = useState<SupplierType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedCity, setSelectedCity] = useState<string>('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedSupplierType, setSelectedSupplierType] = useState<string>('');
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const selectedCitiesRef = useRef<string[]>([]); // Ref для актуального состояния
+  const [isSupplierTypeDropdownOpen, setIsSupplierTypeDropdownOpen] = useState(false);
+  const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
+
+  // Отладка состояния
+  console.log('=== COMPONENT RENDER ===');
+  console.log('Selected cities:', selectedCities);
+  console.log('City dropdown open:', isCityDropdownOpen);
+  console.log('Companies count:', companies.length);
+  console.log('Cities available:', cities.length);
+  console.log('Is loading:', isLoading);
+  console.log('=======================');
 
   // Load initial data
   useEffect(() => {
@@ -30,14 +35,14 @@ const Suppliers = () => {
         // Load companies
         await loadCompanies();
         
-        // Load categories
-        const categoriesResponse = await apiService.get('/categories/tree/');
-        setCategories(Array.isArray(categoriesResponse) ? categoriesResponse : []);
+        // Load supplier types
+        const supplierTypesResponse = await apiService.get('/companies/supplier-types/');
+        setSupplierTypes(supplierTypesResponse?.supplier_types || []);
         
       } catch (error) {
         console.error('Error loading initial data:', error);
         setCompanies([]);
-        setCategories([]);
+        setSupplierTypes([]);
       } finally {
         setIsLoading(false);
       }
@@ -56,62 +61,207 @@ const Suppliers = () => {
     }
   }, [companies]);
 
-  const loadCompanies = async (categoryFilter = '', cityFilter = '') => {
+  const loadCompanies = useCallback(async (supplierTypeFilter = '', citiesFilter: string[] = []) => {
     try {
       const params = new URLSearchParams();
-      if (categoryFilter) params.append('category', categoryFilter);
-      if (cityFilter) params.append('city', cityFilter);
+      if (supplierTypeFilter) params.append('supplier_type', supplierTypeFilter);
+      
+      // Поддерживаем оба формата согласно требованиям:
+      // 1. CSV формат (предпочтительный): cities=Алматы,Астана  
+      if (citiesFilter.length > 0) {
+        params.append('cities', citiesFilter.join(','));
+      }
+      // 2. Альтернативно: повторяющиеся параметры city=Алматы&city=Астана
+      // (можно включить при необходимости)
+      // citiesFilter.forEach(city => params.append('city', city));
       
       const queryString = params.toString();
-      const endpoint = `/companies/${queryString ? `?${queryString}` : ''}`;
+      console.log('🌐 API Request URL params:', queryString);
+      console.log('📊 Filters being applied:', {
+        supplierType: supplierTypeFilter || 'None',
+        cities: citiesFilter.length > 0 ? citiesFilter : 'None'
+      });
       
-      const response = await apiService.get(endpoint);
-      const companiesData = response?.results || response?.data || response || [];
+      let allCompanies: Company[] = [];
+      let nextUrl: string | null = `/companies/${queryString ? `?${queryString}` : ''}`;
+      console.log('🔗 First request URL:', nextUrl);
       
-      setCompanies(Array.isArray(companiesData) ? companiesData : []);
+      // Загружаем все страницы пагинации
+      while (nextUrl) {
+        const response = await apiService.get(nextUrl);
+        
+        // Обрабатываем ответ API
+        const data = response?.results || response?.data || response || [];
+        const companiesData = Array.isArray(data) ? data : [];
+        
+        allCompanies = [...allCompanies, ...companiesData];
+        
+        // Проверяем есть ли следующая страница
+        const nextPageUrl = response?.next;
+        if (nextPageUrl) {
+          // Извлекаем только query параметры из URL следующей страницы
+          if (nextPageUrl.includes('http')) {
+            const url = new URL(nextPageUrl);
+            // Используем только search часть (query параметры) с базовым путем /companies/
+            nextUrl = `/companies/${url.search}`;
+          } else {
+            nextUrl = nextPageUrl;
+          }
+        } else {
+          nextUrl = null;
+        }
+      }
+      
+      console.log(`📈 Total companies loaded: ${allCompanies.length}`);
+      if (citiesFilter.length > 0) {
+        console.log(`🏙️  Filtered by cities: ${citiesFilter.join(', ')}`);
+        // Показываем по одной компании из каждого города для проверки
+        const citiesSample = [...new Set(allCompanies.map(c => c.city))];
+        console.log(`🗺️  Cities in results: ${citiesSample.join(', ')}`);
+      }
+      setCompanies(allCompanies);
     } catch (error) {
       console.error('Error loading companies:', error);
       setCompanies([]);
     }
-  };
+  }, []); // Пустой массив зависимостей, так как функция не зависит от состояния
 
-  const handleCategoryChange = async (categoryName: string) => {
-    setSelectedCategory(categoryName);
-    setIsDropdownOpen(false);
+  const handleSupplierTypeChange = async (supplierType: string) => {
+    setSelectedSupplierType(supplierType);
+    setIsSupplierTypeDropdownOpen(false);
     setIsLoading(true);
     
     try {
-      await loadCompanies(categoryName, selectedCity);
+      await loadCompanies(supplierType, selectedCities);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCityChange = async (city: string) => {
-    setSelectedCity(city);
-    setIsLoading(true);
+  // Ref для отслеживания активных таймеров загрузки
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Синхронизация ref с state
+  useEffect(() => {
+    selectedCitiesRef.current = selectedCities;
+    console.log('🔄 Ref synchronized with state:', selectedCitiesRef.current);
+  }, [selectedCities]);
+
+  // Обработка выбора города - используем ref для актуального состояния
+  const handleCityToggle = useCallback((city: string) => {
+    console.log('=== handleCityToggle START ===');
+    console.log('City clicked:', city);
+    console.log('Current selectedCitiesRef:', selectedCitiesRef.current);
     
-    try {
-      await loadCompanies(selectedCategory, city);
-    } finally {
-      setIsLoading(false);
+    const currentCities = selectedCitiesRef.current;
+    const isCurrentlySelected = currentCities.includes(city);
+    let newSelectedCities;
+    
+    if (isCurrentlySelected) {
+      // Убираем город из списка
+      newSelectedCities = currentCities.filter(c => c !== city);
+      console.log(`🟥 REMOVING city "${city}". Old: [${currentCities.join(', ')}] → New: [${newSelectedCities.join(', ')}]`);
+    } else {
+      // Добавляем город в список  
+      newSelectedCities = [...currentCities, city];
+      console.log(`🟢 ADDING city "${city}". Old: [${currentCities.join(', ')}] → New: [${newSelectedCities.join(', ')}]`);
     }
-  };
+    
+    // Обновляем и state, и ref
+    selectedCitiesRef.current = newSelectedCities;
+    setSelectedCities(newSelectedCities);
+    
+    // Отменяем предыдущий таймер загрузки если есть
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    
+    // Запускаем отложенную загрузку с debounce
+    loadingTimeoutRef.current = setTimeout(async () => {
+      console.log('🔄 Auto-loading companies after city selection');
+      console.log('  - Cities for filter:', newSelectedCities);
+      setIsLoading(true);
+      try {
+        await loadCompanies(selectedSupplierType, newSelectedCities);
+        console.log('✅ Auto-filter completed');
+      } catch (error) {
+        console.error('❌ Error in auto-filter:', error);
+      } finally {
+        setIsLoading(false);
+        loadingTimeoutRef.current = null;
+      }
+    }, 500); // 500ms задержка для завершения множественного выбора
+    
+    console.log('=== handleCityToggle END ===');
+  }, [selectedSupplierType, loadCompanies]); // Только стабильные зависимости
+  
+  // ОТКЛЮЧЕНО: Автоматическая фильтрация - мешает множественному выбору
+  // Вместо этого используем ручное управление через кнопки "Применить фильтры"
+  // useEffect(() => {
+  //   const timeoutId = setTimeout(async () => {
+  //     console.log('🔄 Loading companies with filters (debounced):');
+  //     console.log('  - Supplier type:', selectedSupplierType || 'All');
+  //     console.log('  - Cities:', selectedCities.length > 0 ? selectedCities.join(', ') : 'All');
+      
+  //     setIsLoading(true);
+  //     try {
+  //       await loadCompanies(selectedSupplierType, selectedCities);
+  //       console.log('✅ Companies loaded successfully');
+  //     } catch (error) {
+  //       console.error('❌ Error loading companies:', error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   }, 300);
+    
+  //   return () => clearTimeout(timeoutId);
+  // }, [selectedCities, selectedSupplierType, loadCompanies]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const dropdown = document.getElementById('category-dropdown');
-      if (dropdown && !dropdown.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
+      const supplierTypeDropdown = document.getElementById('supplier-type-dropdown');
+      const cityDropdown = document.getElementById('city-dropdown');
+      
+      // Обычная логика только для supplier type dropdown
+      if (supplierTypeDropdown && !supplierTypeDropdown.contains(event.target as Node)) {
+        setIsSupplierTypeDropdownOpen(false);
+      }
+      
+      // ДЛЯ ГОРОДОВ: проверяем, что клик НЕ внутри city dropdown И dropdown открыт
+      if (isCityDropdownOpen && cityDropdown && !cityDropdown.contains(event.target as Node)) {
+        console.log('🚪 Clicked outside city dropdown - closing it');
+        setIsCityDropdownOpen(false);
+      } else if (isCityDropdownOpen) {
+        console.log('✅ Click inside city dropdown - keeping it open');
       }
     };
 
-    if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+    // Слушаем клики если открыт любой из dropdown'ов
+    if (isSupplierTypeDropdownOpen || isCityDropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [isDropdownOpen]);
+  }, [isSupplierTypeDropdownOpen, isCityDropdownOpen]);
+
+  // Close city dropdown with Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (isCityDropdownOpen) {
+          setIsCityDropdownOpen(false);
+        }
+        if (isSupplierTypeDropdownOpen) {
+          setIsSupplierTypeDropdownOpen(false);
+        }
+      }
+    };
+
+    if (isCityDropdownOpen || isSupplierTypeDropdownOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isCityDropdownOpen, isSupplierTypeDropdownOpen]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -137,46 +287,47 @@ const Suppliers = () => {
         transition={{ duration: 0.8, delay: 0.2 }}
         className="mb-8"
       >
-        <div className="flex justify-center mb-6 space-x-4">
-          {/* Category Filter */}
-          <div className="relative" id="category-dropdown">
+        <div className="flex justify-center mb-6 space-x-4 flex-wrap gap-4">
+
+          {/* Supplier Type Filter */}
+          <div className="relative" id="supplier-type-dropdown">
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center space-x-2 px-6 py-3 bg-dark-800 text-white rounded-lg hover:bg-dark-700 transition-colors min-w-[250px] justify-between"
+              onClick={() => setIsSupplierTypeDropdownOpen(!isSupplierTypeDropdownOpen)}
+              className="flex items-center space-x-2 px-6 py-3 bg-dark-800 text-white rounded-lg hover:bg-dark-700 transition-colors min-w-[200px] justify-between"
             >
-              <span>{selectedCategory || 'Все категории'}</span>
+              <span>{supplierTypes.find(st => st.code === selectedSupplierType)?.name || 'Все типы'}</span>
               <ChevronDown 
                 className={`w-4 h-4 transition-transform ${
-                  isDropdownOpen ? 'rotate-180' : ''
+                  isSupplierTypeDropdownOpen ? 'rotate-180' : ''
                 }`} 
               />
             </button>
             
-            {isDropdownOpen && (
+            {isSupplierTypeDropdownOpen && (
               <div className="absolute top-full left-0 mt-2 w-full bg-dark-800 rounded-lg border border-dark-700 shadow-xl z-50 max-h-80 overflow-y-auto">
                 <div className="py-2">
                   <button
-                    onClick={() => handleCategoryChange('')}
+                    onClick={() => handleSupplierTypeChange('')}
                     className={`w-full text-left px-4 py-2 hover:bg-dark-700 transition-colors ${
-                      selectedCategory === '' 
+                      selectedSupplierType === '' 
                         ? 'bg-primary-600 text-white' 
                         : 'text-dark-300'
                     }`}
                   >
-                    Все категории
+                    Все типы
                   </button>
                   
-                  {categories.map((category) => (
+                  {supplierTypes.map((supplierType) => (
                     <button
-                      key={category.id}
-                      onClick={() => handleCategoryChange(category.name)}
+                      key={supplierType.code}
+                      onClick={() => handleSupplierTypeChange(supplierType.code)}
                       className={`w-full text-left px-4 py-2 hover:bg-dark-700 transition-colors ${
-                        selectedCategory === category.name 
+                        selectedSupplierType === supplierType.code 
                           ? 'bg-primary-600 text-white' 
                           : 'text-dark-300'
                       }`}
                     >
-                      {category.name}
+                      {supplierType.name}
                     </button>
                   ))}
                 </div>
@@ -184,19 +335,131 @@ const Suppliers = () => {
             )}
           </div>
 
-          {/* City Filter */}
-          <select
-            value={selectedCity}
-            onChange={(e) => handleCityChange(e.target.value)}
-            className="px-6 py-3 bg-dark-800 text-white rounded-lg hover:bg-dark-700 transition-colors min-w-[200px] border border-dark-700"
-          >
-            <option value="">Все города</option>
-            {cities.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </select>
+          {/* City Filter - Multi-select */}
+          <div className="relative" id="city-dropdown">
+            <button
+              onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
+              className="flex items-center space-x-2 px-6 py-3 bg-dark-800 text-white rounded-lg hover:bg-dark-700 transition-colors min-w-[200px] justify-between"
+            >
+              <span>
+                {selectedCities.length === 0 
+                  ? 'Все города' 
+                  : selectedCities.length === 1 
+                    ? selectedCities[0]
+                    : `${selectedCities[0]} (+${selectedCities.length - 1})`
+                }
+              </span>
+              <ChevronDown 
+                className={`w-4 h-4 transition-transform ${
+                  isCityDropdownOpen ? 'rotate-180' : ''
+                }`} 
+              />
+            </button>
+            
+            {isCityDropdownOpen && (
+              <div 
+                className="absolute top-full left-0 mt-2 w-full bg-dark-800 rounded-lg border border-dark-700 shadow-xl z-50 max-h-80 overflow-y-auto"
+                onClick={(e) => {
+                  // Блокируем только всплывание кликов наружу dropdown'а
+                  console.log('Dropdown container click - blocking propagation');
+                  e.stopPropagation();
+                }}
+                onMouseDown={(e) => {
+                  console.log('Dropdown container mousedown - blocking propagation');
+                  e.stopPropagation();
+                }}
+              >
+                <div className="py-2">
+                  {/* Заголовок с кнопкой закрыть */}
+                  <div className="flex justify-between items-center px-4 py-2 border-b border-dark-700 bg-dark-750">
+                    <span className="text-sm font-medium text-dark-200">
+                      Выберите города {selectedCities.length > 0 && `(${selectedCities.length})`}
+                      {selectedCities.length > 0 && (
+                        <div className="text-xs text-primary-400 mt-1">
+                          {selectedCities.join(', ')}
+                        </div>
+                      )}
+                    </span>
+                    <button
+                      onClick={() => setIsCityDropdownOpen(false)}
+                      className="text-dark-400 hover:text-white transition-colors text-lg font-bold"
+                      title="Закрыть (Escape)"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  
+                  {/* Опция "Сбросить все города" */}
+                  {selectedCities.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        console.log('🔄 Resetting all cities');
+                        // Отменяем активные таймеры загрузки
+                        if (loadingTimeoutRef.current) {
+                          clearTimeout(loadingTimeoutRef.current);
+                          loadingTimeoutRef.current = null;
+                        }
+                        
+                        selectedCitiesRef.current = [];
+                        setSelectedCities([]);
+                        setIsLoading(true);
+                        try {
+                          await loadCompanies(selectedSupplierType, []);
+                          console.log('✅ All cities reset');
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-red-700 transition-colors text-red-400 text-sm font-medium border-b border-dark-700"
+                    >
+                      ✕ Сбросить все ({selectedCities.length})
+                    </button>
+                  )}
+                  
+                  {cities.map((city) => {
+                    const isSelected = selectedCities.includes(city);
+                    console.log(`🏙️ Rendering city "${city}": isSelected=${isSelected}, selectedCities=[${selectedCities.join(', ')}]`);
+                    
+                    return (
+                      <div
+                        key={city}
+                        className={`flex items-center px-4 py-2 hover:bg-dark-700 transition-colors cursor-pointer ${
+                          isSelected ? 'bg-dark-700 bg-opacity-50' : ''
+                        }`}
+                        onClick={(e) => {
+                          // Блокируем только всплывание, но позволяем обработку
+                          e.stopPropagation();
+                          console.log(`👆 CLICK on "${city}" - Current selected: [${selectedCities.join(', ')}]`);
+                          console.log(`Before handleCityToggle - ref has: [${selectedCitiesRef.current.join(', ')}]`);
+                          handleCityToggle(city);
+                          console.log(`After handleCityToggle - ref has: [${selectedCitiesRef.current.join(', ')}]`);
+                        }}
+                        onMouseDown={(e) => {
+                          // Блокируем только всплывание mousedown
+                          e.stopPropagation();
+                        }}
+                      >
+                        <div className="flex items-center w-full pointer-events-none">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            readOnly
+                            className="mr-3 w-4 h-4 text-primary-600 bg-dark-700 border-dark-500 rounded"
+                          />
+                          <span className={`${
+                            isSelected ? 'text-primary-400 font-medium' : 'text-dark-300'
+                          }`}>
+                            {city} {isSelected && '✓'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </motion.div>
 
@@ -213,10 +476,10 @@ const Suppliers = () => {
         >
           <div className="text-6xl mb-4">🏢</div>
           <h3 className="text-xl font-semibold text-white mb-2">
-            {selectedCategory || selectedCity ? 'Нет поставщиков по выбранным фильтрам' : 'Нет компаний'}
+            {selectedSupplierType || selectedCities.length > 0 ? 'Нет поставщиков по выбранным фильтрам' : 'Нет компаний'}
           </h3>
           <p className="text-dark-300">
-            {selectedCategory || selectedCity ? 'Попробуйте изменить фильтры' : 'Компании появятся в ближайшее время'}
+            {selectedSupplierType || selectedCities.length > 0 ? 'Попробуйте изменить фильтры' : 'Компании появятся в ближайшее время'}
           </p>
         </motion.div>
       ) : (
@@ -227,13 +490,13 @@ const Suppliers = () => {
           className="space-y-6"
         >
           <h3 className="text-2xl font-bold text-white border-b border-dark-700 pb-4">
-            {selectedCategory || selectedCity ? 
+            {selectedSupplierType || selectedCities.length > 0 ? 
               `Поставщики (${companies.length})` : 
               `Все поставщики (${companies.length})`
             }
           </h3>
           
-          <div className="grid grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {companies.map((company, index) => (
               <motion.div
                 key={company.id}
@@ -261,8 +524,8 @@ const Suppliers = () => {
             <div className="text-dark-300">Поставщиков</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-secondary-400 mb-2">{categories.length}</div>
-            <div className="text-dark-300">Категорий</div>
+            <div className="text-3xl font-bold text-secondary-400 mb-2">{supplierTypes.length}</div>
+            <div className="text-dark-300">Типов поставщиков</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-green-400 mb-2">24/7</div>

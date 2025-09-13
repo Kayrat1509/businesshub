@@ -25,12 +25,6 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import TenderCard from '../../components/TenderCard';
 import { toast } from 'react-hot-toast';
 
-interface SocialLink {
-  platform: string;
-  url: string;
-  icon: string;
-}
-
 const CompanyProfile = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -91,7 +85,7 @@ const CompanyProfile = () => {
   };
 
   const getSocialIcon = (platform: string) => {
-    const icons = {
+    const icons: { [key: string]: string } = {
       facebook: '📘',
       instagram: '📷',
       telegram: '📱',

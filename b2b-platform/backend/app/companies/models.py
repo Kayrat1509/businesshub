@@ -8,6 +8,56 @@ from PIL import Image
 User = get_user_model()
 
 
+class CompanyQuerySet(models.QuerySet):
+    """
+    Кастомный QuerySet для модели Company
+    Содержит методы для фильтрации компаний по статусу
+    """
+    
+    def approved(self):
+        """Возвращает только одобренные компании"""
+        return self.filter(status="APPROVED")
+    
+    def pending(self):
+        """Возвращает компании на модерации"""
+        return self.filter(status="PENDING")
+    
+    def draft(self):
+        """Возвращает черновики"""
+        return self.filter(status="DRAFT")
+    
+    def banned(self):
+        """Возвращает заблокированные компании"""
+        return self.filter(status="BANNED")
+
+
+class CompanyManager(models.Manager):
+    """
+    Кастомный менеджер для модели Company
+    Предоставляет удобные методы для работы с разными статусами
+    """
+    
+    def get_queryset(self):
+        """Возвращает кастомный QuerySet"""
+        return CompanyQuerySet(self.model, using=self._db)
+    
+    def approved(self):
+        """Возвращает только одобренные компании для публичного API"""
+        return self.get_queryset().approved()
+    
+    def pending(self):
+        """Возвращает компании на модерации"""
+        return self.get_queryset().pending()
+    
+    def draft(self):
+        """Возвращает черновики"""
+        return self.get_queryset().draft()
+    
+    def banned(self):
+        """Возвращает заблокированные компании"""
+        return self.get_queryset().banned()
+
+
 def validate_logo_size(image):
     if image:
         img = Image.open(image)
@@ -40,8 +90,21 @@ class Company(models.Model):
         ("CRYPTO", "Криптовалюта"),
     ]
 
+    SUPPLIER_TYPE_CHOICES = [
+        ("DEALER", "Дилер"),
+        ("MANUFACTURER", "Производитель"), 
+        ("TRADE_REPRESENTATIVE", "Торговый представитель"),
+    ]
+
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="companies", verbose_name="Владелец")
     name = models.CharField(max_length=200, verbose_name="Название")
+    phones = models.CharField(max_length=500, blank=True, verbose_name="Номера телефонов", help_text="Номера телефонов через ; для импорта/экспорта")
+    supplier_type = models.CharField(
+        max_length=30, 
+        choices=SUPPLIER_TYPE_CHOICES, 
+        blank=True, 
+        verbose_name="Тип поставщика"
+    )
     logo = models.ImageField(
         upload_to=logo_upload_path,
         blank=True,
@@ -82,6 +145,9 @@ class Company(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+
+    # Кастомный менеджер для работы с статусами
+    objects = CompanyManager()
 
     class Meta:
         verbose_name = "Компания"

@@ -16,7 +16,7 @@ SECRET_KEY = config("SECRET_KEY", default="django-insecure-change-me")
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 # Список разрешенных хостов для обращения к приложению
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1,orbiz.asia,api.orbiz.asia").split(",")
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1,orbiz.asia,api.orbiz.asia,testserver").split(",")
 
 # Стандартные приложения Django (админка, аутентификация, сессии и т.д.)
 DJANGO_APPS = [
@@ -35,6 +35,7 @@ THIRD_PARTY_APPS = [
     "corsheaders",  # Обработка CORS заголовков
     "django_filters",  # Фильтрация данных
     "drf_spectacular",  # Автогенерация документации API
+    "import_export",  # Импорт/экспорт данных в админке
 ]
 
 # Локальные приложения проекта (модули B2B платформы)
@@ -73,7 +74,7 @@ ROOT_URLCONF = "app.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",  # Движок шаблонов
-        "DIRS": [],  # Дополнительные директории с шаблонами
+        "DIRS": [BASE_DIR / "templates"],  # Дополнительные директории с шаблонами
         "APP_DIRS": True,  # Поиск шаблонов в приложениях
         "OPTIONS": {
             "context_processors": [  # Процессоры контекста для шаблонов

@@ -1,0 +1,14 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block object-tools %}
+    <!-- Добавляем кнопку импорта из Excel -->
+    <ul class="object-tools">
+        <li>
+            <a href="{% url 'categories:category-import' %}" class="addlink">
+                Импортировать из Excel
+            </a>
+        </li>
+        {{ block.super }}
+    </ul>
+{% endblock %}

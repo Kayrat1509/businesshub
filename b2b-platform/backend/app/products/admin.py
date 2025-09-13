@@ -2,16 +2,24 @@ from django.contrib import admin
 from django import forms
 from django.forms import TextInput, Textarea, NumberInput, Select, CheckboxInput
 from django.utils.html import format_html
+from import_export.admin import ImportExportModelAdmin
 
 from .models import Product, ProductImage
 from .forms import ProductAdminForm
+from .resources import ProductResource
 
 
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(ImportExportModelAdmin):
+    # Подключаем ресурс для импорта/экспорта
+    resource_class = ProductResource
     form = ProductAdminForm
+    
+    # Ограничиваем форматы импорта/экспорта только Excel (.xlsx)
+    from import_export.formats.base_formats import XLSX
+    formats = [XLSX]
     list_display = [
         "title",
         "company",

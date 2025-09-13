@@ -52,10 +52,16 @@ export interface Company {
   logo?: string
   description: string
   categories: Category[]
+  supplier_type?: 'DEALER' | 'MANUFACTURER' | 'TRADE_REPRESENTATIVE'
   contacts: {
     phones?: string[]
     emails?: string[]
     website?: string
+    phone?: string  // для совместимости с backend
+    email?: string  // для совместимости с backend
+    social?: {
+      [key: string]: string
+    }
   }
   legal_info: Record<string, any>
   payment_methods: string[]
@@ -218,11 +224,19 @@ export interface ApiError {
   field?: string
 }
 
+// Supplier Type
+export interface SupplierType {
+  code: 'DEALER' | 'MANUFACTURER' | 'TRADE_REPRESENTATIVE'
+  name: string
+}
+
 // Filter types
 export interface CompanyFilters {
   q?: string
   category?: string
   city?: string
+  cities?: string
+  supplier_type?: string
   rating_gte?: number
   has_actions?: boolean
   is_popular?: boolean

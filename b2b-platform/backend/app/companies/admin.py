@@ -1,9 +1,14 @@
 from django.contrib import admin
 from django import forms
 from django.forms import Textarea, TextInput
+from django.urls import reverse
+from django.utils.safestring import mark_safe
+from import_export.admin import ImportExportModelAdmin
 import json
 
 from .models import Branch, Company, Employee
+from .resources import CompanyResource
+
 
 
 class CompanyAdminForm(forms.ModelForm):
@@ -108,6 +113,7 @@ class CompanyAdminForm(forms.ModelForm):
     class Meta:
         model = Company
         exclude = ['contacts', 'legal_info', 'payment_methods', 'work_schedule']
+        # Включаем новые поля phones и supplier_type в форму
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -202,23 +208,30 @@ class CompanyAdminForm(forms.ModelForm):
 
 
 @admin.register(Company)
-class CompanyAdmin(admin.ModelAdmin):
+class CompanyAdmin(ImportExportModelAdmin):
+    # Подключаем ресурс для импорта/экспорта
+    resource_class = CompanyResource
     form = CompanyAdminForm
-    list_display = ["name", "owner", "city", "status", "rating", "created_at"]
-    list_filter = ["status", "city", "categories", "created_at"]
-    search_fields = ["name", "description", "owner__email"]
-    list_editable = ["status"]
+    
+    # Ограничиваем форматы импорта/экспорта только Excel (.xlsx)
+    from import_export.formats.base_formats import XLSX
+    formats = [XLSX]
+    
+    list_display = ["name", "owner", "supplier_type", "city", "status", "rating", "created_at"]
+    list_filter = ["status", "supplier_type", "city", "categories", "created_at"]
+    search_fields = ["name", "description", "phones", "owner__email"]
+    list_editable = ["status", "supplier_type"]
     filter_horizontal = ["categories"]
     readonly_fields = ["rating", "created_at", "updated_at"]
 
     fieldsets = (
         (
             "Основная информация",
-            {"fields": ("name", "owner", "logo", "description", "categories")},
+            {"fields": ("name", "owner", "supplier_type", "logo", "description", "categories")},
         ),
         (
             "Контактная информация",
-            {"fields": ("phone_numbers", "emails", "website")},
+            {"fields": ("phone_numbers", "emails", "website", "phones")},
         ),
         (
             "Социальные сети",
@@ -246,6 +259,33 @@ class CompanyAdmin(admin.ModelAdmin):
             {"fields": ("created_at", "updated_at"), "classes": ["collapse"]},
         ),
     )
+
+    def changelist_view(self, request, extra_context=None):
+        """
+        Переопределяем представление списка для добавления ссылки на скачивание образца
+        """
+        if extra_context is None:
+            extra_context = {}
+        # Добавляем ссылку на скачивание образца Excel файла
+        extra_context['sample_download_url'] = reverse('company-sample-import')
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_urls(self):
+        """
+        Добавляем URL для скачивания образца к стандартным URL админки
+        """
+        urls = super().get_urls()
+        from django.urls import path
+        from . import views
+        
+        custom_urls = [
+            path(
+                'sample-download/',
+                self.admin_site.admin_view(views.download_company_import_sample),
+                name='companies_company_sample_download'
+            ),
+        ]
+        return custom_urls + urls
 
 
 @admin.register(Branch)

@@ -6,6 +6,16 @@ urlpatterns = [
     path("", views.CompanyListCreateView.as_view(), name="company-list-create"),
     path("my/", views.MyCompaniesView.as_view(), name="my-companies"),
     path(
+        "supplier-types/",
+        views.supplier_types_list,
+        name="supplier-types-list",
+    ),
+    path(
+        "sample-import/",
+        views.download_company_import_sample,
+        name="company-sample-import",
+    ),
+    path(
         "<int:pk>/",
         views.CompanyRetrieveUpdateDestroyView.as_view(),
         name="company-detail",

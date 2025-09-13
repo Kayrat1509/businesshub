@@ -14,7 +14,7 @@ urlpatterns = [
     path("api/auth/", include("app.users.urls")),  # Аутентификация и управление пользователями
     path("api/companies/", include("app.companies.urls")),  # Работа с компаниями
     path("api/products/", include("app.products.urls")),  # Управление товарами и услугами
-    path("api/categories/", include("app.categories.urls")),  # Категории товаров
+    path("api/categories/", include(("app.categories.urls", "categories"), namespace="categories")),  # Категории товаров
     path("api/reviews/", include("app.reviews.urls")),  # Система отзывов
     path("api/tenders/", include("app.tenders.urls")),  # Управление тендерами
     path("api/ads/", include("app.ads.urls")),  # Рекламные объявления
