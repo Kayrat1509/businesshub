@@ -56,8 +56,8 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 # Middleware - промежуточное ПО для обработки запросов и ответов
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",  # CORS политики - ДОЛЖЕН БЫТЬ ПЕРВЫМ
     "django.middleware.security.SecurityMiddleware",  # Безопасность
-    "corsheaders.middleware.CorsMiddleware",  # CORS политики
     "django.contrib.sessions.middleware.SessionMiddleware",  # Сессии
     "django.middleware.common.CommonMiddleware",  # Общие функции
     "django.middleware.csrf.CsrfViewMiddleware",  # Защита от CSRF атак
@@ -171,54 +171,35 @@ SIMPLE_JWT = {
     "LEEWAY": 0,  # Допустимая разница во времени
 }
 
-# Настройки CORS для работы с фронтендом
-CORS_ALLOWED_ORIGINS = [  # Разрешенные домены для CORS запросов
-    "http://localhost:3000",  # React development server (Create React App)
-    "http://127.0.0.1:3000",  # Альтернативный localhost
-    "http://localhost:5173",  # Vite development server
-    "http://127.0.0.1:5173",  # Альтернативный localhost для Vite
-    "https://orbiz.asia",  # Продакшн frontend домен
-    "https://www.orbiz.asia",  # Продакшн frontend домен с www
-]
-
-# Дополнительные настройки CORS для правильной обработки preflight запросов
-CORS_ALLOW_CREDENTIALS = True  # Разрешить отправку cookies и других credentials
+# Настройки CORS для работы с продакшн фронтендом
 CORS_ALLOW_ALL_ORIGINS = False  # Использовать только указанные домены
+CORS_ALLOWED_ORIGINS = [  # Разрешенные домены для CORS запросов
+    "https://orbiz.asia",  # Продакшн frontend домен
+]
+CORS_ALLOW_CREDENTIALS = True  # Разрешить отправку cookies и других credentials
 CORS_ALLOWED_HEADERS = [  # Разрешенные заголовки в CORS запросах
-    'accept',
-    'accept-encoding',
     'authorization',
     'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
     'x-csrftoken',
     'x-requested-with',
 ]
 CORS_ALLOW_METHODS = [  # Разрешенные HTTP методы
-    'DELETE',
     'GET',
-    'OPTIONS',
-    'PATCH',
     'POST',
     'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
 ]
-CORS_PREFLIGHT_MAX_AGE = 86400  # Кэширование preflight запросов на 24 часа
 
 # Настройки CSRF для безопасной работы с продакшн доменами
 CSRF_TRUSTED_ORIGINS = [
     "https://orbiz.asia",  # Продакшн frontend домен
-    "https://www.orbiz.asia",  # Продакшн frontend домен с www
-    "https://api.orbiz.asia",  # Продакшн API домен
-    "http://localhost:5173",  # Локальная разработка Vite
-    "http://127.0.0.1:5173",  # Локальная разработка Vite альтернативный хост
 ]
-
 # Дополнительные настройки CSRF для корректной работы с CORS
-CSRF_USE_SESSIONS = False  # Использовать токен в заголовке вместо cookie
 CSRF_COOKIE_HTTPONLY = False  # Разрешить доступ к CSRF cookie из JavaScript
 CSRF_COOKIE_SAMESITE = 'Lax'  # Настройка SameSite для CSRF cookie
-CSRF_COOKIE_SECURE = not DEBUG  # Использовать secure cookie только в продакшене
+CSRF_COOKIE_SECURE = True  # Использовать secure cookie в продакшене
 
 # Настройки для автогенерации документации API через drf-spectacular
 SPECTACULAR_SETTINGS = {
