@@ -2,13 +2,38 @@
 {% load i18n admin_urls static admin_list %}
 
 {% block object-tools %}
-    <!-- Добавляем кнопку импорта из Excel -->
+    <!-- Добавляем кнопки импорта из Excel и скачивания образца -->
     <ul class="object-tools">
         <li>
+            <a href="{% url 'admin:categories_category_sample_download' %}" class="historylink" style="background-color: #28a745; color: white;">
+                📄 Скачать образец Excel
+            </a>
+        </li>
+        <li>
             <a href="{% url 'categories:category-import' %}" class="addlink">
-                Импортировать из Excel
+                📥 Импортировать из Excel
             </a>
         </li>
         {{ block.super }}
     </ul>
+
+    <!-- Добавляем стили для улучшения внешнего вида кнопок -->
+    <style>
+        .object-tools li a.historylink {
+            margin-right: 10px;
+            border-radius: 4px;
+            padding: 8px 12px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .object-tools li a.historylink:hover {
+            background-color: #218838 !important;
+        }
+        .object-tools li a.addlink {
+            background-color: #417690;
+        }
+        .object-tools li a.addlink:hover {
+            background-color: #205067 !important;
+        }
+    </style>
 {% endblock %}

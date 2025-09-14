@@ -19,7 +19,9 @@ class CategoryAdmin(admin.ModelAdmin):
     ordering = ["parent__name", "name"]
     list_per_page = 50
     actions = ['export_to_excel']
-    change_list_template = 'admin/categories/category/change_list.html'  # Шаблон с кнопкой импорта из Excel
+
+    # Указываем наш кастомный шаблон для списка
+    change_list_template = 'admin/categories/category/change_list.html'
 
     fieldsets = (
         ("Основная информация", {
@@ -124,4 +126,122 @@ class CategoryAdmin(admin.ModelAdmin):
         return response
     
     export_to_excel.short_description = "Экспорт в Excel"
+
+    def generate_sample_excel(self, request, queryset=None):
+        """
+        Генерация образца Excel файла для импорта категорий
+        """
+        # Создаём новый workbook для образца
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Образец категорий"
+
+        # Определяем заголовки колонок для импорта
+        headers = ['ID', 'Название', 'Slug', 'Родитель']
+
+        # Стилизация заголовков
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+
+        # Добавляем заголовки
+        for col_num, header in enumerate(headers, 1):
+            cell = worksheet.cell(row=1, column=col_num, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+
+        # Добавляем примеры данных
+        sample_data = [
+            ['', 'Электроника', 'elektronika', ''],  # Пример родительской категории
+            ['', 'Телефоны', 'telefony', 'Электроника'],  # Пример дочерней категории
+            ['', 'Компьютеры', 'kompyutery', 'Электроника'],  # Еще один пример
+            ['', 'Одежда', 'odezhda', ''],  # Еще одна родительская категория
+        ]
+
+        for row_num, row_data in enumerate(sample_data, 2):
+            for col_num, value in enumerate(row_data, 1):
+                worksheet.cell(row=row_num, column=col_num, value=value)
+
+        # Автоматическое изменение ширины колонок
+        for col_num in range(1, len(headers) + 1):
+            column = get_column_letter(col_num)
+            max_length = 0
+            for cell in worksheet[column]:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            # Устанавливаем ширину с небольшим отступом
+            adjusted_width = max(max_length + 2, 15)  # Минимальная ширина 15 символов
+            worksheet.column_dimensions[column].width = adjusted_width
+
+        # Добавляем инструкции на отдельный лист
+        instructions_sheet = workbook.create_sheet("Инструкции")
+        instructions = [
+            "ИНСТРУКЦИЯ ПО ИМПОРТУ КАТЕГОРИЙ",
+            "",
+            "Заполните таблицу на листе 'Образец категорий' следующим образом:",
+            "",
+            "1. ID - оставьте пустым для новых категорий или укажите существующий ID для обновления",
+            "2. Название - обязательное поле, название категории на русском языке",
+            "3. Slug - транслитерация названия латинскими буквами (можно оставить пустым)",
+            "4. Родитель - название родительской категории (если это подкategория)",
+            "",
+            "ПРИМЕЧАНИЯ:",
+            "• Для создания родительской категории оставьте поле 'Родитель' пустым",
+            "• Для создания подкategorии укажите название родительской категории",
+            "• Если родительская категория не существует, она будет создана автоматически",
+            "• Slug генерируется автоматически из названия, если не указан",
+            "",
+            "ВАЖНО:",
+            "• Сохраните файл в формате .xlsx (Excel)",
+            "• Не изменяйте названия колонок в первой строке",
+            "• Убедитесь, что все данные заполнены корректно перед импортом",
+        ]
+
+        for row_num, instruction in enumerate(instructions, 1):
+            cell = instructions_sheet.cell(row=row_num, column=1, value=instruction)
+            if row_num == 1:  # Заголовок
+                cell.font = Font(bold=True, size=14)
+            elif instruction == "":  # Пустые строки для разделения
+                continue
+            elif instruction.startswith("ПРИМЕЧАНИЯ:") or instruction.startswith("ВАЖНО:"):
+                cell.font = Font(bold=True, size=12)
+
+        # Устанавливаем ширину колонки для инструкций
+        instructions_sheet.column_dimensions['A'].width = 80
+
+        # Создаём HTTP ответ с Excel файлом
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        # Генерируем имя файла
+        filename = 'sample_categories_import.xlsx'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        # Сохраняем workbook в ответ
+        workbook.save(response)
+
+        return response
+
+    generate_sample_excel.short_description = "Скачать образец Excel для импорта"
+
+    def get_urls(self):
+        """
+        Добавляем URL для скачивания образца к стандартным URL админки
+        """
+        urls = super().get_urls()
+        from django.urls import path
+
+        custom_urls = [
+            path(
+                'sample-download/',
+                self.admin_site.admin_view(self.generate_sample_excel),
+                name='categories_category_sample_download'
+            ),
+        ]
+        return custom_urls + urls
 

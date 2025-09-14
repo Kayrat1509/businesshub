@@ -1,0 +1,32 @@
+{% extends "admin/import_export/change_list_import_export.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block object-tools-items %}
+    <!-- Добавляем кнопку скачивания образца Excel -->
+    <li>
+        <a href="{% url 'admin:products_product_sample_download' %}" class="historylink" style="background-color: #28a745; color: white; border-radius: 4px; padding: 8px 12px; text-decoration: none; font-weight: bold; margin-right: 10px; display: inline-block;">
+            📄 Скачать шаблон Excel
+        </a>
+    </li>
+    {{ block.super }}
+
+    <!-- Добавляем стили для улучшения внешнего вида кнопок -->
+    <style>
+        .object-tools li a.historylink:hover {
+            background-color: #218838 !important;
+        }
+        /* Стили для кнопок импорта/экспорта django-import-export */
+        .object-tools li a[href*="import"] {
+            background-color: #417690;
+        }
+        .object-tools li a[href*="import"]:hover {
+            background-color: #205067 !important;
+        }
+        .object-tools li a[href*="export"] {
+            background-color: #6c757d;
+        }
+        .object-tools li a[href*="export"]:hover {
+            background-color: #495057 !important;
+        }
+    </style>
+{% endblock %}

@@ -212,10 +212,15 @@ class CompanyAdmin(ImportExportModelAdmin):
     # Подключаем ресурс для импорта/экспорта
     resource_class = CompanyResource
     form = CompanyAdminForm
-    
+
     # Ограничиваем форматы импорта/экспорта только Excel (.xlsx)
     from import_export.formats.base_formats import XLSX
     formats = [XLSX]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Принудительно устанавливаем наш шаблон после инициализации ImportExportModelAdmin
+        self.change_list_template = 'admin/companies/company/change_list.html'
     
     list_display = ["name", "owner", "supplier_type", "city", "status", "rating", "created_at"]
     list_filter = ["status", "supplier_type", "city", "categories", "created_at"]
@@ -260,15 +265,134 @@ class CompanyAdmin(ImportExportModelAdmin):
         ),
     )
 
-    def changelist_view(self, request, extra_context=None):
+    # Удалили changelist_view так как теперь используем change_list_template
+
+    def generate_sample_excel(self, request, queryset=None):
         """
-        Переопределяем представление списка для добавления ссылки на скачивание образца
+        Генерация образца Excel файла для импорта компаний
         """
-        if extra_context is None:
-            extra_context = {}
-        # Добавляем ссылку на скачивание образца Excel файла
-        extra_context['sample_download_url'] = reverse('company-sample-import')
-        return super().changelist_view(request, extra_context=extra_context)
+        from openpyxl import Workbook
+        from openpyxl.utils import get_column_letter
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from django.http import HttpResponse
+
+        # Создаём новый workbook для образца
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Образец компаний"
+
+        # Определяем заголовки колонок для импорта (согласно CompanyResource)
+        headers = ['ID', 'Название', 'Номера телефонов', 'Описание', 'Город', 'Адрес',
+                  'Тип поставщика', 'Контакты', 'Юр. информация', 'Способы оплаты',
+                  'График работы', 'Статус', 'Владелец', 'Дата создания']
+
+        # Стилизация заголовков
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+
+        # Добавляем заголовки
+        for col_num, header in enumerate(headers, 1):
+            cell = worksheet.cell(row=1, column=col_num, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+
+        # Добавляем примеры данных
+        sample_data = [
+            ['', 'ТОО "Электроника Плюс"', '+7 (777) 123-45-67, +7 (777) 987-65-43',
+             'Продажа электроники и мобильных устройств', 'Алматы', 'пр. Абая, 150',
+             'Дилер', '{"phones": ["+7 (777) 123-45-67"], "emails": ["info@electroplus.kz"], "website": "https://electroplus.kz"}',
+             '{"inn": "123456789012", "legal_name": "ТОО Электроника Плюс"}', '["CASH", "CARD", "TRANSFER"]',
+             '{"description": "Пн-Пт 9:00-18:00, Сб 10:00-16:00"}', 'Одобрено', 'admin@site.com', ''],
+
+            ['', 'ТОО "КомпТех"', '+7 (707) 555-12-34',
+             'IT-консалтинг и разработка программного обеспечения', 'Нур-Султан', 'ул. Сауран, 12/1',
+             'Производитель', '{"phones": ["+7 (707) 555-12-34"], "emails": ["contact@komptech.kz"]}',
+             '{"inn": "987654321098", "legal_name": "ТОО КомпТех"}', '["CARD", "TRANSFER"]',
+             '{"description": "Пн-Пт 9:00-18:00"}', 'Одобрено', 'admin@site.com', ''],
+        ]
+
+        for row_num, row_data in enumerate(sample_data, 2):
+            for col_num, value in enumerate(row_data, 1):
+                worksheet.cell(row=row_num, column=col_num, value=value)
+
+        # Автоматическое изменение ширины колонок
+        for col_num in range(1, len(headers) + 1):
+            column = get_column_letter(col_num)
+            max_length = 0
+            for cell in worksheet[column]:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            # Устанавливаем ширину с небольшим отступом
+            adjusted_width = max(max_length + 2, 20)  # Минимальная ширина 20 символов для компаний
+            worksheet.column_dimensions[column].width = min(adjusted_width, 50)  # Максимум 50
+
+        # Добавляем инструкции на отдельный лист
+        instructions_sheet = workbook.create_sheet("Инструкции")
+        instructions = [
+            "ИНСТРУКЦИЯ ПО ИМПОРТУ КОМПАНИЙ",
+            "",
+            "Заполните таблицу на листе 'Образец компаний' следующим образом:",
+            "",
+            "1. ID - оставьте пустым для новых компаний или укажите существующий ID для обновления",
+            "2. Название - ОБЯЗАТЕЛЬНОЕ поле, название компании",
+            "3. Номера телефонов - основные телефоны компании через запятую",
+            "4. Описание - краткое описание деятельности компании",
+            "5. Город - город нахождения компании",
+            "6. Адрес - полный адрес компании",
+            "7. Тип поставщика - один из: Дилер, Производитель, Торговый представитель",
+            "8. Контакты - JSON с дополнительными контактами (можно оставить пустым)",
+            "9. Юр. информация - JSON с ИНН и юр. названием (можно оставить пустым)",
+            "10. Способы оплаты - JSON массив способов оплаты (можно оставить пустым)",
+            "11. График работы - JSON с описанием графика (можно оставить пустым)",
+            "12. Статус - один из: Черновик, На модерации, Одобрено, Заблокировано",
+            "13. Владелец - email владельца (если не указан, назначается admin)",
+            "14. Дата создания - оставьте пустым (заполнится автоматически)",
+            "",
+            "ПРИМЕЧАНИЯ:",
+            "• JSON поля можно оставить пустыми - они заполнятся значениями по умолчанию",
+            "• Если владелец не найден, будет назначен суперпользователь",
+            "• Новые компании автоматически получают статус 'Одобрено'",
+            "• Поддерживаются как русские, так и английские названия статусов",
+            "",
+            "ВАЖНО:",
+            "• Сохраните файл в формате .xlsx (Excel)",
+            "• Не изменяйте названия колонок в первой строке",
+            "• Поле 'Название' обязательно для заполнения",
+            "• Убедитесь, что все данные заполнены корректно перед импортом",
+        ]
+
+        for row_num, instruction in enumerate(instructions, 1):
+            cell = instructions_sheet.cell(row=row_num, column=1, value=instruction)
+            if row_num == 1:  # Заголовок
+                cell.font = Font(bold=True, size=14)
+            elif instruction == "":  # Пустые строки для разделения
+                continue
+            elif instruction.startswith("ПРИМЕЧАНИЯ:") or instruction.startswith("ВАЖНО:"):
+                cell.font = Font(bold=True, size=12)
+
+        # Устанавливаем ширину колонки для инструкций
+        instructions_sheet.column_dimensions['A'].width = 80
+
+        # Создаём HTTP ответ с Excel файлом
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        # Генерируем имя файла
+        filename = 'sample_companies_import.xlsx'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        # Сохраняем workbook в ответ
+        workbook.save(response)
+
+        return response
+
+    generate_sample_excel.short_description = "Скачать образец Excel для импорта"
 
     def get_urls(self):
         """
@@ -276,12 +400,11 @@ class CompanyAdmin(ImportExportModelAdmin):
         """
         urls = super().get_urls()
         from django.urls import path
-        from . import views
-        
+
         custom_urls = [
             path(
                 'sample-download/',
-                self.admin_site.admin_view(views.download_company_import_sample),
+                self.admin_site.admin_view(self.generate_sample_excel),
                 name='companies_company_sample_download'
             ),
         ]
