@@ -6,3 +6,4 @@ The project is build as docker compose services, conduct all the debugging and t
 - When adding new API services, always use the single source of authorization settings (api/index.ts).
 Do not create duplicate methods for refresh/access tokens.
 All requests must go through the common API layer to avoid inconsistencies.
+- > все библиотеки и новые библиотеки должны быть включены в requirements.txt
