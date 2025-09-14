@@ -27,21 +27,48 @@ class CompanyFilter(filters.FilterSet):
     rating_gte = filters.NumberFilter(field_name="rating", lookup_expr="gte")
     has_actions = filters.BooleanFilter(method="filter_has_actions")
     status = filters.CharFilter(field_name="status")
+    # Фильтрация по городу (одиночный город)
+    city = filters.CharFilter(field_name="city", lookup_expr="iexact")
+    # Фильтрация по нескольким городам (CSV формат: cities=Алматы,Астана)
+    cities = filters.CharFilter(method="filter_cities")
 
     class Meta:
         model = Company
         fields = [
-            "category", 
+            "category",
             "supplier_type",
-            "rating_gte", 
+            "rating_gte",
             "has_actions",
             "status",
+            "city",
+            "cities",
         ]
-    
+
     def filter_has_actions(self, queryset, name, value):
         if value:
             return queryset.filter(actions__is_active=True).distinct()
         return queryset
+
+    def filter_cities(self, queryset, name, value):
+        """
+        Фильтрация по нескольким городам через CSV строку
+        Принимает строку вида: 'Алматы,Астана,Шымкент'
+        """
+        if not value:
+            return queryset
+
+        # Разделяем строку по запятым и убираем лишние пробелы
+        cities_list = [city.strip() for city in value.split(',') if city.strip()]
+
+        if not cities_list:
+            return queryset
+
+        # Фильтруем по любому из городов из списка (OR логика)
+        city_filter = Q()
+        for city in cities_list:
+            city_filter |= Q(city__iexact=city)
+
+        return queryset.filter(city_filter)
 
 
 class CompanyListCreateView(generics.ListCreateAPIView):

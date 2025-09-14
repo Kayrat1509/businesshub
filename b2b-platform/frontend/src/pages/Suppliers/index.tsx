@@ -18,14 +18,8 @@ const Suppliers = () => {
   const [isSupplierTypeDropdownOpen, setIsSupplierTypeDropdownOpen] = useState(false);
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
 
-  // Отладка состояния
-  console.log('=== COMPONENT RENDER ===');
-  console.log('Selected cities:', selectedCities);
-  console.log('City dropdown open:', isCityDropdownOpen);
-  console.log('Companies count:', companies.length);
-  console.log('Cities available:', cities.length);
-  console.log('Is loading:', isLoading);
-  console.log('=======================');
+  // Логирование состояния фильтров для отладки
+  console.log('Фильтры:', { selectedCities, selectedSupplierType, companiesCount: companies.length });
 
   // Load initial data
   useEffect(() => {
@@ -65,21 +59,17 @@ const Suppliers = () => {
     try {
       const params = new URLSearchParams();
       if (supplierTypeFilter) params.append('supplier_type', supplierTypeFilter);
-      
-      // Поддерживаем оба формата согласно требованиям:
-      // 1. CSV формат (предпочтительный): cities=Алматы,Астана  
+
+      // Добавляем фильтр по городам в CSV формате: cities=Алматы,Астана
       if (citiesFilter.length > 0) {
         params.append('cities', citiesFilter.join(','));
       }
-      // 2. Альтернативно: повторяющиеся параметры city=Алматы&city=Астана
-      // (можно включить при необходимости)
-      // citiesFilter.forEach(city => params.append('city', city));
-      
+
       const queryString = params.toString();
-      console.log('🌐 API Request URL params:', queryString);
-      console.log('📊 Filters being applied:', {
-        supplierType: supplierTypeFilter || 'None',
-        cities: citiesFilter.length > 0 ? citiesFilter : 'None'
+      console.log('API запрос с фильтрами:', {
+        supplierType: supplierTypeFilter || 'Все',
+        cities: citiesFilter.length > 0 ? citiesFilter.join(', ') : 'Все',
+        queryString
       });
       
       let allCompanies: Company[] = [];
@@ -141,59 +131,52 @@ const Suppliers = () => {
   // Ref для отслеживания активных таймеров загрузки
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Синхронизация ref с state
+  // Синхронизация ref с state для корректного обновления фильтра
   useEffect(() => {
     selectedCitiesRef.current = selectedCities;
-    console.log('🔄 Ref synchronized with state:', selectedCitiesRef.current);
   }, [selectedCities]);
 
-  // Обработка выбора города - используем ref для актуального состояния
+  // Обработка выбора города с автоматической фильтрацией
   const handleCityToggle = useCallback((city: string) => {
-    console.log('=== handleCityToggle START ===');
-    console.log('City clicked:', city);
-    console.log('Current selectedCitiesRef:', selectedCitiesRef.current);
-    
     const currentCities = selectedCitiesRef.current;
     const isCurrentlySelected = currentCities.includes(city);
     let newSelectedCities;
-    
+
     if (isCurrentlySelected) {
       // Убираем город из списка
       newSelectedCities = currentCities.filter(c => c !== city);
-      console.log(`🟥 REMOVING city "${city}". Old: [${currentCities.join(', ')}] → New: [${newSelectedCities.join(', ')}]`);
+      console.log(`Удален город "${city}". Выбранные города:`, newSelectedCities);
     } else {
-      // Добавляем город в список  
+      // Добавляем город в список
       newSelectedCities = [...currentCities, city];
-      console.log(`🟢 ADDING city "${city}". Old: [${currentCities.join(', ')}] → New: [${newSelectedCities.join(', ')}]`);
+      console.log(`Добавлен город "${city}". Выбранные города:`, newSelectedCities);
     }
-    
-    // Обновляем и state, и ref
+
+    // Обновляем состояние
     selectedCitiesRef.current = newSelectedCities;
     setSelectedCities(newSelectedCities);
-    
+
     // Отменяем предыдущий таймер загрузки если есть
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
-    
-    // Запускаем отложенную загрузку с debounce
+
+    // Запускаем отложенную загрузку с debounce для плавности UI
     loadingTimeoutRef.current = setTimeout(async () => {
-      console.log('🔄 Auto-loading companies after city selection');
-      console.log('  - Cities for filter:', newSelectedCities);
+      console.log('Загрузка компаний с фильтром по городам:', newSelectedCities);
       setIsLoading(true);
       try {
         await loadCompanies(selectedSupplierType, newSelectedCities);
-        console.log('✅ Auto-filter completed');
+        console.log('Фильтрация выполнена успешно');
       } catch (error) {
-        console.error('❌ Error in auto-filter:', error);
+        console.error('Ошибка фильтрации:', error);
       } finally {
         setIsLoading(false);
         loadingTimeoutRef.current = null;
       }
-    }, 500); // 500ms задержка для завершения множественного выбора
-    
-    console.log('=== handleCityToggle END ===');
-  }, [selectedSupplierType, loadCompanies]); // Только стабильные зависимости
+    }, 300); // 300ms задержка для завершения выбора нескольких городов
+
+  }, [selectedSupplierType, loadCompanies]);
   
   // ОТКЛЮЧЕНО: Автоматическая фильтрация - мешает множественному выбору
   // Вместо этого используем ручное управление через кнопки "Применить фильтры"
@@ -228,12 +211,9 @@ const Suppliers = () => {
         setIsSupplierTypeDropdownOpen(false);
       }
       
-      // ДЛЯ ГОРОДОВ: проверяем, что клик НЕ внутри city dropdown И dropdown открыт
+      // Закрываем dropdown городов при клике вне его области
       if (isCityDropdownOpen && cityDropdown && !cityDropdown.contains(event.target as Node)) {
-        console.log('🚪 Clicked outside city dropdown - closing it');
         setIsCityDropdownOpen(false);
-      } else if (isCityDropdownOpen) {
-        console.log('✅ Click inside city dropdown - keeping it open');
       }
     };
 
@@ -360,12 +340,11 @@ const Suppliers = () => {
               <div 
                 className="absolute top-full left-0 mt-2 w-full bg-dark-800 rounded-lg border border-dark-700 shadow-xl z-50 max-h-80 overflow-y-auto"
                 onClick={(e) => {
-                  // Блокируем только всплывание кликов наружу dropdown'а
-                  console.log('Dropdown container click - blocking propagation');
+                  // Предотвращаем закрытие dropdown при клике внутри
                   e.stopPropagation();
                 }}
                 onMouseDown={(e) => {
-                  console.log('Dropdown container mousedown - blocking propagation');
+                  // Предотвращаем закрытие dropdown при нажатии мыши внутри
                   e.stopPropagation();
                 }}
               >
@@ -394,19 +373,19 @@ const Suppliers = () => {
                   {selectedCities.length > 0 && (
                     <button
                       onClick={async () => {
-                        console.log('🔄 Resetting all cities');
+                        console.log('Сброс всех городов');
                         // Отменяем активные таймеры загрузки
                         if (loadingTimeoutRef.current) {
                           clearTimeout(loadingTimeoutRef.current);
                           loadingTimeoutRef.current = null;
                         }
-                        
+
                         selectedCitiesRef.current = [];
                         setSelectedCities([]);
                         setIsLoading(true);
                         try {
                           await loadCompanies(selectedSupplierType, []);
-                          console.log('✅ All cities reset');
+                          console.log('Все города сброшены');
                         } finally {
                           setIsLoading(false);
                         }
@@ -419,8 +398,7 @@ const Suppliers = () => {
                   
                   {cities.map((city) => {
                     const isSelected = selectedCities.includes(city);
-                    console.log(`🏙️ Rendering city "${city}": isSelected=${isSelected}, selectedCities=[${selectedCities.join(', ')}]`);
-                    
+
                     return (
                       <div
                         key={city}
@@ -428,15 +406,10 @@ const Suppliers = () => {
                           isSelected ? 'bg-dark-700 bg-opacity-50' : ''
                         }`}
                         onClick={(e) => {
-                          // Блокируем только всплывание, но позволяем обработку
                           e.stopPropagation();
-                          console.log(`👆 CLICK on "${city}" - Current selected: [${selectedCities.join(', ')}]`);
-                          console.log(`Before handleCityToggle - ref has: [${selectedCitiesRef.current.join(', ')}]`);
                           handleCityToggle(city);
-                          console.log(`After handleCityToggle - ref has: [${selectedCitiesRef.current.join(', ')}]`);
                         }}
                         onMouseDown={(e) => {
-                          // Блокируем только всплывание mousedown
                           e.stopPropagation();
                         }}
                       >
