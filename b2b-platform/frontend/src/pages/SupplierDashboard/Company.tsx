@@ -474,7 +474,7 @@ const handleSave = async () => {
           <textarea
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.target.value)}
-            className="input min-h-[100px]"
+            className="input-expanded"
             placeholder="Расскажите о вашей компании, видах деятельности и преимуществах"
             disabled={!isEditing}
             required

@@ -13,7 +13,7 @@ from .serializers import (ReviewCreateSerializer, ReviewModerationSerializer,
 
 class ReviewFilter(filters.FilterSet):
     company = filters.NumberFilter(field_name="company__id")
-    status = filters.ChoiceFilter(choices=Review.STATUS_CHOICES)
+    status = filters.CharFilter(field_name="status")
     rating = filters.NumberFilter()
     rating_gte = filters.NumberFilter(field_name="rating", lookup_expr="gte")
     rating_lte = filters.NumberFilter(field_name="rating", lookup_expr="lte")
@@ -35,7 +35,7 @@ class ReviewListCreateView(generics.ListCreateAPIView):
             and self.request.user.role == "ROLE_ADMIN"
         ):
             return Review.objects.all()
-        return Review.objects.filter(status="APPROVED")
+        return Review.objects.filter(status=Review.STATUS_APPROVED)
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -56,7 +56,7 @@ class ReviewListCreateView(generics.ListCreateAPIView):
 
         if existing_review:
             return Response(
-                {"error": "You have already reviewed this company"},
+                {"error": "Вы уже оставили отзыв для этой компании"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -64,7 +64,7 @@ class ReviewListCreateView(generics.ListCreateAPIView):
 
 
 class ReviewModerationView(generics.ListAPIView):
-    queryset = Review.objects.filter(status="PENDING")
+    queryset = Review.objects.filter(status=Review.STATUS_PENDING)
     serializer_class = ReviewModerationSerializer
     permission_classes = [IsAdmin]
     filter_backends = [DjangoFilterBackend, OrderingFilter]

@@ -158,16 +158,6 @@ const Login = () => {
         </p>
       </div>
 
-      {/* Demo Accounts */}
-      <div className="mt-6 p-4 bg-dark-700 rounded-lg">
-        <p className="text-dark-300 text-sm mb-3 font-medium">Демо-аккаунт:</p>
-        <div className="space-y-2 text-xs">
-          <div className="flex justify-between">
-            <span className="text-dark-400">Демо-пользователь:</span>
-            <span className="text-white">demo@demo.com / demo123</span>
-          </div>
-        </div>
-      </div>
     </motion.div>
   );
 };

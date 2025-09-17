@@ -16,7 +16,9 @@ import {
   ArrowLeft,
   ExternalLink,
   Package,
-  FileText
+  FileText,
+  MessageSquare,
+  User
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchCompanyById, toggleFavorite, fetchCompanyTenders } from '../../store/slices/companiesSlice';
@@ -24,6 +26,15 @@ import { fetchProducts } from '../../store/slices/productsSlice';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import TenderCard from '../../components/TenderCard';
 import { toast } from 'react-hot-toast';
+import apiService from '../../api';
+
+interface Review {
+  id: number;
+  author_name: string;
+  rating: number;
+  text: string;
+  created_at: string;
+}
 
 const CompanyProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,14 +48,70 @@ const CompanyProfile = () => {
   const { products, isLoading: productsLoading } = useAppSelector(state => state.products);
   const { isAuthenticated } = useAppSelector(state => state.auth);
 
+  // Состояния для отзывов
+  const [companyReviews, setCompanyReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewText, setReviewText] = useState('');
+  const [reviewRating, setReviewRating] = useState(0);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
   useEffect(() => {
     if (id) {
       dispatch(fetchCompanyById(Number(id)));
       // Загружаем товары только для текущей компании, используя параметр company
       dispatch(fetchProducts({ page: 1, filters: { company: Number(id) } }));
       dispatch(fetchCompanyTenders(Number(id)));
+      loadCompanyReviews(Number(id));
     }
   }, [dispatch, id]);
+
+  const loadCompanyReviews = async (companyId: number) => {
+    try {
+      setReviewsLoading(true);
+      const response = await apiService.get<{results: Review[]}>(`/reviews/?company=${companyId}`);
+      console.log('Загруженные отзывы:', response);
+      setCompanyReviews(response.results || []);
+    } catch (error) {
+      console.error('Ошибка загрузки отзывов:', error);
+      setCompanyReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewText.trim() || reviewRating === 0) {
+      toast.error('Заполните все поля');
+      return;
+    }
+
+    try {
+      setIsSubmittingReview(true);
+      await apiService.post('/reviews/', {
+        company: Number(id),
+        rating: reviewRating,
+        text: reviewText.trim()
+      });
+
+      toast.success('Отзыв отправлен на модерацию');
+      setShowReviewForm(false);
+      setReviewText('');
+      setReviewRating(0);
+
+      // Перезагружаем отзывы
+      if (id) {
+        loadCompanyReviews(Number(id));
+      }
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.error ||
+                          error?.response?.data?.detail ||
+                          'Ошибка отправки отзыва';
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
@@ -124,6 +191,7 @@ const CompanyProfile = () => {
     { id: 'overview', label: 'Обзор', icon: Building2 },
     { id: 'products', label: 'Товары', icon: Package },
     { id: 'tenders', label: 'Тендеры', icon: FileText },
+    { id: 'reviews', label: 'Отзывы', icon: MessageSquare },
     { id: 'contacts', label: 'Контакты', icon: Phone },
   ];
 
@@ -184,9 +252,9 @@ const CompanyProfile = () => {
                 </div>
               </div>
               
-              <p className="text-dark-300 mb-4 max-w-2xl">
+              <div className="description-expanded text-dark-300 mb-4">
                 {company.description}
-              </p>
+              </div>
               
               {/* Categories */}
               {company.categories && company.categories.length > 0 && (
@@ -205,7 +273,7 @@ const CompanyProfile = () => {
           </div>
           
           {/* Action buttons */}
-          <div className="flex flex-col space-y-3 lg:min-w-0 lg:flex-shrink-0">
+          <div className="flex flex-row space-x-3 lg:min-w-0 lg:flex-shrink-0" style={{marginLeft: '-350px'}}>
             <button
               onClick={handleToggleFavorite}
               className={`btn flex items-center space-x-2 px-6 py-3 ${
@@ -217,7 +285,7 @@ const CompanyProfile = () => {
               <Heart className={`w-4 h-4 ${company.is_favorite ? 'fill-current' : ''}`} />
               <span>{company.is_favorite ? 'В избранном' : 'В избранное'}</span>
             </button>
-            
+
             <button className="btn-ghost flex items-center space-x-2 px-6 py-3">
               <Share2 className="w-4 h-4" />
               <span>Поделиться</span>
@@ -553,6 +621,148 @@ const CompanyProfile = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'reviews' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-white">
+                Отзывы о компании
+              </h3>
+              {isAuthenticated && (
+                <button
+                  onClick={() => setShowReviewForm(true)}
+                  className="btn-primary flex items-center space-x-2"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Оставить отзыв</span>
+                </button>
+              )}
+            </div>
+
+            {reviewsLoading ? (
+              <div className="flex justify-center py-12">
+                <LoadingSpinner />
+              </div>
+            ) : !Array.isArray(companyReviews) || companyReviews.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageSquare className="w-16 h-16 text-dark-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-white mb-2">Отзывов пока нет</h3>
+                <p className="text-dark-300">Станьте первым, кто оставит отзыв о компании</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {companyReviews.map((review) => (
+                  <div key={review.id} className="card p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-dark-600 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-dark-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium">{review.author_name}</h4>
+                          <p className="text-dark-400 text-sm">
+                            {new Date(review.created_at).toLocaleDateString('ru-RU')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`w-4 h-4 ${
+                              star <= review.rating
+                                ? 'text-yellow-400 fill-current'
+                                : 'text-dark-500'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className="text-dark-200 leading-relaxed">{review.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Форма отзыва */}
+            {showReviewForm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-dark-800 rounded-2xl p-6 w-full max-w-md mx-4">
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    Оставить отзыв о компании
+                  </h3>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-dark-200 mb-2">
+                      Оценка *
+                    </label>
+                    <div className="flex items-center space-x-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`w-6 h-6 cursor-pointer transition-colors ${
+                            star <= reviewRating
+                              ? 'text-yellow-400 fill-current'
+                              : 'text-dark-500 hover:text-yellow-300'
+                          }`}
+                          onClick={() => setReviewRating(star)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-dark-200 mb-2">
+                      Отзыв *
+                    </label>
+                    <textarea
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      placeholder="Поделитесь своим опытом работы с компанией..."
+                      className="input min-h-[120px]"
+                      maxLength={1000}
+                    />
+                    <p className="text-dark-400 text-xs mt-1">
+                      {reviewText.length}/1000 символов
+                    </p>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleSubmitReview}
+                      disabled={!reviewText.trim() || reviewRating === 0 || isSubmittingReview}
+                      className="flex-1 btn-primary flex items-center justify-center space-x-2"
+                    >
+                      {isSubmittingReview ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Отправка...</span>
+                        </>
+                      ) : (
+                        <>
+                          <MessageSquare className="w-4 h-4" />
+                          <span>Отправить на модерацию</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowReviewForm(false);
+                        setReviewText('');
+                        setReviewRating(0);
+                      }}
+                      className="btn-outline px-4 py-2"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </motion.div>

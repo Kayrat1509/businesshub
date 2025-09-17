@@ -4,7 +4,7 @@ from .models import Review
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author_name = serializers.CharField(source="author.get_full_name", read_only=True)
+    author_name = serializers.SerializerMethodField()
     author_email = serializers.CharField(source="author.email", read_only=True)
     company_name = serializers.CharField(source="company.name", read_only=True)
 
@@ -30,6 +30,17 @@ class ReviewSerializer(serializers.ModelSerializer):
             "admin_comment",
         ]
 
+    def get_author_name(self, obj):
+        """Получить отображаемое имя автора"""
+        if obj.author.first_name and obj.author.last_name:
+            return f"{obj.author.first_name} {obj.author.last_name}"
+        elif obj.author.first_name:
+            return obj.author.first_name
+        elif obj.author.username:
+            return obj.author.username
+        else:
+            return obj.author.email.split('@')[0] if obj.author.email else 'Аноним'
+
 
 class ReviewCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,7 +53,7 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
 
 class ReviewModerationSerializer(serializers.ModelSerializer):
-    author_name = serializers.CharField(source="author.get_full_name", read_only=True)
+    author_name = serializers.SerializerMethodField()
     company_name = serializers.CharField(source="company.name", read_only=True)
 
     class Meta:
@@ -57,6 +68,17 @@ class ReviewModerationSerializer(serializers.ModelSerializer):
             "company_name",
             "created_at",
         ]
+
+    def get_author_name(self, obj):
+        """Получить отображаемое имя автора"""
+        if obj.author.first_name and obj.author.last_name:
+            return f"{obj.author.first_name} {obj.author.last_name}"
+        elif obj.author.first_name:
+            return obj.author.first_name
+        elif obj.author.username:
+            return obj.author.username
+        else:
+            return obj.author.email.split('@')[0] if obj.author.email else 'Аноним'
 
     def update(self, instance, validated_data):
         instance.status = validated_data.get("status", instance.status)
