@@ -175,6 +175,10 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = False  # Использовать только указанные домены
 CORS_ALLOWED_ORIGINS = [  # Разрешенные домены для CORS запросов
     "https://orbiz.asia",  # Продакшн frontend домен
+    "http://localhost:3000",  # React development server (Create React App)
+    "http://127.0.0.1:3000",  # Альтернативный localhost
+    "http://localhost:5173",  # Vite development server
+    "http://127.0.0.1:5173",  # Альтернативный localhost для Vite
 ]
 CORS_ALLOW_CREDENTIALS = True  # Разрешить отправку cookies и других credentials
 CORS_ALLOWED_HEADERS = [  # Разрешенные заголовки в CORS запросах
@@ -195,11 +199,15 @@ CORS_ALLOW_METHODS = [  # Разрешенные HTTP методы
 # Настройки CSRF для безопасной работы с продакшн доменами
 CSRF_TRUSTED_ORIGINS = [
     "https://orbiz.asia",  # Продакшн frontend домен
+    "https://www.orbiz.asia",  # Продакшн frontend домен с www
+    "https://api.orbiz.asia",  # Продакшн API домен
+    "http://localhost:5173",  # Локальная разработка Vite
+    "http://127.0.0.1:5173",  # Локальная разработка Vite альтернативный хост
 ]
 # Дополнительные настройки CSRF для корректной работы с CORS
 CSRF_COOKIE_HTTPONLY = False  # Разрешить доступ к CSRF cookie из JavaScript
 CSRF_COOKIE_SAMESITE = 'Lax'  # Настройка SameSite для CSRF cookie
-CSRF_COOKIE_SECURE = True  # Использовать secure cookie в продакшене
+CSRF_COOKIE_SECURE = not DEBUG  # Использовать secure cookie в продакшене
 
 # Настройки для автогенерации документации API через drf-spectacular
 SPECTACULAR_SETTINGS = {
