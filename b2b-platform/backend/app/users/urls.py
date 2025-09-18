@@ -27,4 +27,8 @@ urlpatterns = [
         views.delete_search_item,
         name="delete-search-item",
     ),
+    # Password reset endpoints
+    path("password-reset/send-code/", views.send_reset_code, name="send-reset-code"),
+    path("password-reset/verify-code/", views.verify_reset_code, name="verify-reset-code"),
+    path("password-reset/reset/", views.reset_password, name="reset-password"),
 ]

@@ -69,8 +69,9 @@ const DashboardLayout = () => {
         {/* Sidebar */}
         <div className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-dark-800 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
           <div className="flex items-center justify-between h-16 px-4 border-b border-dark-700">
-            <Link to="/" className="text-xl font-bold text-white">
-              B2B Platform
+            <Link to="/" className="flex flex-col text-white">
+              <span className="text-xl font-bold leading-tight">ORBIZ.ASIA</span>
+              <span className="text-xs text-dark-400 uppercase tracking-wider">B2B Platform</span>
             </Link>
             <button
               onClick={() => setIsSidebarOpen(false)}
@@ -163,8 +164,9 @@ const DashboardLayout = () => {
             </button>
             <div className="flex-1 px-4 flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Link to="/" className="text-xl font-bold text-white hover:text-primary-400 transition-colors">
-                  B2B Platform
+                <Link to="/" className="flex flex-col text-white hover:text-primary-400 transition-colors">
+                  <span className="text-xl font-bold leading-tight">ORBIZ.ASIA</span>
+                  <span className="text-xs text-dark-400 uppercase tracking-wider">B2B Platform</span>
                 </Link>
                 <span className="text-dark-500">|</span>
                 <h1 className="text-lg font-medium text-white">Панель поставщика</h1>

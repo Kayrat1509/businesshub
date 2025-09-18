@@ -56,12 +56,15 @@ return '/dashboard';
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link 
-            to="/" 
-            className="flex items-center space-x-2 text-xl font-bold text-gradient hover:opacity-80 transition-opacity"
+          <Link
+            to="/"
+            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
           >
             <Building2 className="w-8 h-8 text-primary-400" />
-            <span>B2B Platform</span>
+            <div className="flex flex-col">
+              <span className="text-xl font-bold text-gradient leading-tight">ORBIZ.ASIA</span>
+              <span className="text-xs text-dark-400 uppercase tracking-wider leading-none">B2B Platform</span>
+            </div>
           </Link>
 
 

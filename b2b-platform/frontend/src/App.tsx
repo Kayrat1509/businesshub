@@ -17,11 +17,12 @@ import Tenders from './pages/Tenders';
 import Suppliers from './pages/Suppliers';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import ForgotPassword from './pages/Auth/ForgotPassword';
 import HelpPage from './pages/Help';
 import ContactPage from './pages/Contact';
 import PrivacyPage from './pages/Privacy';
-import TermsPage from './pages/Terms';
 import AboutPage from './pages/About';
+import PricingPage from './pages/Pricing';
 
 // Dashboard pages
 import SupplierDashboard from './pages/SupplierDashboard';
@@ -75,14 +76,15 @@ function App() {
           <Route path="help" element={<HelpPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="privacy" element={<PrivacyPage />} />
-          <Route path="terms" element={<TermsPage />} />
           <Route path="about" element={<AboutPage />} />
+          <Route path="help/pricing" element={<PricingPage />} />
         </Route>
 
         {/* Auth routes */}
         <Route path="/auth" element={<AuthLayout />}>
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
         </Route>
 
         {/* Supplier Dashboard */}

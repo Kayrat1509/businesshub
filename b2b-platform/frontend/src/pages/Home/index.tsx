@@ -351,7 +351,7 @@ return;
                           orbiz.asia
                         </div>
                         <div className="flex items-center gap-2 text-dark-400 text-xs md:text-sm">
-                          <span>B2B Platform</span>
+                          <span>B2B PLATFORM</span>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
@@ -379,7 +379,7 @@ return;
                           >
                             Кабинет
                           </button>
-                          <span>B2B Platform</span>
+                          <span>B2B PLATFORM</span>
                         </div>
                       </div>
 

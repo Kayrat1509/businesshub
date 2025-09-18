@@ -9,7 +9,6 @@ const ContactPage: React.FC = () => {
           <div className="text-center mb-8">
             <Mail className="w-16 h-16 text-primary-400 mx-auto mb-4" />
             <h1 className="text-4xl font-bold text-white mb-4">Связаться с нами</h1>
-            <p className="text-xl text-dark-300">Страница находится в разработке</p>
           </div>
 
           <div className="card p-8 text-center">
@@ -19,12 +18,6 @@ const ContactPage: React.FC = () => {
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">
-                  Мы работаем над этой страницей
-                </h2>
-                <p className="text-dark-300 text-lg mb-6">
-                  В скором времени здесь появится удобная форма обратной связи и контактная информация.
-                </p>
 
                 <div className="bg-dark-700 p-6 rounded-lg">
                   <h3 className="text-white font-medium mb-3">Нужна помощь прямо сейчас?</h3>

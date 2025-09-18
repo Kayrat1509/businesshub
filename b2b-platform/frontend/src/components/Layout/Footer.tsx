@@ -8,18 +8,21 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <Building2 className="w-8 h-8 text-primary-400" />
-              <span className="text-xl font-bold text-gradient">B2B Platform</span>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-gradient leading-tight">ORBIZ.ASIA</span>
+                <span className="text-xs text-dark-400 uppercase tracking-wider leading-none">B2B Platform</span>
+              </div>
             </div>
             <p className="text-dark-300 text-sm leading-relaxed">
-              Профессиональная B2B платформа для поиска поставщиков товаров и услуг. 
+              Профессиональная B2B платформа для поиска поставщиков товаров и услуг.
               Объединяем бизнес и создаем возможности для развития.
             </p>
             <div className="flex space-x-4">
               <div className="flex items-center space-x-2 text-dark-400 text-sm">
                 <Mail className="w-4 h-4" />
-                <span>info@b2bplatform.com</span>
+                <span>orbiz.asia@gmail.com</span>
               </div>
             </div>
           </div>
@@ -56,9 +59,6 @@ const Footer = () => {
               <Link to="/help/pricing" className="block text-dark-300 hover:text-white transition-colors text-sm">
                 Тарифы
               </Link>
-              <Link to="/help/api" className="block text-dark-300 hover:text-white transition-colors text-sm">
-                API документация
-              </Link>
             </nav>
           </div>
 
@@ -75,16 +75,13 @@ const Footer = () => {
               <Link to="/privacy" className="block text-dark-300 hover:text-white transition-colors text-sm">
                 Политика конфиденциальности
               </Link>
-              <Link to="/terms" className="block text-dark-300 hover:text-white transition-colors text-sm">
-                Условия использования
-              </Link>
             </nav>
           </div>
         </div>
 
         <div className="border-t border-dark-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-dark-400 text-sm">
-            © 2025 B2B Platform. Все права защищены.
+            © 2025 ORBIZ.ASIA. Все права защищены.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <span className="text-dark-400 text-sm">Сделано с ❤️ для бизнеса</span>

@@ -229,3 +229,18 @@ LOGO_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "bmp", "webp"]  # Раз
 # Для рекламных изображений разрешены любые размеры и форматы
 AD_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "bmp", "webp"]  # Все популярные форматы для рекламы
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Настройки email для отправки писем
+# Используем значение из .env файла, по умолчанию console backend для разработки
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+
+# SMTP настройки (для продакшена)
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='orbiz.asia@gmail.com')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+# Адрес отправителя по умолчанию
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='ORBIZ.ASIA <orbiz.asia@gmail.com>')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL

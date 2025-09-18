@@ -22,9 +22,12 @@ const AuthLayout = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <Link to="/" className="inline-flex items-center space-x-2 text-2xl font-bold text-gradient">
+          <Link to="/" className="inline-flex items-center space-x-3 text-gradient">
             <Building2 className="w-10 h-10 text-primary-400" />
-            <span>B2B Platform</span>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold leading-tight">ORBIZ.ASIA</span>
+              <span className="text-xs text-dark-400 uppercase tracking-wider">B2B Platform</span>
+            </div>
           </Link>
           <p className="text-dark-400 mt-2">Профессиональная B2B платформа</p>
         </motion.div>

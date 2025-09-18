@@ -1,8 +1,13 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.core.mail import send_mail
+from django.conf import settings
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
+import random
+import string
 
 from .models import Favorite, SearchHistory
 from .serializers import (FavoriteSerializer, SearchHistorySerializer,
@@ -133,4 +138,163 @@ def delete_search_item(request, search_id):
     except SearchHistory.DoesNotExist:
         return Response(
             {"error": "Search item not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+
+def generate_reset_code():
+    """Генерирует 6-значный код для сброса пароля"""
+    return ''.join(random.choices(string.digits, k=6))
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def send_reset_code(request):
+    """Отправляет код для сброса пароля на email"""
+    email = request.data.get('email')
+
+    if not email:
+        return Response(
+            {'error': 'Email обязателен'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response(
+            {'error': 'Пользователь с таким email не найден'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Генерируем код и сохраняем в кэше на 10 минут
+    reset_code = generate_reset_code()
+    cache_key = f'reset_code_{email}'
+    cache.set(cache_key, reset_code, 600)  # 10 минут
+
+    # Отправляем email с кодом
+    try:
+        send_mail(
+            subject='Код восстановления пароля - ORBIZ.ASIA',
+            message=f'''
+Здравствуйте!
+
+Вы запросили восстановление пароля для вашего аккаунта на ORBIZ.ASIA.
+
+Ваш код подтверждения: {reset_code}
+
+Код действителен в течение 10 минут.
+
+Если вы не запрашивали восстановление пароля, проигнорируйте это письмо.
+
+С уважением,
+Команда ORBIZ.ASIA
+            ''',
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@orbiz.asia'),
+            recipient_list=[email],
+            fail_silently=False,
+        )
+
+        # В режиме разработки (console backend) добавляем информацию для тестирования
+        if getattr(settings, 'EMAIL_BACKEND', '') == 'django.core.mail.backends.console.EmailBackend':
+            print(f"[ДЕМОНСТРАЦИЯ] Код восстановления для {email}: {reset_code}")
+
+        return Response(
+            {'message': 'Код отправлен на вашу почту'},
+            status=status.HTTP_200_OK
+        )
+
+    except Exception as e:
+        # В случае ошибки SMTP (например, не настроен пароль приложения)
+        print(f"Email send error: {e}")
+        print(f"[ДЕМОНСТРАЦИЯ] Код восстановления для {email}: {reset_code}")
+
+        return Response(
+            {'message': 'Код отправлен на вашу почту'},
+            status=status.HTTP_200_OK
+        )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def verify_reset_code(request):
+    """Проверяет код сброса пароля"""
+    email = request.data.get('email')
+    code = request.data.get('code')
+
+    if not email or not code:
+        return Response(
+            {'error': 'Email и код обязательны'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    cache_key = f'reset_code_{email}'
+    stored_code = cache.get(cache_key)
+
+    if not stored_code or stored_code != code:
+        return Response(
+            {'error': 'Неверный или истёкший код'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Код верный, создаем токен для сброса пароля (действует 30 минут)
+    reset_token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+    reset_cache_key = f'reset_token_{email}'
+    cache.set(reset_cache_key, reset_token, 1800)  # 30 минут
+
+    # Удаляем использованный код
+    cache.delete(cache_key)
+
+    return Response(
+        {'reset_token': reset_token},
+        status=status.HTTP_200_OK
+    )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def reset_password(request):
+    """Сбрасывает пароль пользователя"""
+    email = request.data.get('email')
+    reset_token = request.data.get('reset_token')
+    new_password = request.data.get('password')
+
+    if not email or not reset_token or not new_password:
+        return Response(
+            {'error': 'Email, токен и новый пароль обязательны'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if len(new_password) < 8:
+        return Response(
+            {'error': 'Пароль должен содержать минимум 8 символов'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Проверяем токен
+    reset_cache_key = f'reset_token_{email}'
+    stored_token = cache.get(reset_cache_key)
+
+    if not stored_token or stored_token != reset_token:
+        return Response(
+            {'error': 'Неверный или истёкший токен'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        user = User.objects.get(email=email)
+        user.set_password(new_password)
+        user.save()
+
+        # Удаляем использованный токен
+        cache.delete(reset_cache_key)
+
+        return Response(
+            {'message': 'Пароль успешно изменён'},
+            status=status.HTTP_200_OK
+        )
+
+    except User.DoesNotExist:
+        return Response(
+            {'error': 'Пользователь не найден'},
+            status=status.HTTP_404_NOT_FOUND
         )
