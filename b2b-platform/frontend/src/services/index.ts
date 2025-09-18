@@ -5,6 +5,7 @@ export { productService } from './productService';
 export { companyService } from './companyService';
 export { authService } from './authService';
 export { tenderService } from './tenderService'; // Новый сервис для работы с тендерами
+export { passwordResetService } from './passwordReset';
 
 // Types
 export type { 
@@ -50,3 +51,12 @@ export type {
   TendersResponse,
   TenderResponse
 } from './tenderService'; // Типы для работы с тендерами
+
+export type {
+  SendCodeRequest,
+  VerifyCodeRequest,
+  ResetPasswordRequest,
+  SendCodeResponse,
+  VerifyCodeResponse,
+  ResetPasswordResponse
+} from './passwordReset';

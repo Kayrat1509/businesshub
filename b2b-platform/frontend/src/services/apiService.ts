@@ -27,7 +27,7 @@ class ApiService {
 
   constructor() {
     // Get API base URL from environment variables
-    const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+    const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     
     this.api = axios.create({
       baseURL,
