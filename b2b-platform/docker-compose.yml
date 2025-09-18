@@ -4,6 +4,7 @@ services:
   db:
     image: postgres:15
     container_name: b2b_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: b2b_platform
       POSTGRES_USER: postgres
@@ -16,10 +17,11 @@ services:
       - b2b_network
 
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: b2b_backend
+    restart: unless-stopped
     env_file:
       - backend/.env
     volumes:
@@ -41,6 +43,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: b2b_frontend
+    restart: unless-stopped
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -55,6 +58,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: b2b_pgadmin
+    restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -68,6 +72,7 @@ services:
   nginx:
     image: nginx:alpine
     container_name: b2b_nginx
+    restart: unless-stopped
     ports:
       - "80:80"
     volumes:
