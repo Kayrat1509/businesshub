@@ -59,6 +59,7 @@ const Home = () => {
   const { ads } = useAppSelector(state => state.ads);
   const { isAuthenticated } = useAppSelector(state => state.auth);
 
+
   useEffect(() => {
     // Fetch data for homepage
     dispatch(fetchCategoryTree());
@@ -245,7 +246,7 @@ return;
   };
 
   const handleCompanyClick = (companyId: number) => {
-    navigate(`/suppliers/${companyId}`);
+    navigate(`/company/${companyId}`);
   };
 
   // Функции управления каруселью тендеров
