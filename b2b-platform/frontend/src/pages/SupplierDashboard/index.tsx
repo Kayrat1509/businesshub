@@ -432,7 +432,6 @@ return null;
                   <th className="pb-3 text-dark-300 font-medium">Название</th>
                   <th className="pb-3 text-dark-300 font-medium">Категория</th>
                   <th className="pb-3 text-dark-300 font-medium">Цена</th>
-                  <th className="pb-3 text-dark-300 font-medium">Статус</th>
                   <th className="pb-3 text-dark-300 font-medium">Действия</th>
                 </tr>
               </thead>
@@ -463,9 +462,6 @@ return null;
                       <span className="text-white font-medium">
                         {product.price ? `₸${product.price.toLocaleString()}` : 'По запросу'}
                       </span>
-                    </td>
-                    <td className="py-3">
-                      {getStatusBadge(product.status || (product.is_active ? 'APPROVED' : 'DRAFT'))}
                     </td>
                     <td className="py-3">
                       <div className="flex items-center space-x-2">
