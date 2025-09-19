@@ -25,6 +25,7 @@ import { fetchCompanyById, toggleFavorite, fetchCompanyTenders } from '../../sto
 import { fetchProducts } from '../../store/slices/productsSlice';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import TenderCard from '../../components/TenderCard';
+import ProductCard from '../../components/ProductCard';
 import { toast } from 'react-hot-toast';
 import apiService from '../../api';
 
@@ -471,36 +472,14 @@ const CompanyProfile = () => {
                 <p className="text-dark-300">Компания пока не добавила товары или услуги</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {products.map((product) => (
-                  <div key={product.id} className="card p-6">
-                    <div className="flex justify-between items-start mb-3">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        product.is_service 
-                          ? 'bg-blue-500/20 text-blue-400' 
-                          : 'bg-green-500/20 text-green-400'
-                      }`}>
-                        {product.is_service ? 'Услуга' : 'Товар'}
-                      </span>
-                      {product.price && (
-                        <div className="text-primary-400 font-semibold">
-                          {product.price} {product.currency}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <h4 className="text-lg font-semibold text-white mb-2">
-                      {product.title}
-                    </h4>
-                    
-                    <p className="text-dark-300 text-sm mb-4 line-clamp-3">
-                      {product.description}
-                    </p>
-                    
-                    <button className="w-full btn-outline py-2 text-sm">
-                      Подробнее
-                    </button>
-                  </div>
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    showCompany={false}
+                    variant="compact"
+                  />
                 ))}
               </div>
             )}

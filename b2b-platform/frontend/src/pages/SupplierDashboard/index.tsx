@@ -440,12 +440,16 @@ return null;
                   <tr key={product.id} className="border-b border-dark-800">
                     <td className="py-3">
                       <div className="flex items-center space-x-3">
-                        {product.images && product.images[0] && (
-                          <img 
-                            src={product.images[0].image} 
+                        {product.image ? (
+                          <img
+                            src={product.image}
                             alt={product.title || product.name}
                             className="w-10 h-10 object-cover rounded-lg"
                           />
+                        ) : (
+                          <div className="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center">
+                            <Package className="w-5 h-5 text-dark-400" />
+                          </div>
                         )}
                         <div>
                           <p className="text-white font-medium">{product.title || product.name}</p>

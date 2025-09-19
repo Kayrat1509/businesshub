@@ -3,7 +3,7 @@ from decimal import Decimal
 
 
 def product_image_upload_path(instance, filename):
-    return f"product_images/{instance.company.id}/{filename}"
+    return f"product_images/{instance.product.company.id}/{filename}"
 
 
 class Product(models.Model):
@@ -25,6 +25,7 @@ class Product(models.Model):
     category = models.ForeignKey(
         "categories.Category", on_delete=models.SET_NULL, null=True, blank=True, related_name="products"
     )
+    image = models.ImageField(upload_to="products/", null=True, blank=True, help_text="Основное изображение товара")
     images = models.JSONField(default=list, help_text="List of image URLs")
     in_stock = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)

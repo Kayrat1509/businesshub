@@ -6,6 +6,7 @@ import { useAppSelector } from '../../store/hooks';
 import { toast } from 'react-hot-toast';
 import apiService from '../../api';
 import { Category } from '../../types';
+// import ImageUploader from '../../components/ImageUploader';
 
 interface ProductForm {
   title: string
@@ -17,6 +18,7 @@ interface ProductForm {
   category: number | ''
   in_stock: boolean
   is_active: boolean
+  image: File | null
 }
 
 const CreateProduct = () => {
@@ -36,7 +38,10 @@ const CreateProduct = () => {
     category: '',
     in_stock: true,
     is_active: true,
+    image: null,
   });
+
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Загрузка категорий при инициализации компонента
   useEffect(() => {
@@ -68,7 +73,7 @@ const CreateProduct = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       setFormData({
         ...formData,
@@ -88,38 +93,90 @@ const CreateProduct = () => {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (file) {
+      // Проверяем тип файла
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Разрешены только форматы JPG, PNG и WebP');
+        return;
+      }
+
+      // Проверяем размер файла (например, максимум 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        toast.error('Размер файла не должен превышать 5MB');
+        return;
+      }
+
+      setFormData({
+        ...formData,
+        image: file,
+      });
+
+      // Создаем превью
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFormData({
+        ...formData,
+        image: null,
+      });
+      setImagePreview(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     setIsSubmitting(true);
-    
+
     try {
-      // Подготавливаем данные для отправки на backend
-      const productData = {
-        title: formData.title.trim() || 'Без названия',
-        sku: formData.sku.trim() || undefined,
-        description: formData.description.trim() || 'Описание отсутствует',
-        price: formData.price ? parseFloat(formData.price) : undefined,
-        currency: formData.currency,
-        is_service: formData.is_service,
-        category: formData.category || undefined, // ID категории
-        in_stock: formData.in_stock,
-        is_active: formData.is_active,
-      };
-      
-      console.log('Создание товара:', productData);
-      
-      // Отправляем запрос на backend - компания будет присвоена автоматически
-      const createdProduct = await apiService.post('/products/', productData);
-      
+      // Создаем FormData для отправки файла
+      const formDataToSend = new FormData();
+
+      // Добавляем основные данные товара
+      formDataToSend.append('title', formData.title.trim() || 'Без названия');
+      if (formData.sku.trim()) {
+        formDataToSend.append('sku', formData.sku.trim());
+      }
+      formDataToSend.append('description', formData.description.trim() || 'Описание отсутствует');
+      if (formData.price) {
+        formDataToSend.append('price', formData.price);
+      }
+      formDataToSend.append('currency', formData.currency);
+      formDataToSend.append('is_service', formData.is_service.toString());
+      if (formData.category) {
+        formDataToSend.append('category', formData.category.toString());
+      }
+      formDataToSend.append('in_stock', formData.in_stock.toString());
+      formDataToSend.append('is_active', formData.is_active.toString());
+
+      // Добавляем изображение
+      if (formData.image) {
+        formDataToSend.append('image', formData.image);
+        console.log('Создание товара с изображением:', formData.image.name);
+      } else {
+        console.log('Создание товара без изображения');
+      }
+
+      // Отправляем запрос на backend с FormData
+      // Content-Type будет установлен автоматически браузером
+      const createdProduct = await apiService.post('/products/', formDataToSend);
+
       console.log('Товар создан:', createdProduct);
       toast.success('Товар успешно добавлен');
       navigate('/dashboard/products');
     } catch (error: any) {
       console.error('Ошибка создания товара:', error);
-      
-      const errorMessage = error?.response?.data?.error || 
-                          error?.response?.data?.detail || 
+
+      const errorMessage = error?.response?.data?.error ||
+                          error?.response?.data?.detail ||
                           'Ошибка при добавлении товара';
       toast.error(errorMessage);
     } finally {
@@ -269,6 +326,60 @@ const CreateProduct = () => {
               value={formData.description}
               onChange={handleChange}
             />
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label htmlFor="image" className="block text-sm font-medium text-dark-200 mb-2">
+              Фото товара
+            </label>
+            <div className="space-y-4">
+              <input
+                type="file"
+                name="image"
+                id="image"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleImageChange}
+                disabled={isSubmitting}
+                className="block w-full text-sm text-dark-300
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-medium
+                  file:bg-primary-600 file:text-white
+                  hover:file:bg-primary-700
+                  file:disabled:opacity-50
+                  file:disabled:cursor-not-allowed"
+              />
+
+              {imagePreview && (
+                <div className="relative w-32 h-32">
+                  <img
+                    src={imagePreview}
+                    alt="Превью изображения"
+                    className="w-full h-full object-cover rounded-lg border border-dark-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({...formData, image: null});
+                      setImagePreview(null);
+                      // Сброс input file
+                      const fileInput = document.getElementById('image') as HTMLInputElement;
+                      if (fileInput) fileInput.value = '';
+                    }}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full
+                      flex items-center justify-center hover:bg-red-600 transition-colors"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
+              <p className="text-xs text-dark-400">
+                Разрешены форматы: JPG, PNG, WebP. Максимальный размер: 5MB.
+                Изображение будет автоматически обрезано до 600x600 пикселей.
+              </p>
+            </div>
           </div>
 
           {/* Price */}

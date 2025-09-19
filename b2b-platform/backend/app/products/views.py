@@ -4,6 +4,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.http import JsonResponse
 
 from app.common.permissions import IsOwnerOrReadOnly
@@ -40,6 +41,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
     search_fields = ["title", "description", "sku"]
     ordering_fields = ["title", "price", "created_at", "rating"]
     ordering = ["-rating", "-created_at"]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     
     def get_queryset(self):
         """
@@ -98,6 +100,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
 class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_serializer_class(self):
         if self.request.method in ["PUT", "PATCH"]:

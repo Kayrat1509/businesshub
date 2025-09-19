@@ -430,6 +430,20 @@ class ProductAdmin(ImportExportModelAdmin):
 
 @admin.register(ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
-    list_display = ["product", "alt_text", "is_primary", "created_at"]
+    # Отображение полей в списке
+    list_display = ["product", "image_thumbnail", "alt_text", "is_primary", "created_at"]
     list_filter = ["is_primary", "created_at"]
     search_fields = ["product__title", "alt_text"]
+
+    # Поля для редактирования
+    fields = ["product", "image", "alt_text", "is_primary"]
+
+    def image_thumbnail(self, obj):
+        """Отображение миниатюры изображения в списке"""
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />',
+                obj.image.url
+            )
+        return "Нет изображения"
+    image_thumbnail.short_description = "Изображение"

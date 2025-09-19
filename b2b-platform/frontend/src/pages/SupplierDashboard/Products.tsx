@@ -4,10 +4,10 @@ import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { setTestUser } from '../../store/slices/authSlice';
 import { toast } from 'react-hot-toast';
 import {
-  Package, Plus, Search, Loader, AlertCircle, 
-  DollarSign, Tag, CheckCircle, XCircle, 
-  Image as ImageIcon, ExternalLink, LogIn
+  Package, Plus, Search, Loader, AlertCircle,
+  LogIn
 } from 'lucide-react';
+import ProductCard from '../../components/ProductCard';
 import apiService from '../../api';
 
 interface Product {
@@ -19,40 +19,15 @@ interface Product {
   currency: string
   is_service: boolean
   category?: Category
-  images: string[]
+  image?: string  // URL изображения
   in_stock: boolean
   is_active: boolean
   company_name?: string
-  primary_image?: string
   created_at?: string
   updated_at?: string
   rating?: number
 }
 
-interface Category {
-  id: number
-  name: string
-  slug?: string
-}
-
-// Курсы валют для конвертации
-const EXCHANGE_RATES = {
-  KZT: 450.0, // 1 USD = 450 KZT
-  RUB: 90.0,  // 1 USD = 90 RUB  
-  USD: 1.0    // базовая валюта
-};
-
-// Функция конвертации валют
-const convertPrice = (price: number, fromCurrency: string, toCurrency: string): number => {
-  if (fromCurrency === toCurrency) return price;
-  
-  // Конвертируем в USD сначала
-  const priceInUSD = price / EXCHANGE_RATES[fromCurrency as keyof typeof EXCHANGE_RATES];
-  // Затем в целевую валюту
-  const convertedPrice = priceInUSD * EXCHANGE_RATES[toCurrency as keyof typeof EXCHANGE_RATES];
-  
-  return Math.round(convertedPrice * 100) / 100; // округляем до 2 знаков
-};
 
 const DashboardProducts: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -96,140 +71,6 @@ const DashboardProducts: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Компонент карточки товара
-  const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
-    const [imageError, setImageError] = useState(false);
-    
-    // Получаем первые 3 изображения
-    const displayImages = product.images?.slice(0, 3) || [];
-    const primaryImage = product.primary_image || displayImages[0];
-    
-    // Ограничиваем описание до 2 строк
-    const shortDescription = product.description.length > 100 
-      ? product.description.substring(0, 100) + '...'
-      : product.description;
-    
-    // Конвертация цены в разные валюты
-    const priceConversions = product.price ? {
-      kzt: convertPrice(product.price, product.currency, 'KZT'),
-      rub: convertPrice(product.price, product.currency, 'RUB'),
-      usd: convertPrice(product.price, product.currency, 'USD')
-    } : null;
-
-    return (
-      <div className="group bg-dark-800 rounded-xl border border-dark-700 overflow-hidden hover:border-primary-500 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
-        {/* Изображения */}
-        <div className="relative h-48 bg-dark-700">
-          {primaryImage && !imageError ? (
-            <img
-              src={primaryImage}
-              alt={product.title}
-              className="w-full h-full object-cover"
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <ImageIcon className="w-16 h-16 text-dark-500" />
-            </div>
-          )}
-          
-          {/* Статус товара */}
-          <div className="absolute top-3 left-3">
-            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-              product.in_stock 
-                ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                : 'bg-red-500/20 text-red-400 border border-red-500/30'
-            }`}>
-              {product.in_stock ? (
-                <CheckCircle className="w-3 h-3" />
-              ) : (
-                <XCircle className="w-3 h-3" />
-              )}
-              <span>{product.in_stock ? 'В наличии' : 'Нет в наличии'}</span>
-            </div>
-          </div>
-
-          {/* Тип товара */}
-          <div className="absolute top-3 right-3">
-            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-              product.is_service 
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
-                : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-            }`}>
-              {product.is_service ? (
-                <Tag className="w-3 h-3" />
-              ) : (
-                <Package className="w-3 h-3" />
-              )}
-              <span>{product.is_service ? 'Услуга' : 'Товар'}</span>
-            </div>
-          </div>
-
-          {/* Количество изображений */}
-          {displayImages.length > 1 && (
-            <div className="absolute bottom-3 right-3 bg-dark-900/80 text-white px-2 py-1 rounded text-xs">
-              <ImageIcon className="w-3 h-3 inline mr-1" />
-              {displayImages.length}
-            </div>
-          )}
-        </div>
-
-        {/* Контент карточки */}
-        <div className="p-4">
-          {/* Заголовок */}
-          <h3 className="text-lg font-semibold text-white mb-2 line-clamp-1 group-hover:text-primary-400 transition-colors">
-            {product.title}
-          </h3>
-          
-          {/* SKU */}
-          {product.sku && (
-            <p className="text-sm text-dark-400 mb-2">
-              Артикул: {product.sku}
-            </p>
-          )}
-
-          {/* Категория */}
-          {product.category && (
-            <div className="mb-3">
-              <span className="inline-block px-2 py-1 text-xs bg-primary-500/20 text-primary-400 rounded-full">
-                {product.category.name}
-              </span>
-            </div>
-          )}
-
-          {/* Описание */}
-          <p className="text-dark-300 text-sm mb-4 line-clamp-2 leading-relaxed">
-            {shortDescription}
-          </p>
-
-          {/* Цена и конвертация */}
-          {priceConversions && (
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center space-x-2">
-                <DollarSign className="w-4 h-4 text-green-400" />
-                <span className="text-white font-semibold">
-                  {product.price?.toLocaleString()} {product.currency}
-                </span>
-              </div>
-              <div className="text-xs text-dark-400 space-y-1">
-                <div>≈ {priceConversions.kzt.toLocaleString()} KZT</div>
-                <div>≈ {priceConversions.rub.toLocaleString()} RUB</div>
-                <div>≈ {priceConversions.usd.toLocaleString()} USD</div>
-              </div>
-            </div>
-          )}
-
-          {/* Дата создания */}
-          {product.created_at && (
-            <div className="text-xs text-dark-500">
-              Создано: {new Date(product.created_at).toLocaleDateString('ru-RU')}
-            </div>
-          )}
-        </div>
-      </div>
-    );
   };
 
   // Фильтрация товаров по поиску
@@ -380,7 +221,12 @@ const DashboardProducts: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           {filteredProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              showCompany={false}
+              variant="default"
+            />
           ))}
         </div>
       )}
