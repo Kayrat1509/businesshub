@@ -464,7 +464,19 @@ return null;
                     </td>
                     <td className="py-3">
                       <span className="text-white font-medium">
-                        {product.price ? `₸${product.price.toLocaleString()}` : 'По запросу'}
+                        {product.price ? (() => {
+                          // Определяем символ валюты
+                          const getCurrencySymbol = (currency: string) => {
+                            switch (currency) {
+                              case 'USD': return '$';
+                              case 'RUB': return '₽';
+                              case 'KZT':
+                              default: return '₸';
+                            }
+                          };
+                          const symbol = getCurrencySymbol(product.currency);
+                          return `${symbol}${product.price.toLocaleString()}`;
+                        })() : 'По запросу'}
                       </span>
                     </td>
                     <td className="py-3">
