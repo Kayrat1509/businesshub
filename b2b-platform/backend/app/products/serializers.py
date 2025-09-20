@@ -48,11 +48,29 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         """Возвращает полный URL изображения товара"""
+        # Сначала проверяем основное изображение
         if obj.image:
             request = self.context.get("request")
             if request:
                 return request.build_absolute_uri(obj.image.url)
             return obj.image.url
+
+        # Если основного изображения нет, ищем первичное изображение из ProductImage
+        primary_image = obj.product_images.filter(is_primary=True).first()
+        if primary_image:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(primary_image.image.url)
+            return primary_image.image.url
+
+        # Если первичного нет, берем первое доступное изображение
+        first_image = obj.product_images.first()
+        if first_image:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(first_image.image.url)
+            return first_image.image.url
+
         return None
 
 
@@ -83,11 +101,29 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         """Возвращает полный URL изображения товара"""
+        # Сначала проверяем основное изображение
         if obj.image:
             request = self.context.get("request")
             if request:
                 return request.build_absolute_uri(obj.image.url)
             return obj.image.url
+
+        # Если основного изображения нет, ищем первичное изображение из ProductImage
+        primary_image = obj.product_images.filter(is_primary=True).first()
+        if primary_image:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(primary_image.image.url)
+            return primary_image.image.url
+
+        # Если первичного нет, берем первое доступное изображение
+        first_image = obj.product_images.first()
+        if first_image:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(first_image.image.url)
+            return first_image.image.url
+
         return None
 
 
@@ -185,11 +221,30 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             data['company'] = instance.company.name
 
         # Добавляем информацию об изображении
+        # Сначала проверяем основное изображение
         if instance.image:
             request = self.context.get('request')
             if request:
                 data['image'] = request.build_absolute_uri(instance.image.url)
             else:
                 data['image'] = instance.image.url
+        else:
+            # Если основного изображения нет, ищем первичное изображение из ProductImage
+            primary_image = instance.product_images.filter(is_primary=True).first()
+            if primary_image:
+                request = self.context.get('request')
+                if request:
+                    data['image'] = request.build_absolute_uri(primary_image.image.url)
+                else:
+                    data['image'] = primary_image.image.url
+            else:
+                # Если первичного нет, берем первое доступное изображение
+                first_image = instance.product_images.first()
+                if first_image:
+                    request = self.context.get('request')
+                    if request:
+                        data['image'] = request.build_absolute_uri(first_image.image.url)
+                    else:
+                        data['image'] = first_image.image.url
 
         return data

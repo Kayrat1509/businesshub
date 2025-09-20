@@ -51,10 +51,10 @@ class ProductListCreateView(generics.ListCreateAPIView):
         - Суперпользователи: видят все продукты
         """
         if self.request.user.is_authenticated and self.request.user.is_superuser:
-            return Product.objects.all()
-        
+            return Product.objects.select_related('company', 'category').prefetch_related('product_images').all()
+
         # Для всех остальных - только активные продукты одобренных компаний
-        return Product.objects.filter(is_active=True, company__status="APPROVED")
+        return Product.objects.select_related('company', 'category').prefetch_related('product_images').filter(is_active=True, company__status="APPROVED")
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -99,7 +99,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
 
 class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Product.objects.all()
+    queryset = Product.objects.select_related('company', 'category').prefetch_related('product_images').all()
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_serializer_class(self):
@@ -115,8 +115,8 @@ class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         if self.request.method in ["PUT", "PATCH", "DELETE"]:
             # Users can only edit products from their own companies
-            return Product.objects.filter(company__owner=self.request.user)
-        return Product.objects.all()
+            return Product.objects.select_related('company', 'category').prefetch_related('product_images').filter(company__owner=self.request.user)
+        return Product.objects.select_related('company', 'category').prefetch_related('product_images').all()
 
 
 class MyProductsView(generics.ListAPIView):
@@ -128,7 +128,7 @@ class MyProductsView(generics.ListAPIView):
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        return Product.objects.filter(company__owner=self.request.user)
+        return Product.objects.select_related('company', 'category').prefetch_related('product_images').filter(company__owner=self.request.user)
 
 
 @api_view(['GET'])
@@ -149,8 +149,8 @@ def products_by_category(request, category_name):
         )
     
     # Order by rating and relevance
-    products = products.order_by('-rating', '-created_at')[:20]
-    
+    products = products.select_related('company', 'category').prefetch_related('product_images').order_by('-rating', '-created_at')[:20]
+
     serializer = ProductListSerializer(products, many=True, context={'request': request})
     return Response(serializer.data)
 
