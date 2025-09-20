@@ -540,7 +540,7 @@ return null;
                           };
                           const symbol = getCurrencySymbol(product.currency);
                           return `${symbol}${product.price.toLocaleString()}`;
-                        })() : 'По запросу'}
+                        })() : 'Договорная'}
                       </span>
                     </td>
                     <td className="py-3">

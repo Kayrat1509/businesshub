@@ -293,7 +293,7 @@ const ProductDetail: React.FC = () => {
                   className="text-2xl font-bold"
                 />
               ) : (
-                <span className="text-2xl font-bold text-dark-300">По запросу</span>
+                <span className="text-2xl font-bold text-dark-300">Договорная</span>
               )}
 
               {product.rating && (

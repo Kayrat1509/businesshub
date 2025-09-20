@@ -51,7 +51,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
     if (price > 0 && currency) {
       loadFormattedPrice();
     } else {
-      setFormattedPrice('По запросу');
+      setFormattedPrice('Договорная');
       setIsLoading(false);
     }
 

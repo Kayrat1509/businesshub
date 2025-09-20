@@ -395,7 +395,7 @@ const AdminProducts = () => {
                       <span className="text-white">
                         {product.price
                           ? `${product.price.toLocaleString()} ${product.currency}`
-                          : 'По запросу'
+                          : 'Договорная'
                         }
                       </span>
                     </td>

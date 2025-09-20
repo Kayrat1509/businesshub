@@ -145,7 +145,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               className={variant === 'compact' ? 'text-sm font-semibold' : 'text-sm'}
             />
           ) : (
-            <span className="text-dark-400 text-sm">По запросу</span>
+            <span className="text-dark-400 text-sm">Договорная</span>
           )}
 
           {/* Рейтинг */}

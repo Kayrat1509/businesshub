@@ -516,7 +516,7 @@ const CompanyProfile = () => {
                 <p className="text-dark-300">Компания пока не добавила товары или услуги</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-6 gap-4">
                 {products.map((product) => (
                   <div key={product.id} style={{width: '250px', height: '350px'}}>
                     <ProductCard
