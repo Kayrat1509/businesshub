@@ -76,7 +76,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
-    company_name = serializers.CharField(source="company.name", read_only=True)
+    company = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
 
     class Meta:
@@ -90,7 +90,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "currency",
             "is_service",
             "category",
-            "company_name",
+            "company",
             "image",
             "rating",
             "in_stock",
@@ -98,6 +98,20 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_company(self, obj):
+        """Возвращает полную информацию о компании включая контакты"""
+        if obj.company:
+            return {
+                'id': obj.company.id,
+                'name': obj.company.name,
+                'city': obj.company.city,
+                'address': obj.company.address if hasattr(obj.company, 'address') else None,
+                'rating': obj.company.rating if hasattr(obj.company, 'rating') else None,
+                'logo': obj.company.logo.url if obj.company.logo else None,
+                'contacts': obj.company.contacts if hasattr(obj.company, 'contacts') else None,
+            }
+        return None
 
     def get_image(self, obj):
         """Возвращает полный URL изображения товара"""
@@ -162,23 +176,9 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
 
         request = self.context.get('request')
 
-        if request and request.user.is_authenticated:
-            # Суперпользователи могут указывать компанию вручную
-            if request.user.is_superuser and 'company' in validated_data:
-                product = Product.objects.create(**validated_data)
-            else:
-                # Для обычных пользователей получаем компанию автоматически
-                try:
-                    from app.companies.models import Company
-                    user_company = Company.objects.get(owner=request.user)
-                    validated_data['company'] = user_company
-                    product = Product.objects.create(**validated_data)
-                except Company.DoesNotExist:
-                    raise serializers.ValidationError(
-                        "У вас нет компании для создания продуктов"
-                    )
-        else:
-            product = Product.objects.create(**validated_data)
+        # Создаем продукт с переданными данными
+        # Компания устанавливается в view через serializer.save(company=user_company)
+        product = Product.objects.create(**validated_data)
 
         # Обрабатываем и сохраняем изображение
         if image_data:

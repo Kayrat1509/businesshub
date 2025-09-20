@@ -165,6 +165,48 @@ const CompanyProfile = () => {
     return icons[platform.toLowerCase()] || '🌐';
   };
 
+  // Функция для получения всех телефонов компании
+  const getAllPhones = () => {
+    const phones: string[] = [];
+
+    // Добавляем одинарный телефон, если есть
+    if (company?.contacts?.phone) {
+      phones.push(company.contacts.phone);
+    }
+
+    // Добавляем массив телефонов, если есть
+    if (company?.contacts?.phones && Array.isArray(company.contacts.phones)) {
+      company.contacts.phones.forEach(phone => {
+        if (phone && !phones.includes(phone)) { // Избегаем дублирования
+          phones.push(phone);
+        }
+      });
+    }
+
+    return phones;
+  };
+
+  // Функция для получения всех email адресов компании
+  const getAllEmails = () => {
+    const emails: string[] = [];
+
+    // Добавляем одинарный email, если есть
+    if (company?.contacts?.email) {
+      emails.push(company.contacts.email);
+    }
+
+    // Добавляем массив emails, если есть
+    if (company?.contacts?.emails && Array.isArray(company.contacts.emails)) {
+      company.contacts.emails.forEach(email => {
+        if (email && !emails.includes(email)) { // Избегаем дублирования
+          emails.push(email);
+        }
+      });
+    }
+
+    return emails;
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -383,8 +425,9 @@ const CompanyProfile = () => {
               <div className="card p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Быстрая связь</h3>
                 <div className="space-y-3">
-                  {company.contacts?.phones && company.contacts.phones.length > 0 ? (
-                    company.contacts.phones.map((phone: string, index: number) => (
+                  {/* Отображение всех телефонов */}
+                  {getAllPhones().length > 0 ? (
+                    getAllPhones().map((phone: string, index: number) => (
                       <a
                         key={index}
                         href={`tel:${phone}`}
@@ -397,9 +440,10 @@ const CompanyProfile = () => {
                   ) : (
                     <div className="text-dark-400 text-sm">Телефоны не указаны</div>
                   )}
-                  
-                  {company.contacts?.emails && company.contacts.emails.length > 0 ? (
-                    company.contacts.emails.map((email: string, index: number) => (
+
+                  {/* Отображение всех email адресов */}
+                  {getAllEmails().length > 0 ? (
+                    getAllEmails().map((email: string, index: number) => (
                       <a
                         key={index}
                         href={`mailto:${email}`}
@@ -412,7 +456,7 @@ const CompanyProfile = () => {
                   ) : (
                     <div className="text-dark-400 text-sm">Email не указан</div>
                   )}
-                  
+
                   {company.contacts?.website && (
                     <a
                       href={company.contacts.website}
@@ -472,14 +516,15 @@ const CompanyProfile = () => {
                 <p className="text-dark-300">Компания пока не добавила товары или услуги</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 {products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    showCompany={false}
-                    variant="compact"
-                  />
+                  <div key={product.id} style={{width: '250px', height: '350px'}}>
+                    <ProductCard
+                      product={product}
+                      showCompany={false}
+                      variant="compact"
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -525,10 +570,11 @@ const CompanyProfile = () => {
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-white mb-4">Контактная информация</h3>
               <div className="space-y-4">
-                {company.contacts?.phones && company.contacts.phones.length > 0 ? (
+                {/* Отображение всех телефонов */}
+                {getAllPhones().length > 0 ? (
                   <div>
                     <div className="text-dark-400 text-sm mb-2">Телефоны:</div>
-                    {company.contacts.phones.map((phone: string, index: number) => (
+                    {getAllPhones().map((phone: string, index: number) => (
                       <a
                         key={index}
                         href={`tel:${phone}`}
@@ -542,11 +588,12 @@ const CompanyProfile = () => {
                 ) : (
                   <div className="text-dark-400 text-sm">Телефоны не указаны</div>
                 )}
-                
-                {company.contacts?.emails && company.contacts.emails.length > 0 ? (
+
+                {/* Отображение всех email адресов */}
+                {getAllEmails().length > 0 ? (
                   <div>
                     <div className="text-dark-400 text-sm mb-2">Email:</div>
-                    {company.contacts.emails.map((email: string, index: number) => (
+                    {getAllEmails().map((email: string, index: number) => (
                       <a
                         key={index}
                         href={`mailto:${email}`}
@@ -560,7 +607,7 @@ const CompanyProfile = () => {
                 ) : (
                   <div className="text-dark-400 text-sm">Email не указан</div>
                 )}
-                
+
                 {company.contacts?.website && (
                   <div>
                     <div className="text-dark-400 text-sm mb-2">Веб-сайт:</div>

@@ -124,9 +124,35 @@ class CompanyAdminForm(forms.ModelForm):
             legal_info = self.instance.legal_info or {}
             payment_methods = self.instance.payment_methods or []
             work_schedule = self.instance.work_schedule or {}
-            
-            self.fields['phone_numbers'].initial = ', '.join(contacts.get('phones', []))
-            self.fields['emails'].initial = ', '.join(contacts.get('emails', []))
+
+            # Собираем все телефоны из разных источников
+            all_phones = []
+
+            # Добавляем одинарный телефон из contacts.phone
+            if contacts.get('phone'):
+                all_phones.append(contacts['phone'])
+
+            # Добавляем массив телефонов из contacts.phones
+            if contacts.get('phones') and isinstance(contacts['phones'], list):
+                for phone in contacts['phones']:
+                    if phone and phone not in all_phones:  # Избегаем дублирования
+                        all_phones.append(phone)
+
+            # Собираем все email адреса из разных источников
+            all_emails = []
+
+            # Добавляем одинарный email из contacts.email
+            if contacts.get('email'):
+                all_emails.append(contacts['email'])
+
+            # Добавляем массив emails из contacts.emails
+            if contacts.get('emails') and isinstance(contacts['emails'], list):
+                for email in contacts['emails']:
+                    if email and email not in all_emails:  # Избегаем дублирования
+                        all_emails.append(email)
+
+            self.fields['phone_numbers'].initial = ', '.join(all_phones)
+            self.fields['emails'].initial = ', '.join(all_emails)
             self.fields['website'].initial = contacts.get('website', '')
             
             # Социальные сети
@@ -170,12 +196,21 @@ class CompanyAdminForm(forms.ModelForm):
             if self.cleaned_data[platform]:
                 social_media[platform] = self.cleaned_data[platform]
         
-        instance.contacts = {
-            'phones': phones,
-            'emails': emails,
+        # Сохраняем контакты в обеих форматах для совместимости
+        contacts_data = {
+            'phones': phones,  # Массив телефонов для админки
+            'emails': emails,  # Массив emails для админки
             'website': website,
             'social': social_media
         }
+
+        # Добавляем одинарные поля для совместимости с личным кабинетом
+        if phones:
+            contacts_data['phone'] = phones[0]  # Первый телефон как основной
+        if emails:
+            contacts_data['email'] = emails[0]  # Первый email как основной
+
+        instance.contacts = contacts_data
         
         # Сохранение юридической информации в JSON
         instance.legal_info = {

@@ -12,6 +12,7 @@ import AdminLayout from './components/AdminLayout';
 // Pages
 import Home from './pages/Home';
 import CompanyCard from './pages/CompanyCard';
+import ProductDetail from './pages/ProductDetail';
 import Category from './pages/Category';
 import Tenders from './pages/Tenders';
 import Suppliers from './pages/Suppliers';
@@ -34,6 +35,7 @@ import DashboardSettings from './pages/SupplierDashboard/Settings';
 import DashboardReviews from './pages/SupplierDashboard/Reviews';
 import CreateTender from './pages/SupplierDashboard/CreateTender';
 import CreateProduct from './pages/SupplierDashboard/CreateProduct';
+import EditProduct from './pages/SupplierDashboard/EditProduct';
 import DashboardTenders from './pages/SupplierDashboard/Tenders';
 
 // Admin pages
@@ -72,6 +74,7 @@ function App() {
           <Route path="tenders" element={<Tenders />} />
           <Route path="suppliers" element={<Suppliers />} />
           <Route path="company/:id" element={<CompanyCard />} />
+          <Route path="product/:id" element={<ProductDetail />} />
           <Route path="category/:slug" element={<Category />} />
           <Route path="help" element={<HelpPage />} />
           <Route path="contact" element={<ContactPage />} />
@@ -97,6 +100,7 @@ function App() {
           <Route path="company" element={<DashboardCompany />} />
           <Route path="products" element={<DashboardProducts />} />
           <Route path="products/create" element={<CreateProduct />} />
+          <Route path="products/edit/:id" element={<EditProduct />} />
           <Route path="reviews" element={<DashboardReviews />} />
           <Route path="import" element={<DashboardImport />} />
           <Route path="actions" element={<DashboardActions />} />

@@ -38,7 +38,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
 
         if (isMounted) {
           // В случае ошибки показываем исходную цену
-          setFormattedPrice(`Цена: ${price.toLocaleString()} ${currency}`);
+          setFormattedPrice(`🏷️ ${price.toLocaleString()} ${currency}`);
         }
       } finally {
         if (isMounted) {

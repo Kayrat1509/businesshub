@@ -157,32 +157,37 @@ class CompanyCreateUpdateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         from django.core.mail import send_mail
         from django.conf import settings
-        
+
         categories = validated_data.pop("categories", [])
+
+        # Синхронизируем контакты в обеих форматах перед созданием
+        contacts = validated_data.get('contacts', {})
+        validated_data['contacts'] = self._sync_contacts(contacts)
+
         company = Company.objects.create(**validated_data)
         company.categories.set(categories)
-        
+
         # Send email notification to the company owner
         try:
             owner = company.owner
             subject = f'Компания "{company.name}" успешно создана'
             message = f"""
             Здравствуйте, {owner.get_full_name() or owner.username}!
-            
+
             Ваша компания "{company.name}" была успешно создана в системе B2B Platform.
-            
+
             Основная информация:
             • Название: {company.name}
             • Город: {company.city}
             • Адрес: {company.address}
             • Статус: {company.get_status_display()}
-            
+
             Теперь вы можете добавлять товары и услуги в свой каталог.
-            
+
             С уважением,
             Команда B2B Platform
             """
-            
+
             send_mail(
                 subject=subject,
                 message=message,
@@ -193,11 +198,17 @@ class CompanyCreateUpdateSerializer(serializers.ModelSerializer):
         except Exception as e:
             # Log email error but don't fail the company creation
             print(f"Failed to send company creation email: {e}")
-        
+
         return company
 
     def update(self, instance, validated_data):
         categories = validated_data.pop("categories", None)
+
+        # Синхронизируем контакты в обеих форматах перед обновлением
+        if 'contacts' in validated_data:
+            contacts = validated_data['contacts']
+            validated_data['contacts'] = self._sync_contacts(contacts)
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -206,3 +217,53 @@ class CompanyCreateUpdateSerializer(serializers.ModelSerializer):
             instance.categories.set(categories)
 
         return instance
+
+    def _sync_contacts(self, contacts):
+        """
+        Синхронизирует контакты в обеих форматах для совместимости
+        между личным кабинетом (одинарные поля) и админкой (массивы)
+        """
+        if not contacts:
+            contacts = {}
+
+        # Собираем все телефоны из разных источников
+        all_phones = []
+
+        # Добавляем одинарный телефон из contacts.phone
+        if contacts.get('phone'):
+            all_phones.append(contacts['phone'])
+
+        # Добавляем массив телефонов из contacts.phones
+        if contacts.get('phones') and isinstance(contacts['phones'], list):
+            for phone in contacts['phones']:
+                if phone and phone not in all_phones:  # Избегаем дублирования
+                    all_phones.append(phone)
+
+        # Собираем все email адреса из разных источников
+        all_emails = []
+
+        # Добавляем одинарный email из contacts.email
+        if contacts.get('email'):
+            all_emails.append(contacts['email'])
+
+        # Добавляем массив emails из contacts.emails
+        if contacts.get('emails') and isinstance(contacts['emails'], list):
+            for email in contacts['emails']:
+                if email and email not in all_emails:  # Избегаем дублирования
+                    all_emails.append(email)
+
+        # Сохраняем контакты в обеих форматах
+        synced_contacts = {
+            'phones': all_phones,  # Массив для админки
+            'emails': all_emails,  # Массив для админки
+            'website': contacts.get('website', ''),
+            'social': contacts.get('social', {})
+        }
+
+        # Добавляем одинарные поля для совместимости с личным кабинетом
+        if all_phones:
+            synced_contacts['phone'] = all_phones[0]  # Первый телефон как основной
+        if all_emails:
+            synced_contacts['email'] = all_emails[0]  # Первый email как основной
+
+        return synced_contacts

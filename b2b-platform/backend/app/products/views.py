@@ -69,33 +69,52 @@ class ProductListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         """
         Автоматическое присваивание компании при создании продукта.
-        Компания определяется через Company.objects.get(owner=request.user)
+        Компания определяется на основе выбранной компании пользователя.
         """
-        try:
-            from app.companies.models import Company
-            
-            # Суперпользователи могут создавать продукты для любой компании
-            if self.request.user.is_superuser:
-                # Если company_id передан в запросе, используем его
-                company_id = self.request.data.get('company_id')
-                if company_id:
-                    try:
-                        company = Company.objects.get(id=company_id)
-                        serializer.save(company=company)
-                        return
-                    except Company.DoesNotExist:
-                        pass
-            
-            # Для обычных пользователей получаем компанию автоматически
-            user_company = Company.objects.get(owner=self.request.user)
-            serializer.save(company=user_company)
-            
-        except Company.DoesNotExist:
-            # Если у пользователя нет компании, возвращаем ошибку
-            from rest_framework.exceptions import ValidationError
+        from app.companies.models import Company
+        from rest_framework.exceptions import ValidationError
+
+        # Получаем company_id из запроса
+        company_id = self.request.data.get('company_id')
+
+        # Суперпользователи могут создавать продукты для любой компании
+        if self.request.user.is_superuser:
+            if company_id:
+                try:
+                    company = Company.objects.get(id=company_id)
+                    serializer.save(company=company)
+                    return
+                except Company.DoesNotExist:
+                    raise ValidationError(
+                        {"error": "Указанная компания не найдена"}
+                    )
+
+        # Для обычных пользователей получаем компании, принадлежащие пользователю
+        user_companies = Company.objects.filter(owner=self.request.user)
+
+        if user_companies.count() == 0:
             raise ValidationError(
                 {"error": "У вас нет компании для создания продуктов"}
             )
+        elif user_companies.count() == 1:
+            # Если у пользователя одна компания, используем её
+            user_company = user_companies.first()
+            serializer.save(company=user_company)
+        else:
+            # Если у пользователя несколько компаний, требуем указать company_id
+            if not company_id:
+                raise ValidationError(
+                    {"error": "У вас несколько компаний. Пожалуйста, выберите компанию"}
+                )
+
+            # Проверяем что указанная компания принадлежит пользователю
+            try:
+                user_company = user_companies.get(id=company_id)
+                serializer.save(company=user_company)
+            except Company.DoesNotExist:
+                raise ValidationError(
+                    {"error": "Указанная компания не найдена или не принадлежит вам"}
+                )
 
 
 class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):

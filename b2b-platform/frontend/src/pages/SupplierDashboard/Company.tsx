@@ -9,7 +9,6 @@ import {
   CheckCircle, XCircle, Loader, ArrowRight, Home,
 } from 'lucide-react';
 import apiService from '../../api';
-import CategoryAutocomplete from '../../components/CategoryAutocomplete';
 
 interface Company {
   id?: number
@@ -18,6 +17,7 @@ interface Company {
   logo?: string
   city: string
   address: string
+  supplier_type?: string // Тип поставщика
   contacts: {
     phone?: string
     email?: string
@@ -44,15 +44,11 @@ interface Company {
   branches_count: number
   status: string
   rating?: number
-  categories: number[] | Category[] // Can be either IDs or full objects
+  categories: number[]
   created_at?: string
   updated_at?: string
 }
 
-interface Category {
-  id: number
-  name: string
-}
 
 const DashboardCompany: React.FC = () => {
   const { user } = useAppSelector(state => state.auth);
@@ -61,13 +57,13 @@ const DashboardCompany: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
   
   const [formData, setFormData] = useState<Company>({
     name: '',
     description: '',
     city: '',
     address: '',
+    supplier_type: 'DEALER', // По умолчанию дилер
     contacts: {},
     legal_info: {},
     payment_methods: [],
@@ -86,6 +82,12 @@ const DashboardCompany: React.FC = () => {
     rating: 0,
     categories: [],
   });
+
+  const supplierTypes = [
+    { value: 'DEALER', label: 'Дилер' },
+    { value: 'MANUFACTURER', label: 'Производитель' },
+    { value: 'TRADE_REPRESENTATIVE', label: 'Торговый представитель' },
+  ];
 
   const paymentMethods = [
     { value: 'CASH', label: 'Наличные' },
@@ -135,13 +137,7 @@ const DashboardCompany: React.FC = () => {
         companiesResponse = [];
       }
       
-      const categoriesResponseObj = await apiService.get<Category[]>('/categories/');
-      const categoriesResponse = categoriesResponseObj;
-      
       console.log('User companies response:', companiesResponse);
-      console.log('Categories response:', categoriesResponse);
-      
-      setCategories(categoriesResponse);
       
       // Only use companies that belong to the current user
       const companies = Array.isArray(companiesResponse) ? companiesResponse : [];
@@ -152,14 +148,9 @@ const DashboardCompany: React.FC = () => {
       console.log('Selected user company:', userCompany);
       
       if (userCompany) {
-        // Convert category objects to IDs if needed
         const processedCompany = {
           ...userCompany,
-          categories: Array.isArray(userCompany.categories) && userCompany.categories.length > 0
-            ? typeof userCompany.categories[0] === 'object' 
-              ? (userCompany.categories as Category[]).map(cat => cat.id)
-              : userCompany.categories as number[]
-            : [],
+          categories: [],
           contacts: userCompany.contacts || {},
           legal_info: userCompany.legal_info || {},
           payment_methods: userCompany.payment_methods || [],
@@ -237,27 +228,6 @@ const DashboardCompany: React.FC = () => {
     }));
   };
 
-  // Создание новой категории
-  const handleCreateCategory = async (categoryName: string): Promise<Category> => {
-    try {
-      const newCategory = await apiService.post<Category>('/categories/', {
-        name: categoryName,
-        is_active: true,
-      });
-      
-      // Обновляем локальный список категорий
-      setCategories(prev => [...prev, newCategory]);
-      
-      toast.success(`Категория "${categoryName}" создана и добавлена`);
-      return newCategory;
-    } catch (error: any) {
-      const errorMessage = error?.response?.data?.name?.[0] || 
-                          error?.response?.data?.detail || 
-                          'Ошибка создания категории';
-      toast.error(errorMessage);
-      throw error;
-    }
-  };
 
 
 const handleSave = async () => {
@@ -276,9 +246,7 @@ const handleSave = async () => {
   try {
     const dataToSave = {
       ...formData,
-      categories: Array.isArray(formData.categories)
-        ? (formData.categories as number[])
-        : [],
+      categories: [],
     };
 
     console.log('Saving company data:', dataToSave);
@@ -301,11 +269,7 @@ const handleSave = async () => {
 
     const processedSavedCompany = {
       ...savedCompany,
-      categories: Array.isArray(savedCompany.categories) && savedCompany.categories.length > 0
-        ? typeof savedCompany.categories[0] === 'object'
-          ? (savedCompany.categories as Category[]).map((cat) => cat.id)
-          : (savedCompany.categories as number[])
-        : [],
+      categories: [],
       rating: savedCompany.rating || 0,
       staff_count: savedCompany.staff_count || 1,
       branches_count: savedCompany.branches_count || 1,
@@ -467,6 +431,27 @@ const handleSave = async () => {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div>
+            <label className="block text-sm font-medium text-dark-200 mb-2">
+              Тип поставщика *
+            </label>
+            <select
+              value={formData.supplier_type || 'DEALER'}
+              onChange={(e) => handleInputChange('supplier_type', e.target.value)}
+              className="input"
+              disabled={!isEditing}
+            >
+              {supplierTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-dark-400 mt-1">Выберите тип вашей деятельности</p>
+          </div>
+        </div>
+
         <div className="mt-6">
           <label className="block text-sm font-medium text-dark-200 mb-2">
             Описание *
@@ -584,32 +569,6 @@ const handleSave = async () => {
         </div>
       </div>
 
-      {/* Categories */}
-      <div className="card p-6">
-        <h2 className="text-xl font-semibold text-white mb-6">
-          Категории деятельности
-        </h2>
-        
-        <CategoryAutocomplete
-          categories={categories}
-          selectedCategories={Array.isArray(formData.categories) ? (formData.categories as number[]) : []}
-          onCategoriesChange={(categoryIds) => {
-            setFormData(prev => ({
-              ...prev,
-              categories: categoryIds,
-            }));
-          }}
-          onCreateCategory={isEditing ? handleCreateCategory : undefined}
-          disabled={!isEditing}
-          placeholder="Введите название категории (мин. 3 символа)..."
-        />
-        
-        {isEditing && (
-          <p className="text-dark-400 text-sm mt-2">
-            💡 Начните вводить название категории для поиска. После ввода минимум 3 символов появятся варианты для выбора. Если нужной категории нет в списке, вы можете создать новую.
-          </p>
-        )}
-      </div>
 
       {/* Payment Methods */}
       <div className="card p-6">

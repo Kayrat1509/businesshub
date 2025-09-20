@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package } from 'lucide-react';
 import PriceDisplay from '../PriceDisplay';
 
@@ -36,10 +37,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
   variant = 'default'
 }) => {
   const [imageError, setImageError] = useState(false);
+  const navigate = useNavigate();
 
   const handleCardClick = () => {
     if (onClick) {
       onClick(product);
+    } else {
+      // Если не передан обработчик клика, переходим к странице товара
+      navigate(`/product/${product.id}`);
     }
   };
 
@@ -49,10 +54,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     : product.description;
 
   const cardClasses = variant === 'compact'
-    ? "card p-4 cursor-pointer hover:shadow-lg transition-all duration-200"
+    ? "card p-4 cursor-pointer hover:shadow-lg transition-all duration-200 h-full flex flex-col"
     : "card p-6 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200";
 
-  const imageHeight = variant === 'compact' ? 'h-40' : 'h-48';
+  const imageHeight = variant === 'compact' ? 'h-32' : 'h-48';
 
   return (
     <div className={cardClasses} onClick={handleCardClick}>
@@ -97,10 +102,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       {/* Контент карточки */}
-      <div className="space-y-3">
+      <div className={`space-y-2 ${variant === 'compact' ? 'flex-1 flex flex-col' : 'space-y-3'}`}>
         {/* Заголовок */}
         <h4 className={`font-semibold text-white line-clamp-2 ${
-          variant === 'compact' ? 'text-base' : 'text-lg'
+          variant === 'compact' ? 'text-sm' : 'text-lg'
         }`}>
           {product.title}
         </h4>
@@ -115,10 +120,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {/* Описание */}
-        <p className={`text-dark-300 line-clamp-3 ${
-          variant === 'compact' ? 'text-xs' : 'text-sm'
+        <p className={`text-dark-300 line-clamp-2 ${
+          variant === 'compact' ? 'text-xs flex-1' : 'text-sm line-clamp-3'
         }`}>
-          {shortDescription}
+          {variant === 'compact' && product.description && product.description.length > 60
+            ? product.description.substring(0, 60) + '...'
+            : shortDescription}
         </p>
 
         {/* Компания (если нужно отображать) */}
@@ -129,13 +136,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         )}
 
-        {/* Цена */}
-        <div className="flex flex-col space-y-2">
+        {/* 🏷️ и рейтинг */}
+        <div className={`${variant === 'compact' ? 'mt-auto' : 'flex flex-col space-y-2'}`}>
           {product.price ? (
             <PriceDisplay
               price={product.price}
               currency={product.currency}
-              className="text-sm"
+              className={variant === 'compact' ? 'text-sm font-semibold' : 'text-sm'}
             />
           ) : (
             <span className="text-dark-400 text-sm">По запросу</span>
@@ -143,7 +150,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Рейтинг */}
           {product.rating && (
-            <div className="flex items-center text-yellow-400 text-sm">
+            <div className="flex items-center text-yellow-400 text-xs">
               <span>★ {product.rating}</span>
             </div>
           )}

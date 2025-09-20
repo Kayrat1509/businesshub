@@ -6,6 +6,7 @@ import { useAppSelector } from '../../store/hooks';
 import { toast } from 'react-hot-toast';
 import apiService from '../../api';
 import { Category } from '../../types';
+import CategorySelector from '../../components/CategorySelector';
 // import ImageUploader from '../../components/ImageUploader';
 
 interface ProductForm {
@@ -19,6 +20,7 @@ interface ProductForm {
   in_stock: boolean
   is_active: boolean
   image: File | null
+  company_id: number | ''
 }
 
 const CreateProduct = () => {
@@ -27,6 +29,8 @@ const CreateProduct = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [userCompanies, setUserCompanies] = useState<any[]>([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
 
   const [formData, setFormData] = useState<ProductForm>({
     title: '',
@@ -39,35 +43,63 @@ const CreateProduct = () => {
     in_stock: true,
     is_active: true,
     image: null,
+    company_id: '',
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // Загрузка категорий при инициализации компонента
+  // Загрузка категорий и компаний пользователя при инициализации компонента
   useEffect(() => {
     loadCategories();
+    loadUserCompanies();
   }, []);
+
+  const loadUserCompanies = async () => {
+    try {
+      setIsLoadingCompanies(true);
+      // Получаем компании пользователя
+      const companies = await apiService.get<any>('/companies/?owner=me');
+      if (companies && companies.results && companies.results.length > 0) {
+        setUserCompanies(companies.results);
+        // Автоматически выбираем первую компанию если она единственная
+        if (companies.results.length === 1) {
+          setFormData(prev => ({
+            ...prev,
+            company_id: companies.results[0].id
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки компаний пользователя:', error);
+    } finally {
+      setIsLoadingCompanies(false);
+    }
+  };
 
   const loadCategories = async () => {
     try {
       setIsLoadingCategories(true);
-      // Загружаем категории через единый API слой с автоматическим управлением токенами
-      const data = await apiService.get<{ results: Category[] }>('/categories/');
-      
-      // API возвращает пагинированный ответ, категории находятся в поле results
-      if (data && Array.isArray(data.results)) {
-        setCategories(data.results); // Сохраняем только массив категорий
+      // Загружаем иерархическое дерево категорий через API
+      const data = await apiService.get<Category[]>('/categories/tree/');
+
+      // API возвращает массив корневых категорий с детьми
+      if (data && Array.isArray(data)) {
+        // Убеждаемся что каждая категория имеет поле children
+        const processedCategories = data.map(cat => ({
+          ...cat,
+          children: Array.isArray(cat.children) ? cat.children : []
+        }));
+        setCategories(processedCategories);
       } else {
         console.error('Получены некорректные данные категорий:', data);
-        setCategories([]); // Устанавливаем пустой массив если данные некорректны
-        toast.error('Получены некорректные данные категорий');
+        setCategories([]);
       }
     } catch (error) {
       console.error('Ошибка загрузки категорий:', error);
-      setCategories([]); // Устанавливаем пустой массив при ошибке
-      toast.error('Ошибка загрузки категорий');
+      setCategories([]);
+      // Не показываем ошибку пользователю при выборе категории
     } finally {
-      setIsLoadingCategories(false); // Всегда сбрасываем флаг загрузки
+      setIsLoadingCategories(false);
     }
   };
 
@@ -79,8 +111,8 @@ const CreateProduct = () => {
         ...formData,
         [name]: (e.target as HTMLInputElement).checked,
       });
-    } else if (name === 'category') {
-      // Конвертируем значение в число для категории
+    } else if (name === 'category' || name === 'company_id') {
+      // Конвертируем значение в число для категории и company_id
       setFormData({
         ...formData,
         [name]: value ? Number(value) : '',
@@ -91,6 +123,49 @@ const CreateProduct = () => {
         [name]: value,
       });
     }
+  };
+
+  // Обработчик выбора категории для нового компонента
+  const handleCategorySelect = (categoryId: number) => {
+    setFormData({
+      ...formData,
+      category: categoryId,
+    });
+  };
+
+  // Fallback на простой select если категории не загрузились или произошла ошибка
+  const renderCategorySelector = () => {
+    if (isLoadingCategories) {
+      return (
+        <select className="input disabled:opacity-50" disabled>
+          <option>Загрузка категорий...</option>
+        </select>
+      );
+    }
+
+    if (!Array.isArray(categories) || categories.length === 0) {
+      return (
+        <select
+          name="category"
+          id="category"
+          className="input"
+          value={formData.category}
+          onChange={handleChange}
+        >
+          <option value="">Категории не загружены</option>
+        </select>
+      );
+    }
+
+    return (
+      <CategorySelector
+        categories={categories}
+        selectedCategoryId={typeof formData.category === 'number' ? formData.category : null}
+        onSelect={handleCategorySelect}
+        disabled={isLoadingCategories}
+        placeholder="Выберите категорию"
+      />
+    );
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,6 +209,12 @@ const CreateProduct = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Проверяем что компания выбрана
+    if (!formData.company_id) {
+      toast.error('Пожалуйста, выберите компанию');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -163,6 +244,11 @@ const CreateProduct = () => {
         console.log('Создание товара с изображением:', formData.image.name);
       } else {
         console.log('Создание товара без изображения');
+      }
+
+      // Добавляем ID выбранной компании
+      if (formData.company_id) {
+        formDataToSend.append('company_id', formData.company_id.toString());
       }
 
       // Отправляем запрос на backend с FormData
@@ -247,6 +333,36 @@ const CreateProduct = () => {
             </div>
           </div>
 
+          {/* Company Selection */}
+          <div>
+            <label htmlFor="company_id" className="block text-sm font-medium text-dark-200 mb-2">
+              Компания *
+            </label>
+            <select
+              name="company_id"
+              id="company_id"
+              disabled={isLoadingCompanies}
+              className="input disabled:opacity-50"
+              value={formData.company_id}
+              onChange={handleChange}
+              required
+            >
+              <option value="">
+                {isLoadingCompanies ? 'Загрузка компаний...' : 'Выберите компанию'}
+              </option>
+              {userCompanies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name} ({company.supplier_type || 'Тип не указан'})
+                </option>
+              ))}
+            </select>
+            {userCompanies.length === 0 && !isLoadingCompanies && (
+              <p className="text-sm text-red-400 mt-1">
+                У вас нет зарегистрированных компаний. Сначала добавьте компанию.
+              </p>
+            )}
+          </div>
+
           {/* Title */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-dark-200 mb-2">
@@ -281,34 +397,10 @@ const CreateProduct = () => {
             </div>
 
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-dark-200 mb-2">
+              <label className="block text-sm font-medium text-dark-200 mb-2">
                 Категория
               </label>
-              <select
-                name="category"
-                id="category"
-                disabled={isLoadingCategories}
-                className="input disabled:opacity-50"
-                value={formData.category}
-                onChange={handleChange}
-              >
-                <option value="">
-                  {isLoadingCategories ? 'Загрузка категорий...' : 'Выберите категорию'}
-                </option>
-                {Array.isArray(categories) && categories.length > 0 ? (
-                  // Рендерим категории только если они представляют собой массив с элементами
-                  categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))
-                ) : (
-                  // Показываем сообщение если категории не загрузились
-                  !isLoadingCategories && (
-                    <option value="" disabled>Категории не найдены</option>
-                  )
-                )}
-              </select>
+              {renderCategorySelector()}
             </div>
           </div>
 

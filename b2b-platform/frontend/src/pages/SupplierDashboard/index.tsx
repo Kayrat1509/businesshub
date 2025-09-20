@@ -34,43 +34,56 @@ const SupplierDashboard = () => {
   const loadUserData = async () => {
     try {
       setIsLoading(true);
-      
-      // Загружаем реальные товары пользователя через API
-      const productsData = await apiService.get<{ results: any[] }>('/products/my/');
-      if (productsData && Array.isArray(productsData.results)) {
-        setProducts(productsData.results);
-      } else {
-        console.error('Получены некорректные данные товаров:', productsData);
-        setProducts([]);
-      }
 
-      // Загружаем компании пользователя
-      const companiesData = await apiService.get<{ results: any[] }>('/companies/my/');
-      if (companiesData && Array.isArray(companiesData.results)) {
-        setCompanies(companiesData.results);
-      } else {
-        console.error('Получены некорректные данные компаний:', companiesData);
+      // Загружаем компании пользователя в первую очередь
+      console.log('Загружаем компании пользователя...');
+      try {
+        const companiesData = await apiService.get<{ results: any[] }>('/companies/?owner=me');
+        console.log('Данные компаний получены:', companiesData);
+
+        if (companiesData && Array.isArray(companiesData.results)) {
+          setCompanies(companiesData.results);
+          console.log('Компании установлены:', companiesData.results.length);
+        } else {
+          console.error('Получены некорректные данные компаний:', companiesData);
+          setCompanies([]);
+        }
+      } catch (companyError) {
+        console.error('Ошибка загрузки компаний:', companyError);
         setCompanies([]);
       }
 
-      // Загружаем тендеры пользователя через API
-      const tendersData = await apiService.get<{ results: any[] }>('/tenders/my/');
-      if (tendersData && Array.isArray(tendersData.results)) {
-        setTenders(tendersData.results);
-      } else if (tendersData && Array.isArray(tendersData)) {
-        // На случай если API возвращает массив напрямую, а не в поле results
-        setTenders(tendersData);
-      } else {
-        console.error('Получены некорректные данные тендеров:', tendersData);
+      // Загружаем товары пользователя (используем правильный endpoint)
+      try {
+        const productsData = await apiService.get<{ results: any[] }>('/products/my/');
+        if (productsData && Array.isArray(productsData.results)) {
+          setProducts(productsData.results);
+        } else {
+          console.log('Нет товаров или некорректные данные товаров:', productsData);
+          setProducts([]);
+        }
+      } catch (productError) {
+        console.error('Ошибка загрузки товаров:', productError);
+        setProducts([]);
+      }
+
+      // Загружаем тендеры пользователя
+      try {
+        const tendersData = await apiService.get<{ results: any[] }>('/tenders/?owner=me');
+        if (tendersData && Array.isArray(tendersData.results)) {
+          setTenders(tendersData.results);
+        } else if (tendersData && Array.isArray(tendersData)) {
+          setTenders(tendersData);
+        } else {
+          console.log('Нет тендеров или некорректные данные тендеров:', tendersData);
+          setTenders([]);
+        }
+      } catch (tenderError) {
+        console.error('Ошибка загрузки тендеров:', tenderError);
         setTenders([]);
       }
     } catch (error) {
-      console.error('Ошибка загрузки данных пользователя:', error);
-      toast.error('Ошибка загрузки данных');
-      // Устанавливаем пустые массивы при ошибке
-      setProducts([]);
-      setCompanies([]);
-      setTenders([]);
+      console.error('Общая ошибка загрузки данных пользователя:', error);
     } finally {
       setIsLoading(false);
     }
@@ -116,17 +129,18 @@ const SupplierDashboard = () => {
     }
   };
 
-  const userCompany = companies.find(company => company.owner_name === user?.username) || companies[0];
+  // Все компании пользователя уже отфильтрованы через API, поэтому просто берем их все
+  const userCompanies = companies;
 
   const dashboardCards = [
     {
-      title: 'Карточка компании',
-      description: userCompany ? 'Управление профилем' : 'Создать компанию',
+      title: 'Мои компании',
+      description: companies.length > 0 ? `${companies.length} ${companies.length === 1 ? 'компания' : companies.length < 5 ? 'компании' : 'компаний'}` : 'Создать компанию',
       icon: Building2,
       color: 'from-primary-600 to-primary-500',
       link: '/dashboard/company',
-      value: 'Добавить компанию',
-      status: userCompany?.status,
+      value: companies.length > 0 ? `${companies.length} шт.` : 'Добавить компанию',
+      companies: companies, // Передаем все компании для отображения статусов
     },
     {
       title: 'Карточка товаров',
@@ -264,18 +278,61 @@ return null;
                 <div className={`p-3 rounded-xl bg-gradient-to-br ${card.color}`}>
                   <card.icon className="w-6 h-6 text-white" />
                 </div>
-                {card.status && getStatusBadge(card.status)}
-                {card.change && (
-                  <span className="flex items-center text-green-400 text-sm font-medium">
-                    <ArrowUpRight className="w-4 h-4 mr-1" />
-                    {card.change}
-                  </span>
-                )}
+                <div className="flex flex-col items-end space-y-1">
+                  {card.companies && card.companies.length > 0 ? (
+                    card.companies.slice(0, 3).map((company: any, idx: number) => (
+                      <div key={company.id} className="text-right">
+                        {getStatusBadge(company.status)}
+                      </div>
+                    ))
+                  ) : (
+                    card.status && getStatusBadge(card.status)
+                  )}
+                  {card.companies && card.companies.length > 3 && (
+                    <span className="text-xs text-dark-400">
+                      +{card.companies.length - 3} еще
+                    </span>
+                  )}
+                  {card.change && (
+                    <span className="flex items-center text-green-400 text-sm font-medium">
+                      <ArrowUpRight className="w-4 h-4 mr-1" />
+                      {card.change}
+                    </span>
+                  )}
+                </div>
               </div>
               
               <h3 className="text-white font-semibold mb-1">{card.title}</h3>
               <p className="text-dark-300 text-sm mb-3">{card.description}</p>
-              
+
+              {/* Список компаний для карточки компаний */}
+              {card.companies && card.companies.length > 0 && (
+                <div className="mb-3 space-y-1">
+                  {card.companies.slice(0, 2).map((company: any) => (
+                    <div key={company.id} className="flex items-center justify-between text-xs">
+                      <span className="text-dark-300 truncate flex-1 mr-2">
+                        {company.name}
+                      </span>
+                      <span className={`px-1.5 py-0.5 rounded text-xs ${
+                        company.status === 'APPROVED'
+                          ? 'bg-green-500/20 text-green-400'
+                          : company.status === 'PENDING'
+                          ? 'bg-yellow-500/20 text-yellow-400'
+                          : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {company.status === 'APPROVED' ? 'Активна' :
+                         company.status === 'PENDING' ? 'Модерация' : 'Заблокирована'}
+                      </span>
+                    </div>
+                  ))}
+                  {card.companies.length > 2 && (
+                    <p className="text-xs text-dark-400">
+                      и еще {card.companies.length - 2} компаний...
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-end justify-between">
                 <div>
                   <p className="text-2xl font-bold text-white">{card.value}</p>
@@ -336,30 +393,37 @@ return null;
         <div className="card p-6">
           <h3 className="text-xl font-bold text-white mb-4 flex items-center">
             <Building2 className="w-5 h-5 mr-2 text-primary-400" />
-            Статус компании
+            Мои компании ({userCompanies.length})
           </h3>
           
-          {userCompany ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-dark-300">Название:</span>
-                <span className="text-white font-medium">{userCompany.name}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-dark-300">Город:</span>
-                <span className="text-white">{userCompany.city}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-dark-300">Статус:</span>
-                {getStatusBadge(userCompany.status)}
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-dark-300">Рейтинг:</span>
-                <div className="flex items-center space-x-1">
-                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="text-white">{userCompany.rating.toFixed(1)}</span>
+          {userCompanies.length > 0 ? (
+            <div className="space-y-6">
+              {userCompanies.map((company, index) => (
+                <div key={company.id} className="border border-dark-600 rounded-lg p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-dark-300">Название:</span>
+                      <span className="text-white font-medium">{company.name}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-dark-300">Город:</span>
+                      <span className="text-white">{company.city}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-dark-300">Статус:</span>
+                      {getStatusBadge(company.status)}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-dark-300">Рейтинг:</span>
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="text-white">{company.rating.toFixed(1)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {index < userCompanies.length - 1 && <hr className="border-dark-600 mt-4" />}
                 </div>
-              </div>
+              ))}
             </div>
           ) : (
             <div className="text-center py-8">
@@ -481,8 +545,8 @@ return null;
                     </td>
                     <td className="py-3">
                       <div className="flex items-center space-x-2">
-                        <Link 
-                          to="/dashboard/products"
+                        <Link
+                          to={`/dashboard/products/edit/${product.id}`}
                           className="text-primary-400 hover:text-primary-300 text-sm"
                         >
                           Управление

@@ -162,7 +162,7 @@ export async function formatPrice(price: number, currency: string): Promise<stri
 
     if (!convertedPrices) {
       // Если API недоступен, показываем только исходную цену
-      return `Цена: ${formatPriceWithCurrency(price, currency)}`;
+      return `🏷️ ${formatPriceWithCurrency(price, currency)}`;
     }
 
     // Форматируем цены для всех валют
@@ -170,10 +170,10 @@ export async function formatPrice(price: number, currency: string): Promise<stri
       .map(curr => formatPriceWithCurrency(convertedPrices[curr], curr))
       .join(' | ');
 
-    return `Цена: ${formattedPrices}`;
+    return `🏷️ ${formattedPrices}`;
   } catch (error) {
     console.error('Ошибка форматирования цены:', error);
     // В случае ошибки возвращаем исходную цену
-    return `Цена: ${formatPriceWithCurrency(price, currency)}`;
+    return `🏷️ ${formatPriceWithCurrency(price, currency)}`;
   }
 }

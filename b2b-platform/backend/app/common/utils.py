@@ -5,17 +5,17 @@ import os
 from django.core.exceptions import ValidationError
 
 
-def resize_image(image_file, max_size=(600, 600), quality=90):
+def resize_image(image_file, max_size=(300, 300), quality=90):
     """
     Функция для автоматического ресайза изображений до указанного размера.
 
     Args:
         image_file: Django UploadedFile объект
-        max_size: Кортеж с максимальными размерами (ширина, высота)
+        max_size: Кортеж с максимальными размерами (ширина, высота), по умолчанию 300x300
         quality: Качество JPEG сжатия (1-100)
 
     Returns:
-        ContentFile: Обработанное изображение
+        ContentFile: Обработанное изображение размером 300x300 пикселей
     """
     try:
         # Открываем изображение
@@ -62,7 +62,7 @@ def resize_image(image_file, max_size=(600, 600), quality=90):
         # Ресайзим изображение
         resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-        # Если нужно сделать изображение точно 600x600, добавляем padding
+        # Если нужно сделать изображение точно 300x300, добавляем padding
         if new_width != max_width or new_height != max_height:
             # Создаем новое изображение с нужным размером и белым фоном
             final_image = Image.new('RGB', max_size, (255, 255, 255))
@@ -97,7 +97,7 @@ def validate_and_process_image(image_file):
     """
     Валидация и обработка изображения товара:
     - Проверка формата (jpg, png, webp)
-    - Автоматический ресайз до 600x600
+    - Автоматический ресайз до 300x300
     - Возврат обработанного файла
     """
     # Допустимые форматы изображений

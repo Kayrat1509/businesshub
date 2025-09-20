@@ -79,6 +79,17 @@ class CompanyListCreateView(generics.ListCreateAPIView):
     ordering_fields = ["name", "rating", "created_at"]
     ordering = ["-rating", "name"]
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Проверяем кастомный фильтр owner=me
+        owner_filter = self.request.query_params.get('owner')
+        if owner_filter == 'me' and self.request.user.is_authenticated:
+            # Возвращаем все компании пользователя (не только одобренные)
+            return Company.objects.filter(owner=self.request.user)
+
+        return queryset
+
     def get_serializer_class(self):
         if self.request.method == "POST":
             return CompanyCreateUpdateSerializer
