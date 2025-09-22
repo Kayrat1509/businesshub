@@ -1,6 +1,15 @@
 import React, { useEffect, useRef } from 'react';
+// @ts-ignore
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// Исправление проблемы с иконками маркеров в Vite/Webpack сборке
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
 
 // Интерфейс для пропсов компонента карты
 interface MapComponentProps {
