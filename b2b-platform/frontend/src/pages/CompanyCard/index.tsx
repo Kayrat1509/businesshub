@@ -26,6 +26,7 @@ import { fetchProducts } from '../../store/slices/productsSlice';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import TenderCard from '../../components/TenderCard';
 import ProductCard from '../../components/ProductCard';
+import MapComponent from '../../components/MapComponent';
 import { toast } from 'react-hot-toast';
 import apiService from '../../api';
 
@@ -638,12 +639,17 @@ const CompanyProfile = () => {
                   </div>
                 </div>
                 
-                {/* Map placeholder */}
-                <div className="bg-dark-700 rounded-lg h-48 flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="w-12 h-12 text-dark-400 mx-auto mb-2" />
-                    <p className="text-dark-400">Карта будет доступна в следующих обновлениях</p>
-                  </div>
+                {/* Интерактивная карта с маркером */}
+                <div className="rounded-lg overflow-hidden">
+                  <MapComponent
+                    latitude={company.latitude || 51.505}
+                    longitude={company.longitude || -0.09}
+                    zoom={15}
+                    height="300px"
+                    width="100%"
+                    markerText={`${company.name} - ${company.address || company.city}`}
+                    className="map-company-location"
+                  />
                 </div>
               </div>
             </div>

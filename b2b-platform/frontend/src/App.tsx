@@ -49,6 +49,7 @@ import AdminImport from './pages/AdminPanel/Import';
 // Protected route components
 import ProtectedRoute from './components/ProtectedRoute';
 import DiagnosticPage from './DiagnosticPage';
+import MapTest from './pages/MapTest';
 
 function App() {
   const dispatch = useAppDispatch();
@@ -125,6 +126,9 @@ function App() {
 
         {/* Diagnostic page for development */}
         <Route path="/diagnostic" element={<DiagnosticPage />} />
+
+        {/* Map test page for development */}
+        <Route path="/map-test" element={<MapTest />} />
 
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
