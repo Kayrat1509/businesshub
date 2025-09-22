@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
+import {
   Building2, Package, Star, TrendingUp, Users, Eye,
-  Plus, Calendar, ArrowUpRight, Activity, FileText,
+  Plus, Calendar, ArrowUpRight, Activity, FileText, Edit3,
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -419,6 +419,17 @@ return null;
                         <Star className="w-4 h-4 text-yellow-400 fill-current" />
                         <span className="text-white">{company.rating.toFixed(1)}</span>
                       </div>
+                    </div>
+
+                    {/* Кнопка редактирования конкретной компании */}
+                    <div className="mt-4 pt-3 border-t border-dark-700">
+                      <Link
+                        to={`/dashboard/company/${company.id}`}
+                        className="flex items-center justify-center w-full px-4 py-2 bg-primary-600/20 hover:bg-primary-600/30 text-primary-300 hover:text-primary-200 rounded-lg transition-colors group"
+                      >
+                        <Edit3 className="w-4 h-4 mr-2" />
+                        <span>Редактировать компанию</span>
+                      </Link>
                     </div>
                   </div>
                   {index < userCompanies.length - 1 && <hr className="border-dark-600 mt-4" />}

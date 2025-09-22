@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { login } from '../../store/slices/authSlice';
 import { toast } from 'react-hot-toast';
@@ -9,6 +9,7 @@ import {
   CheckCircle, XCircle, Loader, ArrowRight, Home,
 } from 'lucide-react';
 import apiService from '../../api';
+import MapComponent from '../../components/MapComponent';
 
 interface Company {
   id?: number
@@ -17,6 +18,8 @@ interface Company {
   logo?: string
   city: string
   address: string
+  latitude?: number
+  longitude?: number
   supplier_type?: string // Тип поставщика
   contacts: {
     phone?: string
@@ -52,6 +55,7 @@ interface Company {
 
 const DashboardCompany: React.FC = () => {
   const { user } = useAppSelector(state => state.auth);
+  const { companyId } = useParams<{ companyId?: string }>();
   const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -63,6 +67,8 @@ const DashboardCompany: React.FC = () => {
     description: '',
     city: '',
     address: '',
+    latitude: undefined,
+    longitude: undefined,
     supplier_type: 'DEALER', // По умолчанию дилер
     contacts: {},
     legal_info: {},
@@ -82,6 +88,11 @@ const DashboardCompany: React.FC = () => {
     rating: 0,
     categories: [],
   });
+
+  // Логирование для отладки formData
+  useEffect(() => {
+    console.log('Company.tsx - formData changed:', formData);
+  }, [formData]);
 
   const supplierTypes = [
     { value: 'DEALER', label: 'Дилер' },
@@ -107,77 +118,127 @@ const DashboardCompany: React.FC = () => {
   ];
 
   useEffect(() => {
-    console.log('Current user:', user);
-    // Don't auto-load data, let user manually create company
-    setIsLoading(false);
-    setIsEditing(true); // Start in editing mode for new company
-  }, []);
+    console.log('Company.tsx useEffect - Current user:', user, 'companyId:', companyId);
+    // Автоматически загружаем данные компании пользователя при открытии страницы
+    if (user) {
+      console.log('Company.tsx - User exists, loading data...');
+      loadData();
+    } else {
+      console.log('Company.tsx - No user, setting edit mode');
+      setIsLoading(false);
+      setIsEditing(true); // Start in editing mode for new company if no user
+    }
+  }, [user, companyId]); // Добавляем companyId в зависимости
 
   const loadData = async (preserveEditingState = false) => {
     setIsLoading(true);
-    
+
     // Timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       console.error('Loading timeout - forcing loading to false');
       setIsLoading(false);
     }, 10000); // 10 seconds timeout
-    
+
     try {
-      // Load user's companies and categories - only their own companies
-      console.log('Loading company data for user:', user?.email);
-      
-      let companiesResponse: Company[] = [];
-      try {
-        const response = await apiService.get<Company[]>('/companies/my/');
-        companiesResponse = response;
-        console.log('Loaded user companies:', companiesResponse);
-      } catch (error) {
-        console.error('Failed to load user companies:', error);
-        // Don't fallback to all companies - users should only edit their own
-        companiesResponse = [];
-      }
-      
-      console.log('User companies response:', companiesResponse);
-      
-      // Only use companies that belong to the current user
-      const companies = Array.isArray(companiesResponse) ? companiesResponse : [];
-      console.log('User-owned companies:', companies);
-      
-      // For suppliers, find their company. Take the first one if available
-      const userCompany = companies.length > 0 ? companies[0] : null;
-      console.log('Selected user company:', userCompany);
-      
-      if (userCompany) {
-        const processedCompany = {
-          ...userCompany,
-          categories: [],
-          contacts: userCompany.contacts || {},
-          legal_info: userCompany.legal_info || {},
-          payment_methods: userCompany.payment_methods || [],
-          work_schedule: userCompany.work_schedule || {
-            monday: { open: '09:00', close: '18:00', is_working: true },
-            tuesday: { open: '09:00', close: '18:00', is_working: true },
-            wednesday: { open: '09:00', close: '18:00', is_working: true },
-            thursday: { open: '09:00', close: '18:00', is_working: true },
-            friday: { open: '09:00', close: '18:00', is_working: true },
-            saturday: { open: '10:00', close: '16:00', is_working: false },
-            sunday: { open: '10:00', close: '16:00', is_working: false },
-          },
-          rating: userCompany.rating || 0,
-          staff_count: userCompany.staff_count || 1,
-          branches_count: userCompany.branches_count || 1,
-        };
-        
-        console.log('Processed company data:', processedCompany);
-        setCompany(processedCompany);
-        
-        // Only update form data if not preserving editing state
-        if (!preserveEditingState) {
-          setFormData(processedCompany);
+      console.log('Loading company data for user:', user?.email, 'companyId:', companyId);
+
+      // Если есть companyId в URL, загружаем конкретную компанию
+      if (companyId) {
+        console.log('Loading specific company with ID:', companyId);
+
+        try {
+          // Загружаем конкретную компанию по ID
+          const fullCompanyData = await apiService.get<Company>(`/companies/${companyId}/`);
+          console.log('Loaded specific company data:', fullCompanyData);
+
+          const processedCompany = {
+            ...fullCompanyData,
+            categories: fullCompanyData.categories || [],
+            contacts: fullCompanyData.contacts || {},
+            legal_info: fullCompanyData.legal_info || {},
+            payment_methods: fullCompanyData.payment_methods || [],
+            work_schedule: fullCompanyData.work_schedule || {
+              monday: { open: '09:00', close: '18:00', is_working: true },
+              tuesday: { open: '09:00', close: '18:00', is_working: true },
+              wednesday: { open: '09:00', close: '18:00', is_working: true },
+              thursday: { open: '09:00', close: '18:00', is_working: true },
+              friday: { open: '09:00', close: '18:00', is_working: true },
+              saturday: { open: '10:00', close: '16:00', is_working: false },
+              sunday: { open: '10:00', close: '16:00', is_working: false },
+            },
+            rating: fullCompanyData.rating || 0,
+            staff_count: fullCompanyData.staff_count || 1,
+            branches_count: fullCompanyData.branches_count || 1,
+          };
+
+          console.log('Processed specific company data:', processedCompany);
+          setCompany(processedCompany);
+
+          // Заполняем форму данными конкретной компании
+          if (!preserveEditingState) {
+            console.log('Company.tsx - Setting form data for specific company:', processedCompany);
+            setFormData(processedCompany);
+            setIsEditing(false); // Переводим в режим просмотра, пользователь может нажать "Редактировать"
+            console.log('Company.tsx - Form data set for specific company, editing mode disabled');
+          }
+        } catch (error) {
+          console.error('Failed to load specific company data:', error);
+          toast.error('Ошибка загрузки данных компании');
+          setIsEditing(true); // В случае ошибки переводим в режим создания
         }
       } else {
-        if (!preserveEditingState) {
-          setIsEditing(true); // Create mode if no company
+        // Если нет companyId в URL, показываем первую компанию пользователя или режим создания
+        console.log('No companyId in URL, loading user companies list');
+
+        try {
+          const response = await apiService.get<any>('/companies/my/');
+          const companiesListResponse = Array.isArray(response) ? response : (response.results || []);
+          console.log('Loaded user companies list:', companiesListResponse);
+
+          if (companiesListResponse.length > 0) {
+            // Берем первую компанию если нет конкретного ID
+            const firstCompanyId = companiesListResponse[0].id;
+            console.log('Loading first company with ID:', firstCompanyId);
+
+            const fullCompanyData = await apiService.get<Company>(`/companies/${firstCompanyId}/`);
+
+            const processedCompany = {
+              ...fullCompanyData,
+              categories: fullCompanyData.categories || [],
+              contacts: fullCompanyData.contacts || {},
+              legal_info: fullCompanyData.legal_info || {},
+              payment_methods: fullCompanyData.payment_methods || [],
+              work_schedule: fullCompanyData.work_schedule || {
+                monday: { open: '09:00', close: '18:00', is_working: true },
+                tuesday: { open: '09:00', close: '18:00', is_working: true },
+                wednesday: { open: '09:00', close: '18:00', is_working: true },
+                thursday: { open: '09:00', close: '18:00', is_working: true },
+                friday: { open: '09:00', close: '18:00', is_working: true },
+                saturday: { open: '10:00', close: '16:00', is_working: false },
+                sunday: { open: '10:00', close: '16:00', is_working: false },
+              },
+              rating: fullCompanyData.rating || 0,
+              staff_count: fullCompanyData.staff_count || 1,
+              branches_count: fullCompanyData.branches_count || 1,
+            };
+
+            setCompany(processedCompany);
+            if (!preserveEditingState) {
+              setFormData(processedCompany);
+              setIsEditing(false);
+            }
+          } else {
+            // Если компаний нет, переводим в режим создания
+            console.log('No companies found, switching to create mode');
+            if (!preserveEditingState) {
+              setIsEditing(true); // Create mode if no company
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load user companies:', error);
+          if (!preserveEditingState) {
+            setIsEditing(true); // В случае ошибки переводим в режим создания
+          }
         }
       }
     } catch (error) {
@@ -340,9 +401,11 @@ const handleSave = async () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Создать компанию</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            {company ? `Компания: ${company.name}` : 'Создать компанию'}
+          </h1>
           <p className="text-dark-300">
-            Создайте профиль вашей компании
+            {company ? 'Управляйте информацией о вашей компании' : 'Создайте профиль вашей компании'}
           </p>
         </div>
         
@@ -480,6 +543,68 @@ const handleSave = async () => {
             placeholder="Введите полный адрес"
             disabled={!isEditing}
           />
+        </div>
+
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-dark-200 mb-2">
+            Широта и Долгота
+          </label>
+          <input
+            type="text"
+            id="company-coordinates"
+            name="companyCoordinates"
+            value={
+              formData.latitude && formData.longitude
+                ? `${formData.latitude}, ${formData.longitude}`
+                : ''
+            }
+            onChange={(e) => {
+              // Обработка изменения координат с валидацией диапазонов
+              const coords = e.target.value.split(',').map(coord => coord.trim());
+              if (coords.length === 2) {
+                const lat = parseFloat(coords[0]);
+                const lng = parseFloat(coords[1]);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                  // Проверка диапазонов: широта от -90 до 90, долгота от -180 до 180
+                  if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                    handleInputChange('latitude', lat);
+                    handleInputChange('longitude', lng);
+                  } else {
+                    // Показываем сообщение об ошибке при некорректных координатах
+                    toast.error('Некорректные координаты. Широта: -90 до 90, Долгота: -180 до 180');
+                  }
+                }
+              } else if (e.target.value === '') {
+                // Очистка полей при пустом вводе
+                handleInputChange('latitude', undefined);
+                handleInputChange('longitude', undefined);
+              }
+            }}
+            className="input"
+            placeholder="47.05505112306978, 51.82543208082456"
+            disabled={!isEditing}
+          />
+          <p className="text-xs text-dark-400 mt-1">
+            Введите координаты в формате: широта, долгота (например: 47.05505112306978, 51.82543208082456)
+          </p>
+
+          {/* Превью карты с введенными координатами */}
+          {formData.latitude && formData.longitude && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-dark-200 mb-2">Превью местоположения:</p>
+              <div className="rounded-lg overflow-hidden border border-dark-600">
+                <MapComponent
+                  latitude={formData.latitude}
+                  longitude={formData.longitude}
+                  zoom={15}
+                  height="200px"
+                  width="100%"
+                  markerText={`${formData.name || 'Компания'} - ${formData.address || formData.city}`}
+                  className="preview-map"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

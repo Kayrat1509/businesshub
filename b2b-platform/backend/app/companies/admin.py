@@ -103,16 +103,25 @@ class CompanyAdminForm(forms.ModelForm):
     
     # График работы
     work_hours = forms.CharField(
-        label="График работы", 
-        max_length=200, 
+        label="График работы",
+        max_length=200,
         required=False,
         help_text="Например: Пн-Пт 9:00-18:00, Сб 10:00-16:00, Вс - выходной",
         widget=TextInput(attrs={'size': '60'})
     )
 
+    # Координаты
+    coordinates = forms.CharField(
+        label="Широта и Долгота",
+        max_length=100,
+        required=False,
+        help_text="Введите координаты в формате: широта, долгота (например: 47.05505112306978, 51.82543208082456)",
+        widget=TextInput(attrs={'size': '60', 'placeholder': '47.05505112306978, 51.82543208082456'})
+    )
+
     class Meta:
         model = Company
-        exclude = ['contacts', 'legal_info', 'payment_methods', 'work_schedule']
+        exclude = ['contacts', 'legal_info', 'payment_methods', 'work_schedule', 'latitude', 'longitude']
         # Включаем новые поля phones и supplier_type в форму
 
     def __init__(self, *args, **kwargs):
@@ -174,6 +183,10 @@ class CompanyAdminForm(forms.ModelForm):
             self.fields['accepts_crypto'].initial = 'CRYPTO' in payment_methods
             
             self.fields['work_hours'].initial = work_schedule.get('description', '')
+
+            # Координаты
+            if self.instance.latitude and self.instance.longitude:
+                self.fields['coordinates'].initial = f"{self.instance.latitude}, {self.instance.longitude}"
         else:
             # Создание новой компании - устанавливаем дефолтное значение для телефона
             self.fields['phone_numbers'].initial = '+7 (777) 123-45-67'
@@ -236,7 +249,36 @@ class CompanyAdminForm(forms.ModelForm):
         instance.work_schedule = {
             'description': self.cleaned_data['work_hours']
         }
-        
+
+        # Парсинг и сохранение координат
+        coordinates_str = self.cleaned_data.get('coordinates', '').strip()
+        if coordinates_str:
+            try:
+                coords = [coord.strip() for coord in coordinates_str.split(',')]
+                if len(coords) == 2:
+                    lat = float(coords[0])
+                    lng = float(coords[1])
+                    # Проверяем что координаты в допустимых диапазонах
+                    if -90 <= lat <= 90 and -180 <= lng <= 180:
+                        instance.latitude = lat
+                        instance.longitude = lng
+                    else:
+                        # Если координаты некорректные, очищаем их
+                        instance.latitude = None
+                        instance.longitude = None
+                else:
+                    # Если формат некорректный, очищаем координаты
+                    instance.latitude = None
+                    instance.longitude = None
+            except (ValueError, TypeError):
+                # Если парсинг не удался, очищаем координаты
+                instance.latitude = None
+                instance.longitude = None
+        else:
+            # Если поле пустое, очищаем координаты
+            instance.latitude = None
+            instance.longitude = None
+
         if commit:
             instance.save()
         return instance
@@ -279,7 +321,7 @@ class CompanyAdmin(ImportExportModelAdmin):
         ),
         (
             "Местоположение",
-            {"fields": ("city", "address", "latitude", "longitude")},
+            {"fields": ("city", "address", "coordinates")},
         ),
         (
             "Юридическая информация",

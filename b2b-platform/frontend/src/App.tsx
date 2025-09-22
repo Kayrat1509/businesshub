@@ -99,6 +99,7 @@ function App() {
         }>
           <Route index element={<SupplierDashboard />} />
           <Route path="company" element={<DashboardCompany />} />
+          <Route path="company/:companyId" element={<DashboardCompany />} />
           <Route path="products" element={<DashboardProducts />} />
           <Route path="products/create" element={<CreateProduct />} />
           <Route path="products/edit/:id" element={<EditProduct />} />
