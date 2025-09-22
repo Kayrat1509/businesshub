@@ -1,6 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-// @ts-ignore
-import L from 'leaflet';
+import { useEffect, useRef } from 'react';
+import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Исправление проблемы с иконками маркеров в Vite/Webpack сборке
@@ -22,7 +21,7 @@ interface MapComponentProps {
   className?: string; // Дополнительные CSS классы
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({
+const MapComponent = ({
   latitude = 51.505, // Координаты Лондона по умолчанию
   longitude = -0.09,
   zoom = 13,
@@ -30,7 +29,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   width = '100%',
   markerText = 'Маркер на карте',
   className = ''
-}) => {
+}: MapComponentProps) => {
   // Реф для контейнера карты
   const mapRef = useRef<HTMLDivElement>(null);
   // Реф для экземпляра карты Leaflet

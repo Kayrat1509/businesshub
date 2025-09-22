@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Heart, Building2, Users } from 'lucide-react';
+import { MapPin, Heart, Users } from 'lucide-react';
 import { Company } from '../../types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { toggleFavorite } from '../../store/slices/companiesSlice';

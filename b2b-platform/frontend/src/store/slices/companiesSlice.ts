@@ -9,6 +9,7 @@ interface CompaniesState {
   companyTenders: Tender[]
   totalCount: number
   isLoading: boolean
+  loading: boolean  // добавлено для совместимости с некоторыми компонентами
   tendersLoading: boolean
   error: string | null
   filters: CompanyFilters
@@ -20,6 +21,7 @@ const initialState: CompaniesState = {
   companyTenders: [],
   totalCount: 0,
   isLoading: false,
+  loading: false,  // синхронизируем с isLoading
   tendersLoading: false,
   error: null,
   filters: {},
@@ -99,28 +101,34 @@ const companiesSlice = createSlice({
       // Fetch companies
       .addCase(fetchCompanies.pending, (state) => {
         state.isLoading = true;
+        state.loading = true;  // синхронизируем с isLoading
         state.error = null;
       })
       .addCase(fetchCompanies.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.loading = false;  // синхронизируем с isLoading
         state.companies = action.payload.results;
         state.totalCount = action.payload.count;
       })
       .addCase(fetchCompanies.rejected, (state, action) => {
         state.isLoading = false;
+        state.loading = false;  // синхронизируем с isLoading
         state.error = action.payload as string;
       })
       // Fetch company by id
       .addCase(fetchCompanyById.pending, (state) => {
         state.isLoading = true;
+        state.loading = true;  // синхронизируем с isLoading
         state.error = null;
       })
       .addCase(fetchCompanyById.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.loading = false;  // синхронизируем с isLoading
         state.selectedCompany = action.payload;
       })
       .addCase(fetchCompanyById.rejected, (state, action) => {
         state.isLoading = false;
+        state.loading = false;  // синхронизируем с isLoading
         state.error = action.payload as string;
       })
       // Toggle favorite

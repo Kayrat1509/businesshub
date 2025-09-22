@@ -1,4 +1,3 @@
-import React from 'react';
 import MapComponent from '../components/MapComponent';
 
 // Тестовая страница для демонстрации работы карты

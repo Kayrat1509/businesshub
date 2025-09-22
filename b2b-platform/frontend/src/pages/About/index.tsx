@@ -1,7 +1,6 @@
-import React from 'react';
-import { Building2, MessageCircle, Users, Target, Globe, Shield, Clock, Search, CheckCircle2, Phone, MapPin } from 'lucide-react';
+import { Building2, MessageCircle, Target, Shield, Clock, Search, CheckCircle2, MapPin } from 'lucide-react';
 
-const AboutPage: React.FC = () => {
+const AboutPage = () => {
   return (
     <div className="min-h-screen bg-dark-900 py-12">
       <div className="container mx-auto px-4">

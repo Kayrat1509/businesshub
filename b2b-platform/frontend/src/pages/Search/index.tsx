@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search as SearchIcon, Filter, MapPin, Star, Building2 } from 'lucide-react';
+import { Search as SearchIcon, MapPin, Building2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { searchCompanies } from '../../store/slices/companiesSlice';
+import { fetchCompanies } from '../../store/slices/companiesSlice';
 import { motion } from 'framer-motion';
 
 const Search: React.FC = () => {
@@ -26,7 +26,7 @@ const Search: React.FC = () => {
     
     setIsLoading(true);
     try {
-      await dispatch(searchCompanies({ search: query })).unwrap();
+      await dispatch(fetchCompanies({ page: 1, filters: { q: query } })).unwrap();
     } catch (error) {
       console.error('Search error:', error);
     } finally {

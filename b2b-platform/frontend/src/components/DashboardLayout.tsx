@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   Building2, Package, Upload, Megaphone, Settings, Menu, X,
-  BarChart3, Users, FileText, Star, LogOut, Home,
+  BarChart3, FileText, LogOut, Home,
 } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';

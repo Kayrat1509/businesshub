@@ -1,8 +1,8 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { 
-  Building2, Package, TrendingUp, Activity, Settings, 
-  Menu, X, Home, Upload, LogOut, Star, Calendar,
+import {
+  Building2, Package, Activity, Settings,
+  Menu, X, Home, Upload, LogOut, Star,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';

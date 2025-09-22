@@ -1,4 +1,3 @@
-import React from 'react';
 import DiagnosticPage from './DiagnosticPage';
 
 function App() {

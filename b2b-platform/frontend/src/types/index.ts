@@ -7,6 +7,7 @@ export interface User {
   first_name: string
   last_name: string
   phone: string
+  company_id?: number  // добавлено для поддержки связи с компанией
   created_at: string
 }
 
@@ -268,4 +269,5 @@ export interface TenderFilters {
   budget_min?: number
   budget_max?: number
   status?: string
+  page?: number  // добавлено для пагинации
 }

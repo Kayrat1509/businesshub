@@ -1,8 +1,7 @@
-import React from 'react';
-import { Check, Star, Building2, MessageCircle } from 'lucide-react';
+import { Check, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const PricingPage: React.FC = () => {
+const PricingPage = () => {
   const plans = [
     {
       name: 'Стартовый',
