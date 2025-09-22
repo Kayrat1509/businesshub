@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import * as L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 // Исправление проблемы с иконками маркеров в Vite/Webpack сборке
 delete (L.Icon.Default.prototype as any)._getIconUrl;
