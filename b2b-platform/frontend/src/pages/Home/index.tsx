@@ -59,11 +59,15 @@ const Home = () => {
   const { ads } = useAppSelector(state => state.ads);
   const { isAuthenticated } = useAppSelector(state => state.auth);
 
+  // Отслеживаем изменения состояния компаний для отладки
+  useEffect(() => {
+    console.log('Companies loaded:', companies.length, 'Loading:', companiesLoading);
+  }, [companies, companiesLoading]);
+
 
   useEffect(() => {
-    // Fetch data for homepage
+    // Загружаем данные для главной страницы
     dispatch(fetchCategoryTree());
-    // Загружаем все компании для карусели без ограничений по страницам
     dispatch(fetchCompanies({ page: 1, filters: {} }));
     dispatch(fetchTenders({ page: 1, filters: { status: 'APPROVED' } }));
     dispatch(fetchAds({ is_current: true }));
@@ -184,13 +188,58 @@ return;
       console.log('Extracted companies:', companies.length, companies);
       console.log('Extracted products:', products.length, products);
       
-      // Combine results
+      // ===== ИЗМЕНЕННАЯ ЛОГИКА СОРТИРОВКИ ТОВАРОВ =====
+      // Теперь сортируем товары по релевантности: сначала совпадения в названии, потом в описании
+
+      // Функция для определения релевантности товара по поисковому запросу
+      const getProductRelevance = (product: Product, searchQuery: string): number => {
+        const queryLower = searchQuery.toLowerCase();
+        const titleLower = product.title.toLowerCase();
+        const descriptionLower = product.description.toLowerCase();
+
+        // Приоритет 1: точное совпадение в названии (высший приоритет)
+        if (titleLower === queryLower) return 1;
+
+        // Приоритет 2: название начинается с поискового запроса
+        if (titleLower.startsWith(queryLower)) return 2;
+
+        // Приоритет 3: поисковый запрос есть в названии (любое вхождение)
+        if (titleLower.includes(queryLower)) return 3;
+
+        // Приоритет 4: точное совпадение в описании
+        if (descriptionLower === queryLower) return 4;
+
+        // Приоритет 5: описание начинается с поискового запроса
+        if (descriptionLower.startsWith(queryLower)) return 5;
+
+        // Приоритет 6: поисковый запрос есть в описании (любое вхождение)
+        if (descriptionLower.includes(queryLower)) return 6;
+
+        // Приоритет 7: нет прямых совпадений (для товаров, найденных бэкендом по другим критериям)
+        return 7;
+      };
+
+      // Сортируем товары по релевантности (меньшее число = выше приоритет)
+      const sortedProducts = products.sort((a: Product, b: Product) => {
+        const relevanceA = getProductRelevance(a, query);
+        const relevanceB = getProductRelevance(b, query);
+
+        // Если релевантность одинаковая, сортируем по названию в алфавитном порядке
+        if (relevanceA === relevanceB) {
+          return a.title.localeCompare(b.title);
+        }
+
+        return relevanceA - relevanceB;
+      });
+
+      // Combine results с отсортированными товарами
       const combinedResults: SearchResult[] = [
         ...companies.map((company: Company) => ({
           type: 'company' as const,
           data: company,
         })),
-        ...products.map((product: Product) => ({
+        // Используем отсортированный массив товаров вместо исходного
+        ...sortedProducts.map((product: Product) => ({
           type: 'product' as const,
           data: product,
         })),
@@ -198,9 +247,13 @@ return;
       
       console.log('=== COMBINED RESULTS DEBUG ===');
       console.log('Companies count:', companies.length);
-      console.log('Products count:', products.length);
+      console.log('Products count (original):', products.length);
+      console.log('Products count (sorted):', sortedProducts.length);
       console.log('Combined results count:', combinedResults.length);
-      console.log('Product titles:', products.map(p => p.title));
+
+      // Показываем как изменился порядок товаров после сортировки
+      console.log('Original products order:', products.map(p => p.title));
+      console.log('Sorted products order:', sortedProducts.map(p => p.title));
       console.log('Combined results:', combinedResults);
       
       setSearchResults(combinedResults);
@@ -705,18 +758,21 @@ return;
                             
                             {/* Город */}
                             <div className="flex items-center text-dark-400 text-xs">
-                              📍 {company.city}
+                              📍 {company.city || 'Город не указан'}
                             </div>
-                            
+
                             {/* Телефон */}
                             <div className="flex items-center text-dark-400 text-xs">
-                              📞 {company.contacts?.phones?.[0] || company.contacts?.phone || 'Телефон не указан'}
+                              📞 {(company.contacts && (
+                                company.contacts.phones?.[0] ||
+                                company.contacts.phone
+                              )) || 'Телефон не указан'}
                             </div>
-                            
+
                             {/* Категории деятельности */}
                             <div className="flex items-center text-dark-400 text-xs">
-                              🏷️ {company.categories && company.categories.length > 0 
-                                ? company.categories[0].name 
+                              🏷️ {(company.categories && company.categories.length > 0)
+                                ? company.categories[0].name
                                 : 'Категория не указана'}
                             </div>
                           </div>

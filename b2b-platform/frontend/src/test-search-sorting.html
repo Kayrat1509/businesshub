@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест сортировки результатов поиска</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .product {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .product-title { font-weight: bold; color: #333; }
+        .product-description { color: #666; margin-top: 5px; }
+        .relevance {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .search-input {
+            padding: 10px;
+            font-size: 16px;
+            width: 300px;
+            margin-right: 10px;
+        }
+        .search-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .results { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Тест новой логики сортировки поиска товаров</h1>
+
+    <p>
+        <strong>Новая логика:</strong> Товары с совпадениями в <em>названии</em> показываются первыми,
+        затем товары с совпадениями в <em>описании</em>.
+    </p>
+
+    <div>
+        <input type="text" id="searchInput" class="search-input" placeholder="Введите поисковый запрос..." value="товар">
+        <button onclick="testSearch()" class="search-button">Поиск</button>
+    </div>
+
+    <div id="results" class="results"></div>
+
+    <script>
+        // Тестовые данные товаров
+        const testProducts = [
+            {
+                id: 1,
+                title: "Строительный кирпич",
+                description: "Высококачественный товар для строительства домов и зданий"
+            },
+            {
+                id: 2,
+                title: "Товар для дома",
+                description: "Универсальный предмет для использования в быту"
+            },
+            {
+                id: 3,
+                title: "Электроника и гаджеты",
+                description: "Современный товар: смартфоны, планшеты и аксессуары"
+            },
+            {
+                id: 4,
+                title: "Товар №1 популярный",
+                description: "Самый продаваемый предмет в категории"
+            },
+            {
+                id: 5,
+                title: "Спортивный инвентарь",
+                description: "Качественные товары для спорта и активного отдыха"
+            },
+            {
+                id: 6,
+                title: "Товары для офиса",
+                description: "Канцелярские принадлежности и оборудование"
+            }
+        ];
+
+        // Функция определения релевантности (скопирована из основного кода)
+        function getProductRelevance(product, searchQuery) {
+            const queryLower = searchQuery.toLowerCase();
+            const titleLower = product.title.toLowerCase();
+            const descriptionLower = product.description.toLowerCase();
+
+            // Приоритет 1: точное совпадение в названии (высший приоритет)
+            if (titleLower === queryLower) return { priority: 1, reason: "Точное совпадение в названии" };
+
+            // Приоритет 2: название начинается с поискового запроса
+            if (titleLower.startsWith(queryLower)) return { priority: 2, reason: "Название начинается с запроса" };
+
+            // Приоритет 3: поисковый запрос есть в названии (любое вхождение)
+            if (titleLower.includes(queryLower)) return { priority: 3, reason: "Запрос найден в названии" };
+
+            // Приоритет 4: точное совпадение в описании
+            if (descriptionLower === queryLower) return { priority: 4, reason: "Точное совпадение в описании" };
+
+            // Приоритет 5: описание начинается с поискового запроса
+            if (descriptionLower.startsWith(queryLower)) return { priority: 5, reason: "Описание начинается с запроса" };
+
+            // Приоритет 6: поисковый запрос есть в описании (любое вхождение)
+            if (descriptionLower.includes(queryLower)) return { priority: 6, reason: "Запрос найден в описании" };
+
+            // Приоритет 7: нет прямых совпадений
+            return { priority: 7, reason: "Нет прямых совпадений" };
+        }
+
+        function testSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            const resultsDiv = document.getElementById('results');
+
+            if (!query) {
+                resultsDiv.innerHTML = '<p>Введите поисковый запрос</p>';
+                return;
+            }
+
+            // Фильтруем товары, которые содержат поисковый запрос
+            const filteredProducts = testProducts.filter(product => {
+                const queryLower = query.toLowerCase();
+                return product.title.toLowerCase().includes(queryLower) ||
+                       product.description.toLowerCase().includes(queryLower);
+            });
+
+            // Сортируем по релевантности
+            const sortedProducts = filteredProducts.map(product => {
+                const relevance = getProductRelevance(product, query);
+                return { ...product, relevance };
+            }).sort((a, b) => {
+                // Сортируем по приоритету (меньше = выше приоритет)
+                if (a.relevance.priority !== b.relevance.priority) {
+                    return a.relevance.priority - b.relevance.priority;
+                }
+                // При одинаковом приоритете сортируем по названию
+                return a.title.localeCompare(b.title);
+            });
+
+            // Отображаем результаты
+            if (sortedProducts.length === 0) {
+                resultsDiv.innerHTML = `<p>По запросу "<strong>${query}</strong>" ничего не найдено</p>`;
+                return;
+            }
+
+            const resultsHTML = `
+                <h3>Результаты поиска для: "<strong>${query}</strong>"</h3>
+                <p>Найдено товаров: ${sortedProducts.length}</p>
+                ${sortedProducts.map(product => `
+                    <div class="product">
+                        <div class="relevance">Приоритет ${product.relevance.priority}: ${product.relevance.reason}</div>
+                        <div class="product-title">${highlightMatch(product.title, query)}</div>
+                        <div class="product-description">${highlightMatch(product.description, query)}</div>
+                    </div>
+                `).join('')}
+            `;
+
+            resultsDiv.innerHTML = resultsHTML;
+        }
+
+        // Функция для подсветки совпадений в тексте
+        function highlightMatch(text, query) {
+            if (!query) return text;
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<mark>$1</mark>');
+        }
+
+        // Поиск при нажатии Enter
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testSearch();
+            }
+        });
+
+        // Автоматический поиск при загрузке страницы
+        document.addEventListener('DOMContentLoaded', testSearch);
+    </script>
+</body>
+</html>
