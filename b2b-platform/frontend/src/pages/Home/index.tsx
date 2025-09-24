@@ -80,40 +80,97 @@ const Home = () => {
 
     // ===== ИСПРАВЛЕНО: ЗАГРУЖАЕМ ТОЛЬКО БАННЕРЫ ДЛЯ ГЛАВНОЙ СТРАНИЦЫ =====
     // Вместо загрузки всех баннеров, загружаем только те, что предназначены для виджетов главной страницы
-    dispatch(fetchAds({ position: 'HOME_WIDGET', is_current: true }));
+    // С fallback для совместимости с production
+    loadHomePageAds();
 
     // ===== ЗАГРУЗКА БОКОВЫХ БАННЕРОВ =====
     // Загружаем отдельно левые и правые боковые баннеры
     loadSidebarAds();
   }, [dispatch]);
 
+  // ===== ФУНКЦИЯ ЗАГРУЗКИ БАННЕРОВ ГЛАВНОЙ СТРАНИЦЫ =====
+  const loadHomePageAds = async () => {
+    try {
+      // Пробуем загрузить HOME_WIDGET баннеры
+      let homeResponse = await dispatch(fetchAds({
+        position: 'HOME_WIDGET',
+        is_current: true
+      })).unwrap();
+
+      // Fallback: если нет HOME_WIDGET, пробуем BANNER
+      if (!homeResponse || homeResponse.length === 0) {
+        console.log('⚠️ Fallback: загружаем BANNER баннеры для главной страницы');
+        homeResponse = await dispatch(fetchAds({
+          position: 'BANNER',
+          is_current: true
+        })).unwrap();
+      }
+
+      // Последний fallback: загружаем все активные баннеры и фильтруем
+      if (!homeResponse || homeResponse.length === 0) {
+        console.log('⚠️ Final fallback: загружаем все активные баннеры');
+        const allResponse = await dispatch(fetchAds({ is_current: true })).unwrap();
+        // Фильтруем только баннеры для главной страницы
+        homeResponse = allResponse.filter(ad =>
+          ad.position === 'HOME_WIDGET' || ad.position === 'BANNER'
+        );
+      }
+
+      console.log('✅ Баннеры главной страницы загружены:', homeResponse?.length || 0, 'штук');
+    } catch (error) {
+      console.error('❌ Ошибка загрузки баннеров главной страницы:', error);
+    }
+  };
+
   // ===== ИСПРАВЛЕНА ФУНКЦИЯ ЗАГРУЗКИ БОКОВЫХ БАННЕРОВ =====
-  // Теперь правильно обрабатываем ответ от API и исправлена передача параметров в fetchAds
+  // Теперь с fallback для production, где комбинированные фильтры могут не работать
   const loadSidebarAds = async () => {
     try {
       console.log('=== ЗАГРУЗКА БОКОВЫХ БАННЕРОВ ===');
 
       // ===== ЗАГРУЗКА ЛЕВЫХ БОКОВЫХ БАННЕРОВ =====
-      const leftResponse = await dispatch(fetchAds({
+      let leftResponse;
+
+      // Сначала пробуем с is_current фильтром
+      leftResponse = await dispatch(fetchAds({
         position: 'SIDEBAR_LEFT',
         is_current: true
       })).unwrap();
 
-      // API возвращает массив баннеров напрямую (благодаря return response.results в adsSlice)
+      // ===== FALLBACK ДЛЯ PRODUCTION: ЕСЛИ КОМБИНИРОВАННЫЙ ФИЛЬТР НЕ РАБОТАЕТ =====
+      if (!leftResponse || leftResponse.length === 0) {
+        console.log('⚠️ Fallback: загружаем левые баннеры без is_current фильтра');
+        leftResponse = await dispatch(fetchAds({
+          position: 'SIDEBAR_LEFT'
+        })).unwrap();
+        // Фильтруем вручную только активные и текущие
+        leftResponse = leftResponse.filter(ad => ad.is_active && ad.is_current);
+      }
+
       setLeftSidebarAds(leftResponse || []);
-      // ===== ИСПРАВЛЕНО: СБРОС ИНДЕКСА ПРИ НОВЫХ ДАННЫХ =====
       setCurrentLeftAdIndex(0);
       console.log('✅ Левые баннеры загружены:', leftResponse?.length || 0, 'штук');
 
       // ===== ЗАГРУЗКА ПРАВЫХ БОКОВЫХ БАННЕРОВ =====
-      const rightResponse = await dispatch(fetchAds({
+      let rightResponse;
+
+      // Сначала пробуем с is_current фильтром
+      rightResponse = await dispatch(fetchAds({
         position: 'SIDEBAR_RIGHT',
         is_current: true
       })).unwrap();
 
-      // API возвращает массив баннеров напрямую
+      // ===== FALLBACK ДЛЯ PRODUCTION: ЕСЛИ КОМБИНИРОВАННЫЙ ФИЛЬТР НЕ РАБОТАЕТ =====
+      if (!rightResponse || rightResponse.length === 0) {
+        console.log('⚠️ Fallback: загружаем правые баннеры без is_current фильтра');
+        rightResponse = await dispatch(fetchAds({
+          position: 'SIDEBAR_RIGHT'
+        })).unwrap();
+        // Фильтруем вручную только активные и текущие
+        rightResponse = rightResponse.filter(ad => ad.is_active && ad.is_current);
+      }
+
       setRightSidebarAds(rightResponse || []);
-      // ===== ИСПРАВЛЕНО: СБРОС ИНДЕКСА ПРИ НОВЫХ ДАННЫХ =====
       setCurrentRightAdIndex(0);
       console.log('✅ Правые баннеры загружены:', rightResponse?.length || 0, 'штук');
 
