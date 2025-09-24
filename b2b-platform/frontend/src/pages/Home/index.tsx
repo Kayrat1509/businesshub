@@ -592,35 +592,11 @@ return;
                     onClick={(e) => {
                       e.preventDefault();
                       const product = result.data as Product;
-                      
-                      // Попробуем найти поставщика среди результатов поиска сначала
-                      let supplier = searchResults.find(r => 
-                        r.type === 'company' && 
-                        (r.data as Company).name === product.company_name
-                      );
-                      
-                      if (supplier) {
-                        // Открываем в новой вкладке
-                        window.open(`/company/${(supplier.data as Company).id}`, '_blank');
-                      } else {
-                        // Если поставщик не найден в результатах поиска, 
-                        // попробуем найти его через API по названию компании
-                        const searchCompanyByName = async () => {
-                          try {
-                            const companiesResponse = await apiService.get('/companies/', { 
-                              search: product.company_name 
-                            });
-                            const companies = companiesResponse.results || companiesResponse;
-                            const foundCompany = companies.find((c: Company) => c.name === product.company_name);
-                            if (foundCompany) {
-                              window.open(`/company/${foundCompany.id}`, '_blank');
-                            }
-                          } catch (error) {
-                            console.error('Не удалось найти компанию:', error);
-                          }
-                        };
-                        searchCompanyByName();
-                      }
+
+                      // ===== ИСПРАВЛЕННАЯ ЛОГИКА КЛИКА =====
+                      // Теперь при клике на товар открываем страницу товара, а не компании
+                      // Используем роут /product/:id для отображения детальной информации о товаре
+                      navigate(`/product/${product.id}`);
                     }}
                   >
                     {(() => {
@@ -654,7 +630,7 @@ return;
                           </div>
                           
                           <div className="text-center text-primary-400 text-sm hover:text-primary-300 transition-colors">
-                            Перейти к поставщику →
+                            Подробнее о товаре →
                           </div>
                         </>
                       );
