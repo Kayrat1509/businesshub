@@ -8,7 +8,8 @@ def ad_image_upload_path(instance, filename):
 class Ad(models.Model):
     POSITION_CHOICES = [
         ("HOME_WIDGET", "Баннер на главной странице"),
-        ("SIDEBAR", "Боковая панель"),
+        ("SIDEBAR_LEFT", "Боковая панель с левой стороны"),
+        ("SIDEBAR_RIGHT", "Боковая панель с правой стороны"),
         ("BANNER", "Полноширинный баннер"),
     ]
     

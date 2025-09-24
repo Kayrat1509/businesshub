@@ -21,9 +21,18 @@ class AdFilter(filters.FilterSet):
         fields = ["position", "is_active", "is_current"]
 
     def filter_is_current(self, queryset, name, value):
+        # ===== ИСПРАВЛЕНО: ФИЛЬТР is_current ТЕПЕРЬ УЧИТЫВАЕТ БАННЕРЫ БЕЗ КОНЕЧНОЙ ДАТЫ =====
+        # Проблема была в том, что ends_at__gte=now исключал баннеры с ends_at=None
         now = timezone.now()
         if value:
-            return queryset.filter(is_active=True, starts_at__lte=now, ends_at__gte=now)
+            from django.db.models import Q
+            return queryset.filter(
+                is_active=True,
+                starts_at__lte=now
+            ).filter(
+                # Баннер актуален если ends_at=None ИЛИ ends_at >= now
+                Q(ends_at__isnull=True) | Q(ends_at__gte=now)
+            )
         return queryset
 
 

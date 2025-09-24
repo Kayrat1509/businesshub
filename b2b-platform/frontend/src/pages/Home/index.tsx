@@ -52,12 +52,19 @@ const Home = () => {
   const [isCompanyCarouselHovered, setIsCompanyCarouselHovered] = useState(false);
   const [currentTenderIndex, setCurrentTenderIndex] = useState(0);
   const [isTenderCarouselHovered, setIsTenderCarouselHovered] = useState(false);
-  
+
   const { categoryTree } = useAppSelector(state => state.categories);
   const { companies, isLoading: companiesLoading } = useAppSelector(state => state.companies);
   const { tenders } = useAppSelector(state => state.tenders);
   const { ads } = useAppSelector(state => state.ads);
   const { isAuthenticated } = useAppSelector(state => state.auth);
+
+  // ===== СОСТОЯНИЕ ДЛЯ БОКОВЫХ ПАНЕЛЕЙ =====
+  // Отдельные состояния для левых и правых боковых баннеров
+  const [leftSidebarAds, setLeftSidebarAds] = useState<any[]>([]);
+  const [rightSidebarAds, setRightSidebarAds] = useState<any[]>([]);
+  const [currentLeftAdIndex, setCurrentLeftAdIndex] = useState(0);
+  const [currentRightAdIndex, setCurrentRightAdIndex] = useState(0);
 
   // Отслеживаем изменения состояния компаний для отладки
   useEffect(() => {
@@ -70,19 +77,101 @@ const Home = () => {
     dispatch(fetchCategoryTree());
     dispatch(fetchCompanies({ page: 1, filters: {} }));
     dispatch(fetchTenders({ page: 1, filters: { status: 'APPROVED' } }));
-    dispatch(fetchAds({ is_current: true }));
+
+    // ===== ИСПРАВЛЕНО: ЗАГРУЖАЕМ ТОЛЬКО БАННЕРЫ ДЛЯ ГЛАВНОЙ СТРАНИЦЫ =====
+    // Вместо загрузки всех баннеров, загружаем только те, что предназначены для виджетов главной страницы
+    dispatch(fetchAds({ position: 'HOME_WIDGET', is_current: true }));
+
+    // ===== ЗАГРУЗКА БОКОВЫХ БАННЕРОВ =====
+    // Загружаем отдельно левые и правые боковые баннеры
+    loadSidebarAds();
   }, [dispatch]);
 
-  // Автоматическая смена рекламы каждые 4 секунды
+  // ===== ИСПРАВЛЕНА ФУНКЦИЯ ЗАГРУЗКИ БОКОВЫХ БАННЕРОВ =====
+  // Теперь правильно обрабатываем ответ от API и исправлена передача параметров в fetchAds
+  const loadSidebarAds = async () => {
+    try {
+      console.log('=== ЗАГРУЗКА БОКОВЫХ БАННЕРОВ ===');
+
+      // ===== ЗАГРУЗКА ЛЕВЫХ БОКОВЫХ БАННЕРОВ =====
+      const leftResponse = await dispatch(fetchAds({
+        position: 'SIDEBAR_LEFT',
+        is_current: true
+      })).unwrap();
+
+      // API возвращает массив баннеров напрямую (благодаря return response.results в adsSlice)
+      setLeftSidebarAds(leftResponse || []);
+      // ===== ИСПРАВЛЕНО: СБРОС ИНДЕКСА ПРИ НОВЫХ ДАННЫХ =====
+      setCurrentLeftAdIndex(0);
+      console.log('✅ Левые баннеры загружены:', leftResponse?.length || 0, 'штук');
+
+      // ===== ЗАГРУЗКА ПРАВЫХ БОКОВЫХ БАННЕРОВ =====
+      const rightResponse = await dispatch(fetchAds({
+        position: 'SIDEBAR_RIGHT',
+        is_current: true
+      })).unwrap();
+
+      // API возвращает массив баннеров напрямую
+      setRightSidebarAds(rightResponse || []);
+      // ===== ИСПРАВЛЕНО: СБРОС ИНДЕКСА ПРИ НОВЫХ ДАННЫХ =====
+      setCurrentRightAdIndex(0);
+      console.log('✅ Правые баннеры загружены:', rightResponse?.length || 0, 'штук');
+
+      console.log('=== ВСЕ БОКОВЫЕ БАННЕРЫ ЗАГРУЖЕНЫ ===');
+    } catch (error) {
+      console.error('❌ Ошибка загрузки боковых баннеров:', error);
+      // ===== ДОБАВЛЕНО: СБРАСЫВАЕМ СОСТОЯНИЕ В СЛУЧАЕ ОШИБКИ =====
+      setLeftSidebarAds([]);
+      setRightSidebarAds([]);
+    }
+  };
+
+  // ===== ИСПРАВЛЕНО: Автоматическая смена рекламы каждые 4 секунды =====
+  // Теперь используем только баннеры для главной страницы
   useEffect(() => {
-    if (ads.length > 1) {
+    const homePageAds = ads.filter(ad => ad.position === 'HOME_WIDGET' || ad.position === 'BANNER');
+    if (homePageAds.length > 1) {
       const interval = setInterval(() => {
-        setCurrentAdIndex((prev) => (prev + 1) % ads.length);
+        setCurrentAdIndex((prev) => (prev + 1) % homePageAds.length);
       }, 4000);
-      
+
       return () => clearInterval(interval);
     }
-  }, [ads.length]);
+  }, [ads]);
+
+  // ===== АВТОМАТИЧЕСКАЯ СМЕНА ЛЕВЫХ БОКОВЫХ БАННЕРОВ =====
+  useEffect(() => {
+    // ===== ИСПРАВЛЕНО: СБРОС ИНДЕКСА ЕСЛИ ОН БОЛЬШЕ ДЛИНЫ МАССИВА =====
+    if (leftSidebarAds.length > 0 && currentLeftAdIndex >= leftSidebarAds.length) {
+      console.log('Сбрасываем индекс левого баннера с', currentLeftAdIndex, 'на 0');
+      setCurrentLeftAdIndex(0);
+    }
+
+    if (leftSidebarAds.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentLeftAdIndex((prev) => (prev + 1) % leftSidebarAds.length);
+      }, 5000); // Смена каждые 5 секунд
+
+      return () => clearInterval(interval);
+    }
+  }, [leftSidebarAds.length, currentLeftAdIndex]);
+
+  // ===== АВТОМАТИЧЕСКАЯ СМЕНА ПРАВЫХ БОКОВЫХ БАННЕРОВ =====
+  useEffect(() => {
+    // ===== ИСПРАВЛЕНО: СБРОС ИНДЕКСА ЕСЛИ ОН БОЛЬШЕ ДЛИНЫ МАССИВА =====
+    if (rightSidebarAds.length > 0 && currentRightAdIndex >= rightSidebarAds.length) {
+      console.log('Сбрасываем индекс правого баннера с', currentRightAdIndex, 'на 0');
+      setCurrentRightAdIndex(0);
+    }
+
+    if (rightSidebarAds.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentRightAdIndex((prev) => (prev + 1) % rightSidebarAds.length);
+      }, 6000); // Смена каждые 6 секунд (разная скорость для разнообразия)
+
+      return () => clearInterval(interval);
+    }
+  }, [rightSidebarAds.length, currentRightAdIndex]);
 
   // Автоматическая смена карусели компаний каждые 6 секунд
   const companiesPerPage = 6; // Количество компаний на одной странице карусели
@@ -317,8 +406,108 @@ return;
 
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
+    <div className="min-h-screen" style={{ marginTop: '-50px' }}>
+      {/* ===== ЛЕВАЯ БОКОВАЯ ПАНЕЛЬ ===== */}
+      {/* ===== ИСПРАВЛЕНО: ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ ЛЕВЫХ БАННЕРОВ ===== */}
+      {/* Показываем только если есть левые боковые баннеры и текущий индекс валидный */}
+      {/* ===== ИСПРАВЛЕНО: ПОКАЗЫВАЕМ ТОЛЬКО ЛЕВЫЕ БАННЕРЫ ===== */}
+      {leftSidebarAds.length > 0 && leftSidebarAds[currentLeftAdIndex] && (
+        <div className="fixed left-4 top-32 z-50 hidden lg:block">
+          <div
+            className="w-52 h-[584px] bg-gradient-to-b from-dark-700 to-dark-800 rounded-lg overflow-hidden shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-dark-600"
+            onClick={() => window.open(leftSidebarAds[currentLeftAdIndex].url, '_blank')}
+          >
+            {/* Изображение баннера */}
+            <div className="relative w-full h-full">
+              <img
+                src={leftSidebarAds[currentLeftAdIndex].image}
+                alt={leftSidebarAds[currentLeftAdIndex].title}
+                className="w-full h-full object-cover"
+              />
+              {/* Overlay с названием */}
+              <div className="absolute inset-0 bg-gradient-to-t from-dark-900/80 via-transparent to-dark-900/20">
+                <div className="absolute bottom-2 left-2 right-2">
+                  <h4 className="text-white text-xs font-semibold line-clamp-2">
+                    {leftSidebarAds[currentLeftAdIndex].title}
+                  </h4>
+                  <div className="text-primary-400 text-xs mt-1">
+                    Реклама
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Индикаторы для левой панели */}
+          {leftSidebarAds.length > 1 && (
+            <div className="flex justify-center mt-2 space-x-1">
+              {leftSidebarAds.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentLeftAdIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === currentLeftAdIndex
+                      ? 'bg-primary-500'
+                      : 'bg-dark-600 hover:bg-dark-500'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===== ПРАВАЯ БОКОВАЯ ПАНЕЛЬ ===== */}
+      {/* ===== ИСПРАВЛЕНО: ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ ПРАВЫХ БАННЕРОВ ===== */}
+      {/* Показываем только если есть правые боковые баннеры и текущий индекс валидный */}
+      {/* ===== ИСПРАВЛЕНО: ПОКАЗЫВАЕМ ТОЛЬКО ПРАВЫЕ БАННЕРЫ ===== */}
+      {rightSidebarAds.length > 0 && rightSidebarAds[currentRightAdIndex] && (
+        <div className="fixed right-4 top-32 z-50 hidden lg:block">
+          <div
+            className="w-52 h-[584px] bg-gradient-to-b from-dark-700 to-dark-800 rounded-lg overflow-hidden shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-dark-600"
+            onClick={() => window.open(rightSidebarAds[currentRightAdIndex].url, '_blank')}
+          >
+            {/* Изображение баннера */}
+            <div className="relative w-full h-full">
+              <img
+                src={rightSidebarAds[currentRightAdIndex].image}
+                alt={rightSidebarAds[currentRightAdIndex].title}
+                className="w-full h-full object-cover"
+              />
+              {/* Overlay с названием */}
+              <div className="absolute inset-0 bg-gradient-to-t from-dark-900/80 via-transparent to-dark-900/20">
+                <div className="absolute bottom-2 left-2 right-2">
+                  <h4 className="text-white text-xs font-semibold line-clamp-2">
+                    {rightSidebarAds[currentRightAdIndex].title}
+                  </h4>
+                  <div className="text-primary-400 text-xs mt-1">
+                    Реклама
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Индикаторы для правой панели */}
+          {rightSidebarAds.length > 1 && (
+            <div className="flex justify-center mt-2 space-x-1">
+              {rightSidebarAds.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentRightAdIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === currentRightAdIndex
+                      ? 'bg-primary-500'
+                      : 'bg-dark-600 hover:bg-dark-500'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Hero Section - содержимое сдвинуто на 50px вверх */}
       <section className="relative bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 py-20 px-4 overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
@@ -378,26 +567,33 @@ return;
               </form>
             </motion.div>
 
-            {/* Banner Ads Section - Moved after search */}
-            {ads.length > 0 && (
+            {/* ===== ИСПРАВЛЕНО: Banner Ads Section - Показываем только HOME_WIDGET и BANNER баннеры ===== */}
+            {/* Фильтруем баннеры, чтобы показывать только те, что предназначены для главной страницы */}
+            {ads.length > 0 && ads.filter(ad => ad.position === 'HOME_WIDGET' || ad.position === 'BANNER').length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="mb-8"
               >
-                <motion.div
-                  key={`carousel-${currentAdIndex}`}
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -30 }}
-                  transition={{ duration: 0.6 }}
-                  className="relative w-full cursor-pointer group"
-                  onClick={() => ads[currentAdIndex] && window.open(ads[currentAdIndex].url, '_blank')}
-                >
-                  {/* Карусель баннеров */}
-                  {ads[currentAdIndex] && (
-                    <div className="relative h-[120px] md:h-[150px] bg-gradient-to-r from-dark-700 via-dark-600 to-dark-700 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
+                {(() => {
+                  // Фильтруем только баннеры для главной страницы
+                  const homePageAds = ads.filter(ad => ad.position === 'HOME_WIDGET' || ad.position === 'BANNER');
+                  const currentHomeAd = homePageAds[currentAdIndex % homePageAds.length];
+
+                  return (
+                    <motion.div
+                      key={`carousel-${currentAdIndex}`}
+                      initial={{ opacity: 0, x: 30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -30 }}
+                      transition={{ duration: 0.6 }}
+                      className="relative w-full cursor-pointer group"
+                      onClick={() => currentHomeAd && window.open(currentHomeAd.url, '_blank')}
+                    >
+                      {/* ===== ИСПРАВЛЕНО: Карусель баннеров - используем отфильтрованный баннер ===== */}
+                      {currentHomeAd && (
+                        <div className="relative h-[120px] md:h-[150px] bg-gradient-to-r from-dark-700 via-dark-600 to-dark-700 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
                       
                       {/* Left orbiz.asia branding */}
                       <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20">
@@ -441,18 +637,18 @@ return;
                       <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
                         <div className="w-[280px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-[80px] md:h-[100px] lg:h-[120px] relative rounded-xl overflow-hidden bg-gradient-to-r from-primary-600/10 to-secondary-600/10 border border-primary-500/20">
                           
-                          {/* Ad background image */}
+                          {/* ===== ИСПРАВЛЕНО: Ad background image - используем отфильтрованный баннер ===== */}
                           <img
-                            src={ads[currentAdIndex].image}
-                            alt={ads[currentAdIndex].title}
+                            src={currentHomeAd.image}
+                            alt={currentHomeAd.title}
                             className="w-full h-full object-cover opacity-80 group-hover:opacity-90 transition-opacity duration-300"
                           />
-                          
-                          {/* Ad content overlay */}
+
+                          {/* ===== ИСПРАВЛЕНО: Ad content overlay - используем отфильтрованный баннер ===== */}
                           <div className="absolute inset-0 bg-gradient-to-r from-dark-900/60 via-transparent to-dark-900/60 flex items-center justify-center">
                             <div className="text-center px-4">
                               <h3 className="text-white font-bold text-sm md:text-lg lg:text-xl mb-1 drop-shadow-lg">
-                                {ads[currentAdIndex].title}
+                                {currentHomeAd.title}
                               </h3>
                               <div className="flex items-center justify-center gap-2">
                                 <span className="px-2 py-1 bg-primary-600/80 text-white text-xs rounded-full backdrop-blur-sm">
@@ -472,28 +668,31 @@ return;
                       <div className="absolute inset-0 bg-primary-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
                   )}
-                  
-                  {/* Индикаторы карусели */}
-                  {ads.length > 1 && (
-                    <div className="flex justify-center mt-4 space-x-2">
-                      {ads.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCurrentAdIndex(index);
-                          }}
-                          className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                            index === currentAdIndex
-                              ? 'bg-primary-500 scale-110'
-                              : 'bg-dark-600 hover:bg-dark-500'
-                          }`}
-                          aria-label={`Показать рекламу ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
+
+                        {/* ===== ИСПРАВЛЕНО: Индикаторы карусели - используем отфильтрованные баннеры ===== */}
+                        {/* Показываем индикаторы только если есть несколько баннеров для главной страницы */}
+                        {homePageAds.length > 1 && (
+                          <div className="flex justify-center mt-4 space-x-2">
+                            {homePageAds.map((_, index) => (
+                              <button
+                                key={index}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCurrentAdIndex(index);
+                                }}
+                                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                                  index === (currentAdIndex % homePageAds.length)
+                                    ? 'bg-primary-500 scale-110'
+                                    : 'bg-dark-600 hover:bg-dark-500'
+                                }`}
+                                aria-label={`Показать рекламу ${index + 1}`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                    </motion.div>
+                  );
+                })()}
               </motion.div>
             )}
 

@@ -6,7 +6,9 @@ interface Ad {
   title: string;
   image: string;
   url: string;
-  position: 'HOME_WIDGET' | 'SIDEBAR' | 'BANNER';
+  // ===== ОБНОВЛЕН ИНТЕРФЕЙС AD =====
+  // Добавлены новые позиции для левой и правой боковых панелей
+  position: 'HOME_WIDGET' | 'SIDEBAR_LEFT' | 'SIDEBAR_RIGHT' | 'BANNER';
   is_active: boolean;
   starts_at: string;
   ends_at: string;
@@ -31,9 +33,10 @@ export const fetchAds = createAsyncThunk<
   { position?: string; is_current?: boolean }
 >('ads/fetchAds', async (params, { rejectWithValue }) => {
   try {
-    const response = await apiService.get<{ results: Ad[] }>('/ads/', {
-      params,
-    });
+    // ===== ИСПРАВЛЕНО: ПРЯМАЯ ПЕРЕДАЧА ПАРАМЕТРОВ БЕЗ ОБЕРТКИ =====
+    // Раньше: { params } создавал двойную обертку params[position]=...
+    // Теперь: передаем параметры напрямую в apiService.get
+    const response = await apiService.get<{ results: Ad[] }>('/ads/', params);
     return response.results;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Failed to fetch ads');
