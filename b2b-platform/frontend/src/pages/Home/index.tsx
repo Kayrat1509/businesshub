@@ -123,61 +123,64 @@ const Home = () => {
   };
 
   // ===== ИСПРАВЛЕНА ФУНКЦИЯ ЗАГРУЗКИ БОКОВЫХ БАННЕРОВ =====
-  // Теперь с fallback для production, где комбинированные фильтры могут не работать
+  // Параллельная загрузка для предотвращения перезаписи данных в Redux store
   const loadSidebarAds = async () => {
     try {
-      console.log('=== ЗАГРУЗКА БОКОВЫХ БАННЕРОВ ===');
+      console.log('=== ЗАГРУЗКА БОКОВЫХ БАННЕРОВ ПАРАЛЛЕЛЬНО ===');
 
-      // ===== ЗАГРУЗКА ЛЕВЫХ БОКОВЫХ БАННЕРОВ =====
-      let leftResponse;
+      // ===== ИСПРАВЛЕНИЕ: ПАРАЛЛЕЛЬНАЯ ЗАГРУЗКА БАННЕРОВ =====
+      // Проблема была в том, что каждый fetchAds перезаписывал глобальный ads store
+      // Теперь загружаем оба типа баннеров одновременно
+      const [leftResponse, rightResponse] = await Promise.allSettled([
+        // Загрузка левых баннеров с fallback
+        dispatch(fetchAds({
+          position: 'SIDEBAR_LEFT',
+          is_current: true
+        })).unwrap().catch(async () => {
+          console.log('⚠️ Fallback: загружаем левые баннеры без is_current фильтра');
+          const fallbackResponse = await dispatch(fetchAds({
+            position: 'SIDEBAR_LEFT'
+          })).unwrap();
+          return fallbackResponse.filter(ad => ad.is_active && ad.is_current);
+        }),
 
-      // Сначала пробуем с is_current фильтром
-      leftResponse = await dispatch(fetchAds({
-        position: 'SIDEBAR_LEFT',
-        is_current: true
-      })).unwrap();
+        // Загрузка правых баннеров с fallback
+        dispatch(fetchAds({
+          position: 'SIDEBAR_RIGHT',
+          is_current: true
+        })).unwrap().catch(async () => {
+          console.log('⚠️ Fallback: загружаем правые баннеры без is_current фильтра');
+          const fallbackResponse = await dispatch(fetchAds({
+            position: 'SIDEBAR_RIGHT'
+          })).unwrap();
+          return fallbackResponse.filter(ad => ad.is_active && ad.is_current);
+        })
+      ]);
 
-      // ===== FALLBACK ДЛЯ PRODUCTION: ЕСЛИ КОМБИНИРОВАННЫЙ ФИЛЬТР НЕ РАБОТАЕТ =====
-      if (!leftResponse || leftResponse.length === 0) {
-        console.log('⚠️ Fallback: загружаем левые баннеры без is_current фильтра');
-        leftResponse = await dispatch(fetchAds({
-          position: 'SIDEBAR_LEFT'
-        })).unwrap();
-        // Фильтруем вручную только активные и текущие
-        leftResponse = leftResponse.filter(ad => ad.is_active && ad.is_current);
+      // Обработка результатов левых баннеров
+      if (leftResponse.status === 'fulfilled') {
+        setLeftSidebarAds(leftResponse.value || []);
+        console.log('✅ Левые баннеры загружены:', leftResponse.value?.length || 0, 'штук', leftResponse.value);
+      } else {
+        console.error('❌ Ошибка загрузки левых баннеров:', leftResponse.reason);
+        setLeftSidebarAds([]);
       }
-
-      setLeftSidebarAds(leftResponse || []);
       setCurrentLeftAdIndex(0);
-      console.log('✅ Левые баннеры загружены:', leftResponse?.length || 0, 'штук');
 
-      // ===== ЗАГРУЗКА ПРАВЫХ БОКОВЫХ БАННЕРОВ =====
-      let rightResponse;
-
-      // Сначала пробуем с is_current фильтром
-      rightResponse = await dispatch(fetchAds({
-        position: 'SIDEBAR_RIGHT',
-        is_current: true
-      })).unwrap();
-
-      // ===== FALLBACK ДЛЯ PRODUCTION: ЕСЛИ КОМБИНИРОВАННЫЙ ФИЛЬТР НЕ РАБОТАЕТ =====
-      if (!rightResponse || rightResponse.length === 0) {
-        console.log('⚠️ Fallback: загружаем правые баннеры без is_current фильтра');
-        rightResponse = await dispatch(fetchAds({
-          position: 'SIDEBAR_RIGHT'
-        })).unwrap();
-        // Фильтруем вручную только активные и текущие
-        rightResponse = rightResponse.filter(ad => ad.is_active && ad.is_current);
+      // Обработка результатов правых баннеров
+      if (rightResponse.status === 'fulfilled') {
+        setRightSidebarAds(rightResponse.value || []);
+        console.log('✅ Правые баннеры загружены:', rightResponse.value?.length || 0, 'штук', rightResponse.value);
+      } else {
+        console.error('❌ Ошибка загрузки правых баннеров:', rightResponse.reason);
+        setRightSidebarAds([]);
       }
-
-      setRightSidebarAds(rightResponse || []);
       setCurrentRightAdIndex(0);
-      console.log('✅ Правые баннеры загружены:', rightResponse?.length || 0, 'штук');
 
-      console.log('=== ВСЕ БОКОВЫЕ БАННЕРЫ ЗАГРУЖЕНЫ ===');
+      console.log('=== ВСЕ БОКОВЫЕ БАННЕРЫ ЗАГРУЖЕНЫ ПАРАЛЛЕЛЬНО ===');
     } catch (error) {
-      console.error('❌ Ошибка загрузки боковых баннеров:', error);
-      // ===== ДОБАВЛЕНО: СБРАСЫВАЕМ СОСТОЯНИЕ В СЛУЧАЕ ОШИБКИ =====
+      console.error('❌ Критическая ошибка загрузки боковых баннеров:', error);
+      // Сбрасываем состояние в случае критической ошибки
       setLeftSidebarAds([]);
       setRightSidebarAds([]);
     }

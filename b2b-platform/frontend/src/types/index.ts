@@ -185,7 +185,7 @@ export interface Ad {
   title: string
   image: string
   url: string
-  position: 'HOME_WIDGET' | 'SIDEBAR' | 'BANNER'
+  position: 'HOME_WIDGET' | 'SIDEBAR_LEFT' | 'SIDEBAR_RIGHT' | 'BANNER'
   is_active: boolean
   starts_at: string
   ends_at: string
