@@ -61,6 +61,8 @@ const Home = () => {
   const [convertedPrices, setConvertedPrices] = useState<Map<string, number>>(new Map());
   const [isLoadingCurrency, setIsLoadingCurrency] = useState<boolean>(false);
   const [searchLocationFilter, setSearchLocationFilter] = useState<string>('all'); // 'all', 'title', 'description'
+  const [currentPage, setCurrentPage] = useState<number>(1); // состояние для пагинации товаров
+  const [itemsPerPage] = useState<number>(50); // 5x10 = 50 товаров на страницу
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [currentCompanyIndex, setCurrentCompanyIndex] = useState(0);
   const [isCompanyCarouselHovered, setIsCompanyCarouselHovered] = useState(false);
@@ -514,11 +516,13 @@ return;
   // функция для обработки изменения фильтра по городу
   const handleCityChange = (city: string) => {
     setSelectedCity(city);
+    setCurrentPage(1); // сбрасываем на первую страницу при смене фильтра
   };
 
   // функция для обработки изменения сортировки
   const handleSortChange = (sort: string) => {
     setSortOrder(sort);
+    setCurrentPage(1); // сбрасываем на первую страницу при смене сортировки
   };
 
   // функция для обработки изменения валюты
@@ -531,7 +535,19 @@ return;
   // функция для обработки изменения фильтра по месту поиска
   const handleSearchLocationChange = (location: string) => {
     setSearchLocationFilter(location);
+    setCurrentPage(1); // сбрасываем на первую страницу при смене фильтра
   };
+
+  // функция для обработки смены страницы
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // прокручиваем к началу списка товаров
+    const resultsSection = document.querySelector('.products-results-section');
+    if (resultsSection) {
+      resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
 
   // Функции управления каруселью компаний
   const nextCompanyPage = () => {
@@ -557,6 +573,18 @@ return;
 
   const handleTenderClick = (tenderId: number) => {
     navigate(`/tenders/${tenderId}`);
+  };
+
+  // Функция для получения товаров текущей страницы
+  const getCurrentPageProducts = (): SearchResult[] => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredResults.slice(startIndex, endIndex);
+  };
+
+  // Функция для подсчета общего количества страниц
+  const getTotalPages = (): number => {
+    return Math.ceil(filteredResults.length / itemsPerPage);
   };
 
   // Функция для получения цены товара с учетом выбранной валюты
@@ -803,7 +831,7 @@ return;
 
       {/* Products Results Section */}
       {hasSearched && (
-        <section className="py-16 bg-dark-800/30">
+        <section className="py-16 bg-dark-800/30 products-results-section">
           <div className="container mx-auto px-4 max-w-6xl">
             <div className="flex justify-between items-center mb-8">
               <div>
@@ -943,16 +971,10 @@ return;
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {(() => {
-                  // используем отфильтрованные результаты вместо всех результатов поиска
-                  console.log('=== RENDERING FILTERED PRODUCTS DEBUG ===');
-                  console.log('Total searchResults:', searchResults.length);
-                  console.log('Filtered results count:', filteredResults.length);
-                  console.log('Filtered products:', filteredResults.map(r => (r.data as any)?.title || (r.data as any)?.name));
-                  console.log('Selected city:', selectedCity);
-                  console.log('Sort order:', sortOrder);
-                  return filteredResults.slice(0, 20).map((result, index) => (
+              <>
+                {/* Сетка товаров 5x10 */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="products-results-section">
+                  {getCurrentPageProducts().map((result, index) => (
                     <motion.div
                     key={(result.data as Product).id}
                     initial={{ opacity: 0, y: 20 }}
@@ -1014,21 +1036,106 @@ return;
                       );
                     })()}
                   </motion.div>
-                  ));
-                })()}
-              </div>
-            )}
-            
-            {(() => {
-              // используем отфильтрованные результаты для подсчёта пагинации
-              return filteredResults.length > 20 && (
-                <div className="text-center mt-8">
+                  ))}
+                </div>
+
+                {/* Пагинация */}
+                {getTotalPages() > 1 && (
+                  <div className="flex justify-center items-center mt-8 space-x-2">
+                    {/* Кнопка "Предыдущая" */}
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 bg-dark-600 text-white rounded-md hover:bg-dark-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      ← Назад
+                    </button>
+
+                    {/* Номера страниц (показываем максимум 7 страниц) */}
+                    <div className="flex space-x-1">
+                      {(() => {
+                        const totalPages = getTotalPages();
+                        const maxVisiblePages = 7;
+                        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                        // Корректируем начальную страницу если нужно
+                        if (endPage - startPage + 1 < maxVisiblePages) {
+                          startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                        }
+
+                        const pages = [];
+                        for (let i = startPage; i <= endPage; i++) {
+                          pages.push(i);
+                        }
+
+                        return (
+                          <>
+                            {startPage > 1 && (
+                              <>
+                                <button
+                                  onClick={() => handlePageChange(1)}
+                                  className="px-3 py-2 rounded-md bg-dark-600 text-dark-300 hover:bg-dark-500"
+                                >
+                                  1
+                                </button>
+                                {startPage > 2 && (
+                                  <span className="px-2 py-2 text-dark-400">...</span>
+                                )}
+                              </>
+                            )}
+
+                            {pages.map(page => (
+                              <button
+                                key={page}
+                                onClick={() => handlePageChange(page)}
+                                className={`px-3 py-2 rounded-md ${
+                                  page === currentPage
+                                    ? 'bg-primary-500 text-white'
+                                    : 'bg-dark-600 text-dark-300 hover:bg-dark-500'
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            ))}
+
+                            {endPage < totalPages && (
+                              <>
+                                {endPage < totalPages - 1 && (
+                                  <span className="px-2 py-2 text-dark-400">...</span>
+                                )}
+                                <button
+                                  onClick={() => handlePageChange(totalPages)}
+                                  className="px-3 py-2 rounded-md bg-dark-600 text-dark-300 hover:bg-dark-500"
+                                >
+                                  {totalPages}
+                                </button>
+                              </>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Кнопка "Следующая" */}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === getTotalPages()}
+                      className="px-4 py-2 bg-dark-600 text-white rounded-md hover:bg-dark-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Вперед →
+                    </button>
+                  </div>
+                )}
+
+                {/* Информация о результатах */}
+                <div className="text-center mt-4">
                   <p className="text-dark-300">
-                    Показано {Math.min(20, filteredResults.length)} из {filteredResults.length} товаров
+                    Показано {Math.min(currentPage * itemsPerPage, filteredResults.length)} из {filteredResults.length} товаров
                   </p>
                 </div>
-              );
-            })()}
+              </>
+            )}
           </div>
         </section>
       )}
