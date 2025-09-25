@@ -60,6 +60,7 @@ const Home = () => {
   const [selectedCurrency, setSelectedCurrency] = useState<string>('KZT'); // по умолчанию тенге
   const [convertedPrices, setConvertedPrices] = useState<Map<string, number>>(new Map());
   const [isLoadingCurrency, setIsLoadingCurrency] = useState<boolean>(false);
+  const [searchLocationFilter, setSearchLocationFilter] = useState<string>('all'); // 'all', 'title', 'description'
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [currentCompanyIndex, setCurrentCompanyIndex] = useState(0);
   const [isCompanyCarouselHovered, setIsCompanyCarouselHovered] = useState(false);
@@ -196,6 +197,23 @@ const Home = () => {
     return Array.from(new Set(cities)).sort();
   };
 
+  // функция для определения места поиска в товаре
+  const getSearchLocation = (product: Product, searchQuery: string): 'title' | 'description' | 'both' | 'none' => {
+    if (!searchQuery.trim()) return 'none';
+
+    const queryLower = searchQuery.toLowerCase();
+    const titleLower = product.title.toLowerCase();
+    const descriptionLower = product.description.toLowerCase();
+
+    const foundInTitle = titleLower.includes(queryLower);
+    const foundInDescription = descriptionLower.includes(queryLower);
+
+    if (foundInTitle && foundInDescription) return 'both';
+    if (foundInTitle) return 'title';
+    if (foundInDescription) return 'description';
+    return 'none';
+  };
+
   // функция для фильтрации и сортировки результатов
   const applyFiltersAndSort = (results: SearchResult[]): SearchResult[] => {
     let productResults = results.filter(result => result.type === 'product');
@@ -206,6 +224,23 @@ const Home = () => {
         const product = result.data as Product;
         // безопасная проверка наличия поля company_city
         return (product as any).company_city === selectedCity;
+      });
+    }
+
+    // фильтрация по месту поиска (в названии или описании)
+    if (searchLocationFilter !== 'all' && searchQuery.trim()) {
+      productResults = productResults.filter(result => {
+        const product = result.data as Product;
+        const searchLocation = getSearchLocation(product, searchQuery);
+
+        if (searchLocationFilter === 'title') {
+          return searchLocation === 'title' || searchLocation === 'both';
+        }
+        if (searchLocationFilter === 'description') {
+          return searchLocation === 'description' || searchLocation === 'both';
+        }
+
+        return true; // для 'all' показываем все
       });
     }
 
@@ -251,7 +286,7 @@ const Home = () => {
       setAvailableCities([]);
       setFilteredResults([]);
     }
-  }, [searchResults, selectedCity, sortOrder, convertedPrices]); // добавлен convertedPrices в зависимости
+  }, [searchResults, selectedCity, sortOrder, convertedPrices, searchLocationFilter]); // добавлен searchLocationFilter
 
   // отладка: логируем каждое изменение searchResults
   useEffect(() => {
@@ -491,6 +526,11 @@ return;
     if (currency === selectedCurrency) return;
     setSelectedCurrency(currency);
     // Конвертация будет выполнена автоматически через useEffect
+  };
+
+  // функция для обработки изменения фильтра по месту поиска
+  const handleSearchLocationChange = (location: string) => {
+    setSearchLocationFilter(location);
   };
 
   // Функции управления каруселью компаний
@@ -786,7 +826,7 @@ return;
               </button>
             </div>
 
-            {/* добавлены фильтры по городам, валютам и сортировка */}
+            {/* добавлены фильтры по городам, валютам, месту поиска и сортировка */}
             {searchResults.length > 0 && (
               <div className="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-dark-700/50 rounded-lg">
                 {/* фильтр по городам */}
@@ -829,6 +869,22 @@ return;
                       <span className="ml-2 text-xs text-dark-400">Конвертация...</span>
                     </div>
                   )}
+                </div>
+
+                {/* фильтр по месту поиска */}
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-dark-300 mb-2">
+                    Поиск выполнен:
+                  </label>
+                  <select
+                    value={searchLocationFilter}
+                    onChange={(e) => handleSearchLocationChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-md text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    <option value="all">Показать все</option>
+                    <option value="title">В названии товара</option>
+                    <option value="description">В описаниях</option>
+                  </select>
                 </div>
 
                 {/* сортировка по цене */}
