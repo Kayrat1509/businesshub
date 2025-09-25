@@ -6,9 +6,8 @@ interface Ad {
   title: string;
   image: string;
   url: string;
-  // ===== ОБНОВЛЕН ИНТЕРФЕЙС AD =====
-  // Добавлены новые позиции для левой и правой боковых панелей
-  position: 'HOME_WIDGET' | 'SIDEBAR_LEFT' | 'SIDEBAR_RIGHT' | 'BANNER';
+  // removed sidebar ads positions
+  position: 'HOME_WIDGET' | 'BANNER';
   is_active: boolean;
   starts_at: string;
   ends_at: string;

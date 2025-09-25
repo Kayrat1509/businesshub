@@ -22,6 +22,8 @@ class ProductFilter(filters.FilterSet):
     price_min = filters.NumberFilter(field_name="price", lookup_expr="gte")
     price_max = filters.NumberFilter(field_name="price", lookup_expr="lte")
     in_stock = filters.BooleanFilter()
+    # добавлен фильтр по городу компании
+    city = filters.CharFilter(field_name="company__city", lookup_expr="iexact")
 
     class Meta:
         model = Product
@@ -32,6 +34,7 @@ class ProductFilter(filters.FilterSet):
             "price_min",
             "price_max",
             "in_stock",
+            "city",  # добавлен фильтр по городу
         ]
 
 
@@ -39,8 +42,9 @@ class ProductListCreateView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
     search_fields = ["title", "description", "sku"]
+    # добавлена сортировка по цене (по возрастанию и убыванию)
     ordering_fields = ["title", "price", "created_at", "rating"]
-    ordering = ["-rating", "-created_at"]
+    ordering = ["-rating", "-created_at"]  # сортировка по умолчанию
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     
     def get_queryset(self):

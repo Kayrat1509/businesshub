@@ -7,6 +7,8 @@ import { fetchCategories, fetchCategoryTree } from '../../store/slices/categorie
 import { fetchCompanies } from '../../store/slices/companiesSlice';
 import { fetchTenders } from '../../store/slices/tendersSlice';
 import { fetchAds } from '../../store/slices/adsSlice';
+// добавлен сервис для работы с валютами
+import currencyService from '../../services/currencyService';
 import CompanyCard from '../../components/CompanyCard';
 import CategoryGrid from '../../components/CategoryGrid';
 import TenderCard from '../../components/TenderCard';
@@ -47,6 +49,17 @@ const Home = () => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(!!searchParams.get('q'));
+
+  // добавлены состояния для фильтрации и сортировки товаров
+  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<string>('');
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [filteredResults, setFilteredResults] = useState<SearchResult[]>([]);
+
+  // добавлено состояние для работы с валютами
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('KZT'); // по умолчанию тенге
+  const [convertedPrices, setConvertedPrices] = useState<Map<string, number>>(new Map());
+  const [isLoadingCurrency, setIsLoadingCurrency] = useState<boolean>(false);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [currentCompanyIndex, setCurrentCompanyIndex] = useState(0);
   const [isCompanyCarouselHovered, setIsCompanyCarouselHovered] = useState(false);
@@ -59,12 +72,7 @@ const Home = () => {
   const { ads } = useAppSelector(state => state.ads);
   const { isAuthenticated } = useAppSelector(state => state.auth);
 
-  // ===== СОСТОЯНИЕ ДЛЯ БОКОВЫХ ПАНЕЛЕЙ =====
-  // Отдельные состояния для левых и правых боковых баннеров
-  const [leftSidebarAds, setLeftSidebarAds] = useState<any[]>([]);
-  const [rightSidebarAds, setRightSidebarAds] = useState<any[]>([]);
-  const [currentLeftAdIndex, setCurrentLeftAdIndex] = useState(0);
-  const [currentRightAdIndex, setCurrentRightAdIndex] = useState(0);
+  // removed sidebar ads
 
   // Отслеживаем изменения состояния компаний для отладки
   useEffect(() => {
@@ -83,9 +91,7 @@ const Home = () => {
     // С fallback для совместимости с production
     loadHomePageAds();
 
-    // ===== ЗАГРУЗКА БОКОВЫХ БАННЕРОВ =====
-    // Загружаем отдельно левые и правые боковые баннеры
-    loadSidebarAds();
+    // removed sidebar ads
   }, [dispatch]);
 
   // ===== ФУНКЦИЯ ЗАГРУЗКИ БАННЕРОВ ГЛАВНОЙ СТРАНИЦЫ =====
@@ -122,69 +128,7 @@ const Home = () => {
     }
   };
 
-  // ===== ИСПРАВЛЕНА ФУНКЦИЯ ЗАГРУЗКИ БОКОВЫХ БАННЕРОВ =====
-  // Параллельная загрузка для предотвращения перезаписи данных в Redux store
-  const loadSidebarAds = async () => {
-    try {
-      console.log('=== ЗАГРУЗКА БОКОВЫХ БАННЕРОВ ПАРАЛЛЕЛЬНО ===');
-
-      // ===== ИСПРАВЛЕНИЕ: ПАРАЛЛЕЛЬНАЯ ЗАГРУЗКА БАННЕРОВ =====
-      // Проблема была в том, что каждый fetchAds перезаписывал глобальный ads store
-      // Теперь загружаем оба типа баннеров одновременно
-      const [leftResponse, rightResponse] = await Promise.allSettled([
-        // Загрузка левых баннеров с fallback
-        dispatch(fetchAds({
-          position: 'SIDEBAR_LEFT',
-          is_current: true
-        })).unwrap().catch(async () => {
-          console.log('⚠️ Fallback: загружаем левые баннеры без is_current фильтра');
-          const fallbackResponse = await dispatch(fetchAds({
-            position: 'SIDEBAR_LEFT'
-          })).unwrap();
-          return fallbackResponse.filter(ad => ad.is_active && ad.is_current);
-        }),
-
-        // Загрузка правых баннеров с fallback
-        dispatch(fetchAds({
-          position: 'SIDEBAR_RIGHT',
-          is_current: true
-        })).unwrap().catch(async () => {
-          console.log('⚠️ Fallback: загружаем правые баннеры без is_current фильтра');
-          const fallbackResponse = await dispatch(fetchAds({
-            position: 'SIDEBAR_RIGHT'
-          })).unwrap();
-          return fallbackResponse.filter(ad => ad.is_active && ad.is_current);
-        })
-      ]);
-
-      // Обработка результатов левых баннеров
-      if (leftResponse.status === 'fulfilled') {
-        setLeftSidebarAds(leftResponse.value || []);
-        console.log('✅ Левые баннеры загружены:', leftResponse.value?.length || 0, 'штук', leftResponse.value);
-      } else {
-        console.error('❌ Ошибка загрузки левых баннеров:', leftResponse.reason);
-        setLeftSidebarAds([]);
-      }
-      setCurrentLeftAdIndex(0);
-
-      // Обработка результатов правых баннеров
-      if (rightResponse.status === 'fulfilled') {
-        setRightSidebarAds(rightResponse.value || []);
-        console.log('✅ Правые баннеры загружены:', rightResponse.value?.length || 0, 'штук', rightResponse.value);
-      } else {
-        console.error('❌ Ошибка загрузки правых баннеров:', rightResponse.reason);
-        setRightSidebarAds([]);
-      }
-      setCurrentRightAdIndex(0);
-
-      console.log('=== ВСЕ БОКОВЫЕ БАННЕРЫ ЗАГРУЖЕНЫ ПАРАЛЛЕЛЬНО ===');
-    } catch (error) {
-      console.error('❌ Критическая ошибка загрузки боковых баннеров:', error);
-      // Сбрасываем состояние в случае критической ошибки
-      setLeftSidebarAds([]);
-      setRightSidebarAds([]);
-    }
-  };
+  // removed sidebar ads
 
   // ===== ИСПРАВЛЕНО: Автоматическая смена рекламы каждые 4 секунды =====
   // Теперь используем только баннеры для главной страницы
@@ -199,39 +143,9 @@ const Home = () => {
     }
   }, [ads]);
 
-  // ===== АВТОМАТИЧЕСКАЯ СМЕНА ЛЕВЫХ БОКОВЫХ БАННЕРОВ =====
-  useEffect(() => {
-    // ===== ИСПРАВЛЕНО: СБРОС ИНДЕКСА ЕСЛИ ОН БОЛЬШЕ ДЛИНЫ МАССИВА =====
-    if (leftSidebarAds.length > 0 && currentLeftAdIndex >= leftSidebarAds.length) {
-      console.log('Сбрасываем индекс левого баннера с', currentLeftAdIndex, 'на 0');
-      setCurrentLeftAdIndex(0);
-    }
+  // removed sidebar ads
 
-    if (leftSidebarAds.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentLeftAdIndex((prev) => (prev + 1) % leftSidebarAds.length);
-      }, 5000); // Смена каждые 5 секунд
-
-      return () => clearInterval(interval);
-    }
-  }, [leftSidebarAds.length, currentLeftAdIndex]);
-
-  // ===== АВТОМАТИЧЕСКАЯ СМЕНА ПРАВЫХ БОКОВЫХ БАННЕРОВ =====
-  useEffect(() => {
-    // ===== ИСПРАВЛЕНО: СБРОС ИНДЕКСА ЕСЛИ ОН БОЛЬШЕ ДЛИНЫ МАССИВА =====
-    if (rightSidebarAds.length > 0 && currentRightAdIndex >= rightSidebarAds.length) {
-      console.log('Сбрасываем индекс правого баннера с', currentRightAdIndex, 'на 0');
-      setCurrentRightAdIndex(0);
-    }
-
-    if (rightSidebarAds.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentRightAdIndex((prev) => (prev + 1) % rightSidebarAds.length);
-      }, 6000); // Смена каждые 6 секунд (разная скорость для разнообразия)
-
-      return () => clearInterval(interval);
-    }
-  }, [rightSidebarAds.length, currentRightAdIndex]);
+  // removed sidebar ads
 
   // Автоматическая смена карусели компаний каждые 6 секунд
   const companiesPerPage = 6; // Количество компаний на одной странице карусели
@@ -270,7 +184,76 @@ const Home = () => {
     }
   }, [searchParams]);
   
-  // Отладка: логируем каждое изменение searchResults
+  // функция для извлечения уникальных городов из результатов поиска
+  const extractCitiesFromResults = (results: SearchResult[]): string[] => {
+    const productResults = results.filter(result => result.type === 'product');
+    const cities = productResults.map(result => {
+      const product = result.data as Product;
+      // безопасная проверка наличия поля company_city
+      return (product as any).company_city;
+    }).filter(city => city && city.trim() !== '');
+
+    return Array.from(new Set(cities)).sort();
+  };
+
+  // функция для фильтрации и сортировки результатов
+  const applyFiltersAndSort = (results: SearchResult[]): SearchResult[] => {
+    let productResults = results.filter(result => result.type === 'product');
+
+    // фильтрация по городу
+    if (selectedCity) {
+      productResults = productResults.filter(result => {
+        const product = result.data as Product;
+        // безопасная проверка наличия поля company_city
+        return (product as any).company_city === selectedCity;
+      });
+    }
+
+    // сортировка по цене с учетом конвертированных валют
+    if (sortOrder === 'price_asc') {
+      productResults.sort((a, b) => {
+        const productA = a.data as Product;
+        const productB = b.data as Product;
+
+        // Получаем конвертированные цены через функцию getDisplayPrice
+        const { price: priceA } = getDisplayPrice(productA);
+        const { price: priceB } = getDisplayPrice(productB);
+
+        return priceA - priceB;
+      });
+    } else if (sortOrder === 'price_desc') {
+      productResults.sort((a, b) => {
+        const productA = a.data as Product;
+        const productB = b.data as Product;
+
+        // Получаем конвертированные цены через функцию getDisplayPrice
+        const { price: priceA } = getDisplayPrice(productA);
+        const { price: priceB } = getDisplayPrice(productB);
+
+        return priceB - priceA;
+      });
+    }
+
+    return productResults;
+  };
+
+  // обновление фильтрованных результатов при изменении состояний
+  useEffect(() => {
+    if (searchResults.length > 0) {
+      // обновляем список доступных городов
+      const cities = extractCitiesFromResults(searchResults);
+      setAvailableCities(cities);
+
+      // применяем фильтры и сортировку
+      const filtered = applyFiltersAndSort(searchResults);
+      setFilteredResults(filtered);
+    } else {
+      setAvailableCities([]);
+      setFilteredResults([]);
+    }
+  }, [searchResults, selectedCity, sortOrder, convertedPrices]); // добавлен convertedPrices в зависимости
+
+  // отладка: логируем каждое изменение searchResults
   useEffect(() => {
     console.log('=== SEARCH RESULTS CHANGED ===');
     console.log('New searchResults length:', searchResults.length);
@@ -278,6 +261,56 @@ const Home = () => {
     const productCount = searchResults.filter(r => r.type === 'product').length;
     console.log('Product count in searchResults:', productCount);
   }, [searchResults]);
+
+  // автоматическая конвертация цен при получении новых результатов поиска или смене валюты
+  useEffect(() => {
+    if (searchResults.length > 0 && selectedCurrency) {
+      // Конвертируем ВСЕ цены в выбранную валюту, включая товары в той же валюте
+      const convertPrices = async () => {
+        setIsLoadingCurrency(true);
+
+        try {
+          const productsInResults = searchResults
+            .filter(result => result.type === 'product')
+            .map(result => result.data as Product);
+
+          const newConvertedPrices = new Map<string, number>();
+
+          for (const product of productsInResults) {
+            if (product.price && product.currency) {
+              try {
+                // ИЗМЕНЕНО: конвертируем ВСЕ товары, независимо от исходной валюты
+                const convertedPrice = await currencyService.convert(
+                  product.price,
+                  product.currency,
+                  selectedCurrency
+                );
+
+                const key = `${product.id}_${selectedCurrency}`;
+                newConvertedPrices.set(key, convertedPrice);
+
+                console.log(`Converted ${product.title}: ${product.price} ${product.currency} -> ${convertedPrice} ${selectedCurrency}`);
+              } catch (error) {
+                console.warn(`Failed to convert price for product ${product.id}:`, error);
+                // В случае ошибки используем оригинальную цену, но всё равно сохраняем в кеш
+                const key = `${product.id}_${selectedCurrency}`;
+                newConvertedPrices.set(key, product.price);
+              }
+            }
+          }
+
+          setConvertedPrices(newConvertedPrices);
+          console.log(`Converted prices for ${newConvertedPrices.size} products to ${selectedCurrency}`);
+        } catch (error) {
+          console.error('Error during currency conversion:', error);
+        } finally {
+          setIsLoadingCurrency(false);
+        }
+      };
+
+      convertPrices();
+    }
+  }, [searchResults, selectedCurrency]);
 
   const saveSearchToHistory = async (query: string) => {
     if (!isAuthenticated || !query.trim()) {
@@ -329,8 +362,8 @@ return;
       console.log('Raw products response:', productsResponse);
       
       // Извлекаем results из пагинированного ответа
-      const companies = companiesResponse.results || companiesResponse;
-      const products = productsResponse.results || productsResponse;
+      const companies = (companiesResponse as any).results || companiesResponse;
+      const products = (productsResponse as any).results || productsResponse;
       
       // Отладочная информация после извлечения
       console.log('Search query:', query);
@@ -435,7 +468,29 @@ return;
     setSearchResults([]);
     setHasSearched(false);
     setSearchParams({});
+    // сбрасываем фильтры при очистке поиска
+    setSelectedCity('');
+    setSortOrder('');
+    setAvailableCities([]);
+    setFilteredResults([]);
     console.log('Search cleared - should be 0 results now');
+  };
+
+  // функция для обработки изменения фильтра по городу
+  const handleCityChange = (city: string) => {
+    setSelectedCity(city);
+  };
+
+  // функция для обработки изменения сортировки
+  const handleSortChange = (sort: string) => {
+    setSortOrder(sort);
+  };
+
+  // функция для обработки изменения валюты
+  const handleCurrencyChange = (currency: string) => {
+    if (currency === selectedCurrency) return;
+    setSelectedCurrency(currency);
+    // Конвертация будет выполнена автоматически через useEffect
   };
 
   // Функции управления каруселью компаний
@@ -464,108 +519,37 @@ return;
     navigate(`/tenders/${tenderId}`);
   };
 
+  // Функция для получения цены товара с учетом выбранной валюты
+  const getDisplayPrice = (product: Product): { price: number; currency: string } => {
+    // Если цена не задана, возвращаем 0 в выбранной валюте
+    if (!product.price) {
+      return { price: 0, currency: selectedCurrency };
+    }
+
+    // Всегда ищем конвертированную цену в выбранной валюте
+    const key = `${product.id}_${selectedCurrency}`;
+    const convertedPrice = convertedPrices.get(key);
+
+    if (convertedPrice !== undefined) {
+      return { price: convertedPrice, currency: selectedCurrency };
+    }
+
+    // Если конвертированная цена не найдена, но валюта товара совпадает с выбранной
+    if (product.currency === selectedCurrency) {
+      return { price: product.price, currency: selectedCurrency };
+    }
+
+    // Если нет конвертированной цены и валюты не совпадают, возвращаем оригинальную цену
+    // (это состояние должно быть редким, так как конвертация должна произойти автоматически)
+    return { price: product.price, currency: product.currency };
+  };
+
 
   return (
     <div className="min-h-screen" style={{ marginTop: '-50px' }}>
-      {/* ===== ЛЕВАЯ БОКОВАЯ ПАНЕЛЬ ===== */}
-      {/* ===== ИСПРАВЛЕНО: ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ ЛЕВЫХ БАННЕРОВ ===== */}
-      {/* Показываем только если есть левые боковые баннеры и текущий индекс валидный */}
-      {/* ===== ИСПРАВЛЕНО: ПОКАЗЫВАЕМ ТОЛЬКО ЛЕВЫЕ БАННЕРЫ ===== */}
-      {leftSidebarAds.length > 0 && leftSidebarAds[currentLeftAdIndex] && (
-        <div className="fixed left-4 top-32 z-50 hidden lg:block">
-          <div
-            className="w-52 h-[584px] bg-gradient-to-b from-dark-700 to-dark-800 rounded-lg overflow-hidden shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-dark-600"
-            onClick={() => window.open(leftSidebarAds[currentLeftAdIndex].url, '_blank')}
-          >
-            {/* Изображение баннера */}
-            <div className="relative w-full h-full">
-              <img
-                src={leftSidebarAds[currentLeftAdIndex].image}
-                alt={leftSidebarAds[currentLeftAdIndex].title}
-                className="w-full h-full object-cover"
-              />
-              {/* Overlay с названием */}
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-900/80 via-transparent to-dark-900/20">
-                <div className="absolute bottom-2 left-2 right-2">
-                  <h4 className="text-white text-xs font-semibold line-clamp-2">
-                    {leftSidebarAds[currentLeftAdIndex].title}
-                  </h4>
-                  <div className="text-primary-400 text-xs mt-1">
-                    Реклама
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* removed sidebar ads */}
 
-          {/* Индикаторы для левой панели */}
-          {leftSidebarAds.length > 1 && (
-            <div className="flex justify-center mt-2 space-x-1">
-              {leftSidebarAds.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentLeftAdIndex(index)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentLeftAdIndex
-                      ? 'bg-primary-500'
-                      : 'bg-dark-600 hover:bg-dark-500'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ===== ПРАВАЯ БОКОВАЯ ПАНЕЛЬ ===== */}
-      {/* ===== ИСПРАВЛЕНО: ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ ПРАВЫХ БАННЕРОВ ===== */}
-      {/* Показываем только если есть правые боковые баннеры и текущий индекс валидный */}
-      {/* ===== ИСПРАВЛЕНО: ПОКАЗЫВАЕМ ТОЛЬКО ПРАВЫЕ БАННЕРЫ ===== */}
-      {rightSidebarAds.length > 0 && rightSidebarAds[currentRightAdIndex] && (
-        <div className="fixed right-4 top-32 z-50 hidden lg:block">
-          <div
-            className="w-52 h-[584px] bg-gradient-to-b from-dark-700 to-dark-800 rounded-lg overflow-hidden shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-dark-600"
-            onClick={() => window.open(rightSidebarAds[currentRightAdIndex].url, '_blank')}
-          >
-            {/* Изображение баннера */}
-            <div className="relative w-full h-full">
-              <img
-                src={rightSidebarAds[currentRightAdIndex].image}
-                alt={rightSidebarAds[currentRightAdIndex].title}
-                className="w-full h-full object-cover"
-              />
-              {/* Overlay с названием */}
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-900/80 via-transparent to-dark-900/20">
-                <div className="absolute bottom-2 left-2 right-2">
-                  <h4 className="text-white text-xs font-semibold line-clamp-2">
-                    {rightSidebarAds[currentRightAdIndex].title}
-                  </h4>
-                  <div className="text-primary-400 text-xs mt-1">
-                    Реклама
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Индикаторы для правой панели */}
-          {rightSidebarAds.length > 1 && (
-            <div className="flex justify-center mt-2 space-x-1">
-              {rightSidebarAds.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentRightAdIndex(index)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentRightAdIndex
-                      ? 'bg-primary-500'
-                      : 'bg-dark-600 hover:bg-dark-500'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* removed sidebar ads */}
 
       {/* Hero Section - содержимое сдвинуто на 50px вверх */}
       <section className="relative bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 py-20 px-4 overflow-hidden">
@@ -785,8 +769,8 @@ return;
               <div>
                 <h2 className="text-3xl font-bold text-white mb-2">
                   Товары {(() => {
-                    const productResults = searchResults.filter(result => result.type === 'product');
-                    return productResults.length > 0 && `(${productResults.length})`;
+                    // отображаем количество фильтрованных результатов
+                    return filteredResults.length > 0 && `(${filteredResults.length})`;
                   })()}
                 </h2>
                 <p className="text-dark-300">
@@ -802,11 +786,81 @@ return;
               </button>
             </div>
 
+            {/* добавлены фильтры по городам, валютам и сортировка */}
+            {searchResults.length > 0 && (
+              <div className="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-dark-700/50 rounded-lg">
+                {/* фильтр по городам */}
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-dark-300 mb-2">
+                    Фильтр по городу:
+                  </label>
+                  <select
+                    value={selectedCity}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-md text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    <option value="">Все города</option>
+                    {availableCities.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* выбор валюты */}
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-dark-300 mb-2">
+                    Валюта отображения:
+                  </label>
+                  <select
+                    value={selectedCurrency}
+                    onChange={(e) => handleCurrencyChange(e.target.value)}
+                    disabled={isLoadingCurrency}
+                    className="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-md text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="KZT">Тенге (KZT)</option>
+                    <option value="RUB">Рубли (RUB)</option>
+                    <option value="USD">Доллары (USD)</option>
+                  </select>
+                  {isLoadingCurrency && (
+                    <div className="flex items-center justify-center mt-1">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500"></div>
+                      <span className="ml-2 text-xs text-dark-400">Конвертация...</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* сортировка по цене */}
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-dark-300 mb-2">
+                    Сортировка по цене:
+                  </label>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-md text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    <option value="">По умолчанию</option>
+                    <option value="price_asc">От дешёвых к дорогим</option>
+                    <option value="price_desc">От дорогих к дешёвым</option>
+                  </select>
+                </div>
+
+                {/* счётчик результатов */}
+                <div className="flex items-end">
+                  <div className="text-sm text-dark-400">
+                    Показано: <span className="text-primary-400 font-semibold">{filteredResults.length}</span> из <span className="text-white">{searchResults.filter(r => r.type === 'product').length}</span> товаров
+                  </div>
+                </div>
+              </div>
+            )}
+
             {isSearching ? (
               <div className="flex justify-center py-12">
                 <LoadingSpinner />
               </div>
-            ) : searchResults.filter(result => result.type === 'product').length === 0 ? (
+            ) : filteredResults.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">📦</div>
                 <h3 className="text-xl font-semibold text-white mb-2">Товары не найдены</h3>
@@ -835,13 +889,14 @@ return;
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {(() => {
-                  const productResults = searchResults.filter(result => result.type === 'product');
-                  console.log('=== RENDERING PRODUCTS DEBUG ===');
+                  // используем отфильтрованные результаты вместо всех результатов поиска
+                  console.log('=== RENDERING FILTERED PRODUCTS DEBUG ===');
                   console.log('Total searchResults:', searchResults.length);
-                  console.log('All searchResults:', searchResults);
-                  console.log('Product results count:', productResults.length);
-                  console.log('Product results:', productResults.map(r => (r.data as any)?.title || (r.data as any)?.name));
-                  return productResults.slice(0, 20).map((result, index) => (
+                  console.log('Filtered results count:', filteredResults.length);
+                  console.log('Filtered products:', filteredResults.map(r => (r.data as any)?.title || (r.data as any)?.name));
+                  console.log('Selected city:', selectedCity);
+                  console.log('Sort order:', sortOrder);
+                  return filteredResults.slice(0, 20).map((result, index) => (
                     <motion.div
                     key={(result.data as Product).id}
                     initial={{ opacity: 0, y: 20 }}
@@ -874,7 +929,15 @@ return;
                           
                           {product.price && (
                             <div className="text-primary-400 font-bold text-xl mb-3">
-                              {product.price} {product.currency}
+                              {(() => {
+                                const { price, currency } = getDisplayPrice(product);
+                                // Форматируем цену для отображения
+                                const formattedPrice = price.toLocaleString('ru-RU', {
+                                  minimumFractionDigits: 0,
+                                  maximumFractionDigits: 2
+                                });
+                                return `${formattedPrice} ${currency}`;
+                              })()}
                             </div>
                           )}
                           
@@ -901,11 +964,11 @@ return;
             )}
             
             {(() => {
-              const productResults = searchResults.filter(result => result.type === 'product');
-              return productResults.length > 20 && (
+              // используем отфильтрованные результаты для подсчёта пагинации
+              return filteredResults.length > 20 && (
                 <div className="text-center mt-8">
                   <p className="text-dark-300">
-                    Показано {Math.min(20, productResults.length)} из {productResults.length} товаров
+                    Показано {Math.min(20, filteredResults.length)} из {filteredResults.length} товаров
                   </p>
                 </div>
               );

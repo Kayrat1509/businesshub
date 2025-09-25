@@ -27,6 +27,8 @@ class ProductImageSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     company_name = serializers.CharField(source="company.name", read_only=True)
+    # добавлен город компании для фильтрации
+    company_city = serializers.CharField(source="company.city", read_only=True)
     image = serializers.SerializerMethodField()
 
     class Meta:
@@ -40,6 +42,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "is_service",
             "category",
             "company_name",
+            "company_city",  # добавлен город для фильтрации
             "image",
             "rating",
             "in_stock",

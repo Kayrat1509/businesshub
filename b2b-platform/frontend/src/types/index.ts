@@ -114,6 +114,8 @@ export interface Product {
   is_service: boolean
   category?: Category
   company_name: string
+  // добавлен город компании для фильтрации
+  company_city?: string
   primary_image?: string
   product_images?: ProductImage[]
   images: string[]
@@ -185,7 +187,8 @@ export interface Ad {
   title: string
   image: string
   url: string
-  position: 'HOME_WIDGET' | 'SIDEBAR_LEFT' | 'SIDEBAR_RIGHT' | 'BANNER'
+  // removed sidebar ads positions
+  position: 'HOME_WIDGET' | 'BANNER'
   is_active: boolean
   starts_at: string
   ends_at: string
@@ -252,6 +255,9 @@ export interface ProductFilters {
   price_min?: number
   price_max?: number
   in_stock?: boolean
+  // добавлены фильтры для поиска на главной странице
+  city?: string
+  ordering?: string
 }
 
 export interface ReviewFilters {
