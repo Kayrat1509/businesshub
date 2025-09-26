@@ -223,8 +223,8 @@ const CompanyProfile = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-white mb-4">Компания не найдена</h1>
-          <Link to="/tenders" className="btn-primary px-6 py-3">
-            Вернуться к активным тендерам
+          <Link to="/suppliers" className="btn-primary px-6 py-3">
+            Назад ко всем поставщикам
           </Link>
         </div>
       </div>
@@ -243,11 +243,11 @@ const CompanyProfile = () => {
     <div className="container mx-auto px-4 py-8">
       {/* Back button */}
       <Link
-        to="/tenders"
+        to="/suppliers"
         className="inline-flex items-center space-x-2 text-dark-300 hover:text-white mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span>Назад к активным тендерам</span>
+        <span>Назад ко всем поставщикам</span>
       </Link>
 
       {/* Company Header */}
