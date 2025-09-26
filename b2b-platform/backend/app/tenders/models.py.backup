@@ -51,14 +51,6 @@ class Tender(models.Model):
         verbose_name="Валюта"
     )
     deadline_date = models.DateField(null=True, blank=True, verbose_name="Крайний срок")
-    # Контактный телефон для связи с автором тендера
-    contact_phone = models.CharField(
-        max_length=20,
-        blank=True,
-        null=True,
-        verbose_name="Контактный телефон",
-        help_text="Номер телефона для связи с автором тендера"
-    )
     admin_comment = models.TextField(
         blank=True, help_text="Комментарий администратора при отклонении", verbose_name="Комментарий администратора"
     )

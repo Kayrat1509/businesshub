@@ -255,8 +255,8 @@ const CreateProduct = () => {
       // Content-Type будет установлен автоматически браузером
       const createdProduct = await apiService.post('/products/', formDataToSend);
 
-      console.log('Товар создан:', createdProduct);
-      toast.success('Товар успешно добавлен');
+      console.log('Продукт создан:', createdProduct);
+      toast.success('Продукт успешно добавлен');
       navigate('/dashboard/products');
     } catch (error: any) {
       console.error('Ошибка создания товара:', error);
@@ -316,7 +316,7 @@ const CreateProduct = () => {
                   onChange={() => setFormData({...formData, is_service: false})}
                   className="w-4 h-4 text-primary-600 bg-dark-800 border-dark-600 focus:ring-primary-500"
                 />
-                <span className="ml-2 text-white">Товар</span>
+                <span className="ml-2 text-white">Продукт</span>
               </label>
               <label className="flex items-center">
                 <input

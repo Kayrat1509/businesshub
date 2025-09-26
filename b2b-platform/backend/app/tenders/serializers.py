@@ -30,6 +30,7 @@ class TenderListSerializer(serializers.ModelSerializer):
             "deadline_date",
             "status",
             "author_name",
+            "contact_phone",
             "company",
             "created_at",
         ]
@@ -66,6 +67,7 @@ class TenderDetailSerializer(serializers.ModelSerializer):
             "attachments",
             "tender_attachments",
             "author_name",
+            "contact_phone",
             "company",
             "admin_comment",
             "created_at",
@@ -94,6 +96,7 @@ class TenderCreateUpdateSerializer(serializers.ModelSerializer):
             "budget_max",
             "currency",
             "deadline_date",
+            "contact_phone",
             "attachments",
         ]
 

@@ -241,7 +241,7 @@ const AdminProducts = () => {
         },
       });
 
-      toast.success(editingProduct ? 'Товар обновлен' : 'Товар создан');
+      toast.success(editingProduct ? 'Продукт обновлен' : 'Продукт создан');
       closeModal();
       loadProducts();
     } catch (error: any) {
@@ -263,7 +263,7 @@ const AdminProducts = () => {
 
     try {
       await apiService.delete(`/admin/products/${productId}/`);
-      toast.success('Товар удален');
+      toast.success('Продукт удален');
       loadProducts();
     } catch (error: any) {
       console.error('Ошибка удаления товара:', error);
@@ -359,7 +359,7 @@ const AdminProducts = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-dark-700">
-                  <th className="text-left pb-3 text-dark-300 font-medium">Товар</th>
+                  <th className="text-left pb-3 text-dark-300 font-medium">Продукт</th>
                   <th className="text-left pb-3 text-dark-300 font-medium">Категория</th>
                   <th className="text-left pb-3 text-dark-300 font-medium">Цена</th>
                   <th className="text-left pb-3 text-dark-300 font-medium">Статус</th>
@@ -432,7 +432,7 @@ const AdminProducts = () => {
             {filteredProducts.length === 0 && (
               <div className="text-center py-8">
                 <Package className="w-16 h-16 text-dark-400 mx-auto mb-4" />
-                <p className="text-dark-300">Товары не найдены</p>
+                <p className="text-dark-300">Продукты не найдены</p>
               </div>
             )}
           </div>
@@ -477,7 +477,7 @@ const AdminProducts = () => {
                         onChange={() => setFormData(prev => ({...prev, is_service: false}))}
                         className="w-4 h-4 text-primary-600 bg-dark-800 border-dark-600 focus:ring-primary-500"
                       />
-                      <span className="ml-2 text-white">Товар</span>
+                      <span className="ml-2 text-white">Продукт</span>
                     </label>
                     <label className="flex items-center">
                       <input

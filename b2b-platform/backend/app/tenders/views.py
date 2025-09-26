@@ -96,8 +96,8 @@ class TenderRetrieveUpdateView(generics.RetrieveUpdateAPIView):
 
     def get_queryset(self):
         if self.request.method in ["PUT", "PATCH"]:
-            # Users can only edit their own tenders and only if pending
-            return Tender.objects.filter(author=self.request.user, status="PENDING")
+            # Users can edit all their own tenders regardless of status
+            return Tender.objects.filter(author=self.request.user)
         return Tender.objects.all()
 
 

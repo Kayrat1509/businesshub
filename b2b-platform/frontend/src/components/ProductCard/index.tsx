@@ -83,7 +83,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
               : 'bg-green-500/20 text-green-400 border border-green-500/30'
           }`}>
-            {product.is_service ? 'Услуга' : 'Товар'}
+            {product.is_service ? 'Услуга' : 'Продукт'}
           </span>
         </div>
 

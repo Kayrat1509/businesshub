@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchMyTenders } from '../../store/slices/tendersSlice';
-import TenderCard from '../../components/TenderCard';
+import DashboardTenderCard from '../../components/TenderCard/DashboardTenderCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Tender } from '../../types';
 
@@ -259,7 +259,7 @@ const MyTenders = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
             >
-              <TenderCard tender={tender} />
+              <DashboardTenderCard tender={tender} />
             </motion.div>
           ))}
         </motion.div>

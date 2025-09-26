@@ -163,6 +163,8 @@ export interface Tender {
   attachments: string[]
   tender_attachments?: TenderAttachment[]
   author_name: string
+  // Контактный телефон автора тендера для связи с заинтересованными поставщиками
+  contact_phone?: string
   company?: {
     id: number
     name: string

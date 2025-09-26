@@ -46,7 +46,7 @@ class CategoryAdmin(admin.ModelAdmin):
         if count > 0:
             return format_html('<span style="color: green; font-weight: bold;">{}</span>', count)
         return count
-    products_count.short_description = "Товары"
+    products_count.short_description = "Продукты"
 
     def companies_count(self, obj):
         from app.companies.models import Company

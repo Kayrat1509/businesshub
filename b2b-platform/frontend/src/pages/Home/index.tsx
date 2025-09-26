@@ -7,6 +7,8 @@ import { fetchCategories, fetchCategoryTree } from '../../store/slices/categorie
 import { fetchCompanies } from '../../store/slices/companiesSlice';
 import { fetchTenders } from '../../store/slices/tendersSlice';
 import { fetchAds } from '../../store/slices/adsSlice';
+// Импортируем тип Tender для типизации обработчика клика
+import { Tender } from '../../types';
 // добавлен сервис для работы с валютами
 import currencyService from '../../services/currencyService';
 import CompanyCard from '../../components/CompanyCard';
@@ -571,8 +573,18 @@ return;
     setCurrentTenderIndex((prev) => (prev - 1 + totalTenderPages) % totalTenderPages);
   };
 
-  const handleTenderClick = (tenderId: number) => {
-    navigate(`/tenders/${tenderId}`);
+  // Функция для открытия карточки компании-инициатора тендера в новой вкладке
+  const handleTenderClick = (tender: Tender) => {
+    // Проверяем наличие информации о компании в тендере
+    if (tender.company && tender.company.id) {
+      // Формируем URL карточки компании и открываем в новой вкладке
+      const companyUrl = `/company/${tender.company.id}`;
+      window.open(companyUrl, '_blank');
+    } else {
+      // Если информация о компании отсутствует, показываем уведомление
+      console.warn('Информация о компании-инициаторе тендера недоступна');
+      // Можно добавить toast-уведомление при необходимости
+    }
   };
 
   // Функция для получения товаров текущей страницы
@@ -815,11 +827,17 @@ return;
               transition={{ duration: 0.8, delay: 0.3 }}
               className="flex flex-wrap justify-center gap-4"
             >
-              <button 
+              <button
                 onClick={() => navigate('/suppliers')}
                 className="btn-outline px-6 py-3 hover:shadow-glow"
               >
-                Все поставщики
+                Поставщики
+              </button>
+              <button
+                onClick={() => navigate('/products')}
+                className="btn-outline px-6 py-3 hover:shadow-glow"
+              >
+                Продукты
               </button>
               <Link to="/tenders" className="btn-ghost px-6 py-3 hover:bg-dark-700">
                 Тендеры
@@ -836,7 +854,7 @@ return;
             <div className="flex justify-between items-center mb-8">
               <div>
                 <h2 className="text-3xl font-bold text-white mb-2">
-                  Товары {(() => {
+                  Продукты {(() => {
                     // отображаем количество фильтрованных результатов
                     return filteredResults.length > 0 && `(${filteredResults.length})`;
                   })()}
@@ -947,7 +965,7 @@ return;
             ) : filteredResults.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">📦</div>
-                <h3 className="text-xl font-semibold text-white mb-2">Товары не найдены</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">Продукты не найдены</h3>
                 <p className="text-dark-300 mb-6">
                   По запросу "{searchQuery}" товары не найдены
                 </p>
@@ -997,7 +1015,7 @@ return;
                         <>
                           <div className="flex items-center justify-between mb-3">
                             <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">
-                              {product.is_service ? 'Услуга' : 'Товар'}
+                              {product.is_service ? 'Услуга' : 'Продукт'}
                             </span>
                           </div>
                           
@@ -1208,7 +1226,7 @@ return;
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.6, delay: index * 0.1 }}
-                          className="card p-4 hover:border-primary-500 transition-colors cursor-pointer"
+                          className="card p-6 hover:border-primary-500 transition-colors cursor-pointer"
                           onClick={() => handleCompanyClick(company.id)}
                         >
                           <div className="space-y-3">
@@ -1323,7 +1341,7 @@ return;
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.6 }}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4"
                 >
                   {tenders
                     .slice(
@@ -1336,69 +1354,51 @@ return;
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: index * 0.1 }}
-                        className="card p-4 hover:border-primary-500 transition-colors cursor-pointer group"
-                        onClick={() => handleTenderClick(tender.id)}
+                        className="card p-6 hover:border-primary-500 transition-colors cursor-pointer group"
+                        onClick={() => handleTenderClick(tender)}
                       >
                         <div className="space-y-3">
                           {/* Название тендера */}
-                          <h3 className="text-sm font-semibold text-white line-clamp-2 group-hover:text-primary-400 transition-colors">
+                          <h3 className="text-sm font-semibold text-white line-clamp-2">
                             {tender.title}
                           </h3>
-                          
+
                           {/* Город поставки */}
                           <div className="flex items-center text-dark-400 text-xs">
                             📍 {tender.city}
                           </div>
-                          
-                          {/* Статус - показываем только если активный */}
-                          {tender.status === 'APPROVED' && (
-                            <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400">
-                              активный
-                            </span>
-                          )}
-                          
-                          {/* Бюджет с валютой */}
-                          <div className="space-y-1">
-                            <div className="text-dark-400 text-xs">Бюджет:</div>
-                            <div className="text-primary-400 font-bold text-sm">
-                              {(() => {
-                                const getCurrencySymbol = (currency?: string) => {
-                                  switch (currency) {
-                                    case 'USD': return '$';
-                                    case 'RUB': return '₽';
-                                    case 'KZT':
-                                    default: return '₸';
-                                  }
-                                };
-                                const symbol = getCurrencySymbol(tender.currency);
-                                
-                                if (tender.budget_min && tender.budget_max) {
-                                  return `${tender.budget_min.toLocaleString()} - ${tender.budget_max.toLocaleString()} ${symbol}`;
-                                }
-                                if (tender.budget_min) {
-                                  return `от ${tender.budget_min.toLocaleString()} ${symbol}`;
-                                }
-                                if (tender.budget_max) {
-                                  return `до ${tender.budget_max.toLocaleString()} ${symbol}`;
-                                }
-                                return 'Бюджет не указан';
-                              })()}
-                            </div>
-                          </div>
-                          
-                          {/* Срок поставки */}
-                          {tender.deadline_date && (
-                            <div className="space-y-1">
-                              <div className="text-dark-400 text-xs">Крайний срок:</div>
-                              <div className="text-white text-sm">
-                                {new Date(tender.deadline_date).toLocaleDateString('ru-RU')}
-                              </div>
+
+                          {/* Информация о компании-инициаторе */}
+                          {tender.company && (
+                            <div className="flex items-center text-blue-400 text-xs">
+                              🏢 {tender.company.name}
                             </div>
                           )}
-                          
-                          {/* Ссылка на тендер */}
-                          <div className="text-primary-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            Смотреть тендер →
+
+                          {/* Бюджет (упрощенно) */}
+                          <div className="flex items-center text-primary-400 text-xs">
+                            💰 {(() => {
+                              const getCurrencySymbol = (currency?: string) => {
+                                switch (currency) {
+                                  case 'USD': return '$';
+                                  case 'RUB': return '₽';
+                                  case 'KZT':
+                                  default: return '₸';
+                                }
+                              };
+                              const symbol = getCurrencySymbol(tender.currency);
+
+                              if (tender.budget_min && tender.budget_max) {
+                                return `${tender.budget_min.toLocaleString()}-${tender.budget_max.toLocaleString()} ${symbol}`;
+                              }
+                              if (tender.budget_min) {
+                                return `от ${tender.budget_min.toLocaleString()} ${symbol}`;
+                              }
+                              if (tender.budget_max) {
+                                return `до ${tender.budget_max.toLocaleString()} ${symbol}`;
+                              }
+                              return 'Договорная';
+                            })()}
                           </div>
                         </div>
                       </motion.div>

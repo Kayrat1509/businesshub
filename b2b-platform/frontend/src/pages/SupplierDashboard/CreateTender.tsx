@@ -19,6 +19,7 @@ interface TenderForm {
   budget_min: string // Минимальный бюджет - снято ограничение на количество цифр (опциональное поле)
   budget_max: string // Максимальный бюджет - снято ограничение на количество цифр (опциональное поле)
   currency: string // Валюта бюджета (KZT, USD, RUB)
+  contact_phone: string // Контактный телефон для связи с автором тендера (опциональное поле)
   // Поля author и company НЕ включены - назначаются автоматически на backend
 }
 
@@ -39,6 +40,7 @@ const CreateTender = () => {
     budget_min: '',
     budget_max: '',
     currency: 'KZT', // По умолчанию KZT
+    contact_phone: '', // Поле для контактного телефона
   });
 
   // Загрузка категорий при инициализации компонента
@@ -119,6 +121,7 @@ const CreateTender = () => {
         budget_min: formData.budget_min ? parseFloat(formData.budget_min) : undefined,
         budget_max: formData.budget_max ? parseFloat(formData.budget_max) : undefined,
         currency: formData.currency, // Добавляем валюту
+        contact_phone: formData.contact_phone.trim() || undefined, // Добавляем контактный телефон
       };
       
       console.log('Создание тендера через новый tenderService:', tenderData);
@@ -235,6 +238,25 @@ const CreateTender = () => {
               value={formData.description}
               onChange={handleChange}
             />
+          </div>
+
+          {/* Contact Phone - поле для контактного телефона автора тендера */}
+          <div>
+            <label htmlFor="contact_phone" className="block text-sm font-medium text-dark-200 mb-2">
+              Контактный телефон
+            </label>
+            <input
+              type="tel"
+              name="contact_phone"
+              id="contact_phone"
+              className="input"
+              placeholder="Например: +7 777 123 45 67"
+              value={formData.contact_phone}
+              onChange={handleChange}
+            />
+            <p className="text-dark-400 text-xs mt-1">
+              Этот номер телефона будет виден заинтересованным поставщикам для связи с вами
+            </p>
           </div>
 
           {/* Currency */}

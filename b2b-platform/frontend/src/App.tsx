@@ -13,8 +13,10 @@ import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
 import CompanyCard from './pages/CompanyCard';
 import ProductDetail from './pages/ProductDetail';
+import Products from './pages/Products';
 import Category from './pages/Category';
 import Tenders from './pages/Tenders';
+import TenderDetail from './pages/TenderDetail';
 import Suppliers from './pages/Suppliers';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -34,6 +36,7 @@ import DashboardActions from './pages/SupplierDashboard/Actions';
 import DashboardSettings from './pages/SupplierDashboard/Settings';
 import DashboardReviews from './pages/SupplierDashboard/Reviews';
 import CreateTender from './pages/SupplierDashboard/CreateTender';
+import EditTender from './pages/SupplierDashboard/EditTender';
 import CreateProduct from './pages/SupplierDashboard/CreateProduct';
 import EditProduct from './pages/SupplierDashboard/EditProduct';
 import DashboardTenders from './pages/SupplierDashboard/Tenders';
@@ -44,6 +47,7 @@ import AdminModeration from './pages/AdminPanel/Moderation';
 import AdminCategories from './pages/AdminPanel/Categories';
 import AdminReviews from './pages/AdminPanel/Reviews';
 import AdminTenders from './pages/AdminPanel/Tenders';
+import CreateEditTender from './pages/AdminPanel/CreateEditTender';
 import AdminImport from './pages/AdminPanel/Import';
 
 // Protected route components
@@ -72,7 +76,9 @@ function App() {
         {/* Public routes */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="products" element={<Products />} />
           <Route path="tenders" element={<Tenders />} />
+          <Route path="tenders/:id" element={<TenderDetail />} />
           <Route path="suppliers" element={<Suppliers />} />
           <Route path="company/:id" element={<CompanyCard />} />
           <Route path="product/:id" element={<ProductDetail />} />
@@ -108,6 +114,7 @@ function App() {
           <Route path="actions" element={<DashboardActions />} />
           <Route path="tenders" element={<DashboardTenders />} />
           <Route path="tenders/create" element={<CreateTender />} />
+          <Route path="tenders/edit/:id" element={<EditTender />} />
           <Route path="settings" element={<DashboardSettings />} />
         </Route>
 
@@ -122,6 +129,8 @@ function App() {
           <Route path="categories" element={<AdminCategories />} />
           <Route path="reviews" element={<AdminReviews />} />
           <Route path="tenders" element={<AdminTenders />} />
+          <Route path="tenders/create" element={<CreateEditTender />} />
+          <Route path="tenders/:id/edit" element={<CreateEditTender />} />
           <Route path="import" element={<AdminImport />} />
         </Route>
 

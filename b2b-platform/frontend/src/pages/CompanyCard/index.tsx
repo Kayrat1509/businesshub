@@ -223,8 +223,8 @@ const CompanyProfile = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-white mb-4">Компания не найдена</h1>
-          <Link to="/suppliers" className="btn-primary px-6 py-3">
-            Вернуться к поставщикам
+          <Link to="/tenders" className="btn-primary px-6 py-3">
+            Вернуться к активным тендерам
           </Link>
         </div>
       </div>
@@ -233,7 +233,7 @@ const CompanyProfile = () => {
 
   const tabs = [
     { id: 'overview', label: 'Обзор', icon: Building2 },
-    { id: 'products', label: 'Товары', icon: Package },
+    { id: 'products', label: 'Продукты', icon: Package },
     { id: 'tenders', label: 'Тендеры', icon: FileText },
     { id: 'reviews', label: 'Отзывы', icon: MessageSquare },
     { id: 'contacts', label: 'Контакты', icon: Phone },
@@ -242,12 +242,12 @@ const CompanyProfile = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Back button */}
-      <Link 
-        to="/suppliers" 
+      <Link
+        to="/tenders"
         className="inline-flex items-center space-x-2 text-dark-300 hover:text-white mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span>Назад к поставщикам</span>
+        <span>Назад к активным тендерам</span>
       </Link>
 
       {/* Company Header */}
@@ -400,22 +400,125 @@ const CompanyProfile = () => {
                     <Clock className="w-5 h-5" />
                     <span>График работы</span>
                   </h3>
-                  <div className="space-y-2">
-                    {Object.entries(company.work_schedule).map(([day, hours]) => {
-                      // Обрабатываем случай когда hours это объект с open, close, is_working
-                      const displayHours = typeof hours === 'object' && hours !== null 
-                        ? (hours as any).is_working 
-                          ? `${(hours as any).open} - ${(hours as any).close}`
-                          : 'Выходной'
-                        : hours as string;
-                      
+                  <div className="text-white">
+                    {(() => {
+                      // Функция для форматирования графика работы в удобном формате
+                      const formatWorkSchedule = (schedule: any) => {
+                        // Порядок дней недели для правильной сортировки
+                        const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                        const dayNames = {
+                          'monday': 'Пн',
+                          'tuesday': 'Вт',
+                          'wednesday': 'Ср',
+                          'thursday': 'Чт',
+                          'friday': 'Пт',
+                          'saturday': 'Сб',
+                          'sunday': 'Вс'
+                        };
+
+                        // Группируем дни по одинаковому времени работы
+                        const timeGroups: { [key: string]: string[] } = {};
+
+                        dayOrder.forEach(day => {
+                          if (schedule[day]) {
+                            const hours = schedule[day];
+                            let timeKey = '';
+
+                            if (typeof hours === 'object' && hours !== null) {
+                              if ((hours as any).is_working && (hours as any).open && (hours as any).close) {
+                                timeKey = `${(hours as any).open} до ${(hours as any).close}`;
+                              } else {
+                                timeKey = 'Выходной';
+                              }
+                            } else if (typeof hours === 'string') {
+                              timeKey = hours === 'Выходной' || hours === 'closed' ? 'Выходной' : hours;
+                            } else {
+                              timeKey = 'Выходной';
+                            }
+
+                            if (!timeGroups[timeKey]) {
+                              timeGroups[timeKey] = [];
+                            }
+                            timeGroups[timeKey].push(dayNames[day as keyof typeof dayNames]);
+                          }
+                        });
+
+                        // Формируем строки для отображения
+                        const scheduleLines: string[] = [];
+                        Object.entries(timeGroups).forEach(([time, days]) => {
+                          if (time !== 'Выходной' && days.length > 0) {
+                            // Группируем последовательные дни (например, Пн-Пт)
+                            const daySequences = groupConsecutiveDays(days, dayOrder, dayNames);
+                            scheduleLines.push(`${daySequences} ${time}`);
+                          }
+                        });
+
+                        // Добавляем выходные дни отдельно
+                        if (timeGroups['Выходной'] && timeGroups['Выходной'].length > 0) {
+                          const weekendDays = groupConsecutiveDays(timeGroups['Выходной'], dayOrder, dayNames);
+                          scheduleLines.push(`${weekendDays} — выходные`);
+                        }
+
+                        return scheduleLines.length > 0 ? scheduleLines : ['График не указан'];
+                      };
+
+                      // Функция для группировки последовательных дней
+                      const groupConsecutiveDays = (days: string[], dayOrder: string[], dayNames: any): string => {
+                        // Сортируем дни согласно порядку недели
+                        const sortedDays = days.sort((a, b) => {
+                          const aIndex = Object.values(dayNames).indexOf(a);
+                          const bIndex = Object.values(dayNames).indexOf(b);
+                          return aIndex - bIndex;
+                        });
+
+                        if (sortedDays.length === 1) {
+                          return sortedDays[0];
+                        }
+
+                        // Ищем последовательности (например, Пн, Вт, Ср, Чт, Пт -> Пн-Пт)
+                        const sequences: string[] = [];
+                        let start = 0;
+
+                        while (start < sortedDays.length) {
+                          let end = start;
+
+                          // Ищем конец последовательности
+                          while (end < sortedDays.length - 1) {
+                            const currentDayIndex = Object.values(dayNames).indexOf(sortedDays[end]);
+                            const nextDayIndex = Object.values(dayNames).indexOf(sortedDays[end + 1]);
+
+                            if (nextDayIndex === currentDayIndex + 1) {
+                              end++;
+                            } else {
+                              break;
+                            }
+                          }
+
+                          // Формируем строку для последовательности
+                          if (end > start) {
+                            sequences.push(`${sortedDays[start]}-${sortedDays[end]}`);
+                          } else {
+                            sequences.push(sortedDays[start]);
+                          }
+
+                          start = end + 1;
+                        }
+
+                        return sequences.join(', ');
+                      };
+
+                      const formattedSchedule = formatWorkSchedule(company.work_schedule);
+
                       return (
-                        <div key={day} className="flex justify-between">
-                          <span className="text-dark-300 capitalize">{day}:</span>
-                          <span className="text-white">{displayHours}</span>
+                        <div className="space-y-1">
+                          {formattedSchedule.map((line, index) => (
+                            <div key={index} className="text-white">
+                              {line}
+                            </div>
+                          ))}
                         </div>
                       );
-                    })}
+                    })()}
                   </div>
                 </div>
               )}
@@ -502,7 +605,7 @@ const CompanyProfile = () => {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold text-white">
-                Товары и услуги ({products.length})
+                Продукты и услуги ({products.length})
               </h3>
             </div>
             

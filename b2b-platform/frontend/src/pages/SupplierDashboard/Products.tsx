@@ -144,7 +144,7 @@ const DashboardProducts: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Мои товары</h1>
           <p className="text-dark-300">
-            Товары и услуги вашей компании
+            Продукты и услуги вашей компании
           </p>
         </div>
         
@@ -198,7 +198,7 @@ const DashboardProducts: React.FC = () => {
         <div className="text-center py-16">
           <Package className="w-20 h-20 mx-auto text-dark-400 mb-6" />
           <h2 className="text-2xl font-bold text-white mb-3">
-            {products.length === 0 ? 'У вас пока нет товаров' : 'Товары не найдены'}
+            {products.length === 0 ? 'У вас пока нет товаров' : 'Продукты не найдены'}
           </h2>
           <p className="text-dark-300 mb-8 max-w-md mx-auto">
             {products.length === 0 

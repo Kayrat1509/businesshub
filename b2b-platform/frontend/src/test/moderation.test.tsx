@@ -64,7 +64,7 @@ describe('Moderation Component', () => {
     expect(screen.getByText('Компании')).toBeInTheDocument();
     expect(screen.getByText('Отзывы')).toBeInTheDocument();
     expect(screen.getByText('Тендеры')).toBeInTheDocument();
-    expect(screen.getByText('Товары')).toBeInTheDocument();
+    expect(screen.getByText('Продукты')).toBeInTheDocument();
   });
 
   it('switches between tabs correctly', () => {
@@ -157,7 +157,7 @@ describe('Moderation Component', () => {
     renderWithProviders(<Moderation />);
     
     // Switch to products tab (which has no mock data)
-    const productsTab = screen.getByText('Товары');
+    const productsTab = screen.getByText('Продукты');
     fireEvent.click(productsTab);
     
     expect(screen.getByText('Нет элементов на модерации')).toBeInTheDocument();

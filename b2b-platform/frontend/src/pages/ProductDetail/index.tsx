@@ -68,7 +68,7 @@ const ProductDetail: React.FC = () => {
     } catch (error: any) {
       console.error('Ошибка загрузки товара:', error);
       if (error?.response?.status === 404) {
-        toast.error('Товар не найден');
+        toast.error('Продукт не найден');
         navigate('/');
       } else {
         toast.error('Ошибка загрузки товара');
@@ -100,7 +100,7 @@ const ProductDetail: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-white mb-4">Товар не найден</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">Продукт не найден</h1>
           <Link to="/" className="btn-primary px-6 py-3">
             Вернуться на главную
           </Link>
@@ -262,7 +262,7 @@ const ProductDetail: React.FC = () => {
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                   : 'bg-green-500/20 text-green-400 border border-green-500/30'
               }`}>
-                {product.is_service ? 'Услуга' : 'Товар'}
+                {product.is_service ? 'Услуга' : 'Продукт'}
               </span>
 
               {!product.is_service && (

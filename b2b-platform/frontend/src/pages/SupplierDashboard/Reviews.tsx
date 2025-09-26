@@ -39,7 +39,7 @@ const Reviews = () => {
           id: 1,
           rating: 5,
           title: 'Отличное качество',
-          content: 'Товар полностью соответствует описанию. Быстрая доставка, качественная упаковка. Рекомендую!',
+          content: 'Продукт полностью соответствует описанию. Быстрая доставка, качественная упаковка. Рекомендую!',
           author_name: 'Алексей К.',
           created_at: '2024-01-15T10:30:00Z',
           status: 'APPROVED',
@@ -256,7 +256,7 @@ return null;
 
                 {review.product_name && (
                   <div className="flex items-center text-sm text-dark-400">
-                    <span className="mr-1">Товар:</span>
+                    <span className="mr-1">Продукт:</span>
                     <span className="text-primary-400">{review.product_name}</span>
                   </div>
                 )}

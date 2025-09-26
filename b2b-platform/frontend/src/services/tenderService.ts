@@ -97,9 +97,9 @@ class TenderService {
    * Обновить существующий тендер
    * PUT /api/tenders/<id>/ - требует авторизации и владения тендером
    */
-  async updateTender(tenderData: UpdateTenderRequest): Promise<Tender> {
-    const { id, ...data } = tenderData;
-    return await apiService.put<Tender>(`${this.BASE_URL}${id}/`, data);
+  async updateTender(tenderId: string, tenderData: Omit<CreateTenderRequest, 'id'>): Promise<Tender> {
+    // Пробуем обновить тендер через общий endpoint
+    return await apiService.put<Tender>(`${this.BASE_URL}${tenderId}/`, tenderData);
   }
 
   /**

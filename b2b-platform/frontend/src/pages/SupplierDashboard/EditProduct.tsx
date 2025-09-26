@@ -117,7 +117,7 @@ const EditProduct = () => {
     } catch (error: any) {
       console.error('Ошибка загрузки товара:', error);
       if (error?.response?.status === 404) {
-        toast.error('Товар не найден');
+        toast.error('Продукт не найден');
         navigate('/dashboard');
       } else {
         toast.error('Ошибка загрузки товара');
@@ -255,8 +255,8 @@ const EditProduct = () => {
       // Отправляем PATCH запрос для обновления товара
       const updatedProduct = await apiService.patch(`/products/${id}/`, formDataToSend);
 
-      console.log('Товар обновлен:', updatedProduct);
-      toast.success('Товар успешно обновлен');
+      console.log('Продукт обновлен:', updatedProduct);
+      toast.success('Продукт успешно обновлен');
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Ошибка обновления товара:', error);
@@ -293,7 +293,7 @@ const EditProduct = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-white mb-4">Товар не найден</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">Продукт не найден</h1>
           <button
             onClick={() => navigate('/dashboard')}
             className="btn-primary px-6 py-3"
@@ -377,7 +377,7 @@ const EditProduct = () => {
                     onChange={() => setFormData({...formData, is_service: false})}
                     className="w-4 h-4 text-primary-600 bg-dark-800 border-dark-600 focus:ring-primary-500"
                   />
-                  <span className="ml-2 text-white">Товар</span>
+                  <span className="ml-2 text-white">Продукт</span>
                 </label>
                 <label className="flex items-center">
                   <input

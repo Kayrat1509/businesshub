@@ -36,7 +36,7 @@ const DashboardLayout = () => {
       icon: Building2,
     },
     {
-      name: 'Товары и услуги',
+      name: 'Продукты и услуги',
       href: '/dashboard/products',
       icon: Package,
     },

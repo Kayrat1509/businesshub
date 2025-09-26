@@ -97,7 +97,7 @@ const SupplierDashboard = () => {
 
     try {
       await apiService.delete(`/products/${productId}/`);
-      toast.success('Товар успешно удален');
+      toast.success('Продукт успешно удален');
       // Обновляем список товаров после удаления
       loadUserData();
     } catch (error: any) {
@@ -587,7 +587,7 @@ return null;
         ) : (
           <div className="text-center py-8">
             <Package className="w-16 h-16 text-dark-400 mx-auto mb-4" />
-            <h4 className="text-lg font-semibold text-white mb-2">Товары не добавлены</h4>
+            <h4 className="text-lg font-semibold text-white mb-2">Продукты не добавлены</h4>
             <p className="text-dark-300 mb-6">
               Начните с добавления первого товара в ваш каталог
             </p>

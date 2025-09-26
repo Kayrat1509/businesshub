@@ -27,7 +27,7 @@ const DashboardLayout = () => {
       current: location.pathname === '/dashboard/company',
     },
     {
-      name: 'Товары и услуги',
+      name: 'Продукты и услуги',
       href: '/dashboard/products',
       icon: Package,
       current: location.pathname === '/dashboard/products',

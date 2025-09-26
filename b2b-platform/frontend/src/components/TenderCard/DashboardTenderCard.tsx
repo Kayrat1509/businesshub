@@ -1,29 +1,37 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, DollarSign, Clock, Tag } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Clock, Tag, Edit2, Eye } from 'lucide-react';
 import { Tender } from '../../types';
 
-interface TenderCardProps {
+interface DashboardTenderCardProps {
   tender: Tender
   displayCurrency?: string
   convertedBudgetMin?: number | null
   convertedBudgetMax?: number | null
 }
 
-const TenderCard = ({ tender, displayCurrency, convertedBudgetMin, convertedBudgetMax }: TenderCardProps) => {
+const DashboardTenderCard = ({ tender, displayCurrency, convertedBudgetMin, convertedBudgetMax }: DashboardTenderCardProps) => {
   const navigate = useNavigate();
 
-  // Функция для открытия детальной страницы тендера
-  const handleClick = () => {
-    // Переходим на страницу детального просмотра тендера
+  // Функция для редактирования тендера
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation(); // предотвращаем всплытие события
+    navigate(`/dashboard/tenders/edit/${tender.id}`);
+  };
+
+  // Функция для просмотра тендера
+  const handleView = (e: React.MouseEvent) => {
+    e.stopPropagation(); // предотвращаем всплытие события
     navigate(`/tenders/${tender.id}`);
   };
+
   const getCurrencySymbol = (currency?: string) => {
     switch (currency) {
       case 'USD': return '$';
       case 'RUB': return '₽';
       case 'KZT':
-      default: return '₸';
+      default:
+        return '₸';
     }
   };
 
@@ -51,32 +59,32 @@ const TenderCard = ({ tender, displayCurrency, convertedBudgetMin, convertedBudg
 
   const formatDate = (dateString?: string) => {
     if (!dateString) {
-return 'Не указано';
-}
+      return 'Не указано';
+    }
     return new Date(dateString).toLocaleDateString('ru-RU');
   };
 
   const getDaysLeft = (dateString?: string) => {
     if (!dateString) {
-return null;
-}
+      return null;
+    }
     const deadline = new Date(dateString);
     const today = new Date();
     const diffTime = deadline.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) {
-return 'Просрочен';
-}
+      return 'Просрочен';
+    }
     if (diffDays === 0) {
-return 'Сегодня';
-}
+      return 'Сегодня';
+    }
     if (diffDays === 1) {
-return '1 день';
-}
+      return '1 день';
+    }
     if (diffDays < 5) {
-return `${diffDays} дня`;
-}
+      return `${diffDays} дня`;
+    }
     return `${diffDays} дней`;
   };
 
@@ -86,7 +94,7 @@ return `${diffDays} дня`;
       PENDING: { text: 'На модерации', color: 'bg-yellow-500/20 text-yellow-400' },
       REJECTED: { text: 'Отклонен', color: 'bg-red-500/20 text-red-400' },
     };
-    
+
     const config = statusConfig[tender.status];
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
@@ -100,10 +108,9 @@ return `${diffDays} дня`;
   return (
     <motion.div
       whileHover={{ y: -3 }}
-      onClick={handleClick}
-      className="card p-6 hover:shadow-glow transition-all duration-300 group cursor-pointer"
+      className="card p-6 hover:shadow-glow transition-all duration-300 group"
     >
-      {/* Header */}
+      {/* Header с кнопками управления */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-white group-hover:text-primary-400 transition-colors mb-2 line-clamp-2">
@@ -114,7 +121,30 @@ return `${diffDays} дня`;
             {tender.city}
           </p>
         </div>
-        {getStatusBadge()}
+        <div className="flex items-center space-x-2">
+          {getStatusBadge()}
+
+          {/* Кнопки управления */}
+          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            {/* Кнопка редактирования - доступна для всех собственных тендеров */}
+            <button
+              onClick={handleEdit}
+              className="p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md transition-colors"
+              title="Редактировать тендер"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+
+            {/* Кнопка просмотра */}
+            <button
+              onClick={handleView}
+              className="p-2 bg-dark-600 hover:bg-dark-500 text-white rounded-md transition-colors"
+              title="Просмотреть тендер"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Description */}
@@ -176,8 +206,8 @@ return `${diffDays} дня`;
               <span className="text-dark-300 text-sm">Осталось:</span>
             </div>
             <span className={`font-medium text-sm ${
-              daysLeft === 'Просрочен' 
-                ? 'text-red-400' 
+              daysLeft === 'Просрочен'
+                ? 'text-red-400'
                 : daysLeft === 'Сегодня' || daysLeft === '1 день'
                   ? 'text-yellow-400'
                   : 'text-white'
@@ -198,12 +228,12 @@ return `${diffDays} дня`;
         </span>
       </div>
 
-      {/* Hover effect - показываем подсказку для перехода к детальной информации тендера */}
+      {/* Action hint */}
       <div className="mt-3 text-primary-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        Подробнее о тендере →
+        Редактировать или просмотреть →
       </div>
     </motion.div>
   );
 };
 
-export default TenderCard;
+export default DashboardTenderCard;
