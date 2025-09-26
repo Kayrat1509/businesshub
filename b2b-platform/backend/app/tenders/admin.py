@@ -38,6 +38,7 @@ class TenderAdminForm(forms.ModelForm):
             'budget_min': NumberInput(attrs={'min': '0', 'step': '0.01', 'placeholder': '0.00'}),
             'budget_max': NumberInput(attrs={'min': '0', 'step': '0.01', 'placeholder': '0.00'}),
             'deadline_date': DateInput(attrs={'type': 'date'}),
+            'contact_phone': TextInput(attrs={'size': '20', 'placeholder': '+7 (777) 123-45-67'}),
             'status': Select(attrs={'style': 'width: 200px;'}),
             'admin_comment': Textarea(attrs={'rows': 3, 'cols': 80, 'placeholder': 'Комментарий администратора (при отклонении)'}),
         }
@@ -50,6 +51,8 @@ class TenderAdminForm(forms.ModelForm):
             'deadline_date': 'Крайний срок подачи предложений',
             'status': 'Статус тендера (на модерации, одобрен, отклонен)',
             'admin_comment': 'Комментарий администратора (обязательно при отклонении)',
+            'contact_phone': 'Контактный телефон для связи с автором тендера',
+            'currency': 'Валюта бюджета тендера',
             'author': 'Пользователь, создавший тендер',
             'categories': 'Категории товаров/услуг для данного тендера',
         }
@@ -113,7 +116,10 @@ class TenderAdmin(admin.ModelAdmin):
             "fields": ("title", "author", "client_company", "description", "categories")
         }),
         ("Местоположение и бюджет", {
-            "fields": ("city", "budget_min", "budget_max", "deadline_date")
+            "fields": ("city", "budget_min", "budget_max", "currency", "deadline_date")
+        }),
+        ("Контактная информация", {
+            "fields": ("contact_phone",)
         }),
         ("Модерация", {
             "fields": ("status", "admin_comment")

@@ -1226,7 +1226,7 @@ return;
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.6, delay: index * 0.1 }}
-                          className="card p-6 hover:border-primary-500 transition-colors cursor-pointer"
+                          className="card p-4 hover:border-primary-500 transition-colors cursor-pointer"
                           onClick={() => handleCompanyClick(company.id)}
                         >
                           <div className="space-y-3">
@@ -1341,7 +1341,7 @@ return;
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.6 }}
-                  className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 >
                   {tenders
                     .slice(
@@ -1354,7 +1354,7 @@ return;
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: index * 0.1 }}
-                        className="card p-6 hover:border-primary-500 transition-colors cursor-pointer group"
+                        className="card p-4 hover:border-primary-500 transition-colors cursor-pointer group"
                         onClick={() => handleTenderClick(tender)}
                       >
                         <div className="space-y-3">
