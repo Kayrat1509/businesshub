@@ -7,8 +7,8 @@ import { fetchCategories, fetchCategoryTree } from '../../store/slices/categorie
 import { fetchCompanies } from '../../store/slices/companiesSlice';
 import { fetchTenders } from '../../store/slices/tendersSlice';
 import { fetchAds } from '../../store/slices/adsSlice';
-// Импортируем тип Tender для типизации обработчика клика
-import { Tender } from '../../types';
+// Импортируем типы для типизации
+import { Tender, Company } from '../../types';
 // добавлен сервис для работы с валютами
 import currencyService from '../../services/currencyService';
 import CompanyCard from '../../components/CompanyCard';
@@ -33,15 +33,7 @@ interface SearchResult {
   data: Company | Product;
 }
 
-interface Company {
-  id: number
-  name: string
-  description: string
-  category: string
-  location: string
-  website?: string
-  rating?: number
-}
+// Используем глобальный тип Company из /types/index.ts
 
 const Home = () => {
   const navigate = useNavigate();
@@ -1242,10 +1234,11 @@ return;
 
                             {/* Телефон */}
                             <div className="flex items-center text-dark-400 text-xs">
-                              📞 {(company.contacts && (
-                                company.contacts.phones?.[0] ||
-                                company.contacts.phone
-                              )) || 'Телефон не указан'}
+                              📞 {(() => {
+                                // Получаем первый доступный телефон
+                                const firstPhone = company.contacts?.phones?.[0] || company.contacts?.phone;
+                                return firstPhone || 'Телефон не указан';
+                              })()}
                             </div>
 
                             {/* Категории деятельности */}

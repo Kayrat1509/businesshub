@@ -51,6 +51,7 @@ class CompanyListSerializer(serializers.ModelSerializer):
             "description",
             "categories",
             "supplier_type",
+            "contacts",  # Добавлено поле контактов для отображения телефонов
             "city",
             "rating",
             "status",
