@@ -296,7 +296,8 @@ const CompanyProfile = () => {
                 </div>
               </div>
               
-              <div className="description-expanded text-dark-300 mb-4">
+              {/* Описание компании - адаптивный блок с корректными переносами */}
+              <div className="w-full text-dark-300 mb-4 leading-relaxed text-sm sm:text-base break-words overflow-wrap-anywhere whitespace-pre-wrap">
                 {company.description}
               </div>
               
