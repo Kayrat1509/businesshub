@@ -43,7 +43,7 @@ const CompanyProfile = () => {
   const [searchParams] = useSearchParams();
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState(() => {
-    return searchParams.get('tab') || 'overview';
+    return searchParams.get('tab') || 'products'; // По умолчанию открывается вкладка "Продукты"
   });
   
   const { selectedCompany: company, isLoading, companyTenders, tendersLoading } = useAppSelector(state => state.companies);
