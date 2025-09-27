@@ -1,0 +1,24 @@
+--- a/src/pages/ProductDetail/index.tsx
++++ b/src/pages/ProductDetail/index.tsx
+@@ -166,7 +166,7 @@
+         {/* Product Images and Info */}
+-        <div className="flex-shrink-0 space-y-6" style={{width: '400px', maxWidth: '100%'}}>
++        <div className="flex-shrink-0 space-y-6 w-full max-w-md lg:max-w-lg">
+           {/* Image Gallery */}
+           <div className="space-y-4">
+
+Описание изменений:
+- Убран фиксированный inline стиль width: '400px'
+- Добавлены адаптивные CSS классы:
+  - w-full: полная ширина на малых экранах
+  - max-w-md: максимум 28rem (448px) на обычных экранах
+  - lg:max-w-lg: максимум 32rem (512px) на больших экранах
+- Убрано maxWidth: '100%' так как это дублируется w-full
+
+Риски: Небольшое изменение компоновки на больших экранах
+
+Тестирование:
+1. Проверить отображение галереи изображений
+2. Убедиться что боковая панель не перекрывает контент
+3. Проверить адаптивность на мобильных устройствах
+4. Убедиться что соотношение сторон изображений корректно

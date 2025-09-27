@@ -1,3 +1,8 @@
+/* Глобальный border-box для предсказуемого расчёта размеров элементов */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -55,17 +60,15 @@
 
   .input-expanded {
     @apply w-full px-4 py-3 border border-dark-600 rounded-lg bg-dark-800 text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
-    max-width: 800px;
-    width: 800px;
-    height: 300px;
+    max-width: 100%;
+    min-height: 12rem; /* 192px - адаптивная высота вместо фиксированной */
     resize: vertical;
   }
 
   .description-expanded {
-    @apply px-4 py-3 border border-dark-600 rounded-lg bg-dark-800 text-white;
-    max-width: 1200px;
-    width: 1200px;
-    min-height: 300px;
+    @apply px-4 py-3 border border-dark-600 rounded-lg bg-dark-800 text-white w-full;
+    max-width: 100%; /* Адаптивная ширина */
+    min-height: 8rem; /* 128px - уменьшенная минимальная высота */
     line-height: 1.6;
     overflow-wrap: break-word;
   }

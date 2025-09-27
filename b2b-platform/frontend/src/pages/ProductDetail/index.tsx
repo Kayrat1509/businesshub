@@ -166,7 +166,7 @@ const ProductDetail: React.FC = () => {
       {/* Первый ряд: Фото товара и описание */}
       <div className="flex flex-col lg:flex-row gap-8 mb-8">
         {/* Левая колонка: Изображение товара и контакты поставщика */}
-        <div className="flex-shrink-0 space-y-6" style={{width: '400px', maxWidth: '100%'}}>
+        <div className="flex-shrink-0 space-y-6 w-full max-w-md lg:max-w-lg">
           {/* Изображение товара */}
           <div className="card p-6">
             <div className="w-full h-[400px] bg-dark-700 rounded-lg overflow-hidden">

@@ -1,0 +1,42 @@
+--- a/src/pages/CompanyCard/index.tsx
++++ b/src/pages/CompanyCard/index.tsx
+@@ -622,9 +622,7 @@
+             ) : (
+               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                 {products.map((product) => (
+-                  <div key={product.id} style={{width: '250px', height: '350px'}}>
+-                    <ProductCard
++                  <ProductCard
++                    key={product.id}
+                       product={product}
+                       showCompany={false}
+                       variant="compact"
+-                    />
+-                  </div>
++                  />
+                 ))}
+               </div>
+             )}
+
+--- a/src/components/ProductCard/index.tsx
++++ b/src/components/ProductCard/index.tsx
+@@ -55,7 +55,7 @@
+
+   const cardClasses = variant === 'compact'
+-    ? "card p-4 cursor-pointer hover:shadow-lg transition-all duration-200 h-full flex flex-col"
++    ? "card p-4 cursor-pointer hover:shadow-lg transition-all duration-200 h-full flex flex-col w-full max-w-xs"
+     : "card p-6 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200";
+
+Описание изменений:
+- Убраны фиксированные inline стили width: '250px', height: '350px'
+- Добавлены CSS классы w-full max-w-xs для адаптивной ширины (max-width: 20rem = 320px)
+- Высота автоматически адаптируется к содержимому через h-full
+- Компонент стал более гибким и адаптивным
+
+Риски: Возможно небольшое изменение внешнего вида карточек
+
+Тестирование:
+1. Проверить что карточки имеют правильный размер
+2. Убедиться что контент полностью видим
+3. Проверить отображение на разных разрешениях
+4. Убедиться что карточки не переполняют контейнер

@@ -1,0 +1,11 @@
+id,приоритет,тип,краткое_описание,файл,номер_строки,как_воспроизвести,предложение_по_исправлению
+ISSUE-001,критично,css,Неадаптивная сетка grid-cols-6 на мобильных устройствах,src/pages/CompanyCard/index.tsx,623,"Открыть страницу компании, уменьшить ширину экрана до 320px","Заменить на grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
+ISSUE-002,критично,css,Фиксированные inline размеры элементов продуктов,src/pages/CompanyCard/index.tsx,625,"Открыть карточку компании, перейти на вкладку Продукты","Убрать style={{width: '250px', height: '350px'}} и использовать CSS классы"
+ISSUE-003,высокий,css,Фиксированная ширина боковой панели,src/pages/ProductDetail/index.tsx,169,"Открыть детальную страницу продукта на мобильном устройстве","Заменить style={{width: '400px'}} на адаптивные CSS классы"
+ISSUE-004,высокий,css,Фиксированные размеры в CSS классах,src/styles/index.css,58-68,"Использовать элементы с классами .input-expanded .description-expanded","Заменить фиксированные px на max-width с % или rem"
+ISSUE-005,высокий,css,Отсутствие глобального box-sizing border-box,src/styles/index.css,1,"Проверить вычисление размеров элементов с padding","Добавить *, *::before, *::after { box-sizing: border-box; }"
+ISSUE-006,средний,css,Отсутствие медиа-запросов для кастомной адаптации,src/styles/index.css,весь_файл,"Проверить адаптивность на различных устройствах","Добавить @media запросы для ключевых брейкпойнтов"
+ISSUE-007,средний,js,Множественные ESLint предупреждения,src/components/CategorySelector/index.tsx,46-176,"Запустить npm run lint","Исправить отсутствие фигурных скобок, console.log, magic numbers"
+ISSUE-008,средний,js,Использование console.log в production коде,src/api/index.ts,96,"Открыть DevTools в production","Убрать все console.log или использовать условную отладку"
+ISSUE-009,низкий,accessibility,Предупреждения npm audit - 5 уязвимостей,package.json,зависимости,"Запустить npm audit","Обновить уязвимые зависимости командой npm audit fix"
+ISSUE-010,низкий,производительность,Большой размер JavaScript бандла,vite.config.ts,конфигурация,"Проверить размер dist/assets/index-c5b62b34.js","Настроить code splitting и манual chunks в Rollup"

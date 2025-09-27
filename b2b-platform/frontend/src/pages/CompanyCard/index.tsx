@@ -317,7 +317,7 @@ const CompanyProfile = () => {
           </div>
           
           {/* Action buttons */}
-          <div className="flex flex-row space-x-3 lg:min-w-0 lg:flex-shrink-0" style={{marginLeft: '-350px'}}>
+          <div className="flex flex-row space-x-3 lg:min-w-0 lg:flex-shrink-0 lg:ml-auto">
             <button
               onClick={handleToggleFavorite}
               className={`btn flex items-center space-x-2 px-6 py-3 ${
@@ -620,15 +620,14 @@ const CompanyProfile = () => {
                 <p className="text-dark-300">Компания пока не добавила товары или услуги</p>
               </div>
             ) : (
-              <div className="grid grid-cols-6 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                 {products.map((product) => (
-                  <div key={product.id} style={{width: '250px', height: '350px'}}>
-                    <ProductCard
-                      product={product}
-                      showCompany={false}
-                      variant="compact"
-                    />
-                  </div>
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    showCompany={false}
+                    variant="compact"
+                  />
                 ))}
               </div>
             )}

@@ -1,0 +1,81 @@
+КОМАНДЫ И РЕЗУЛЬТАТЫ ДИАГНОСТИКИ АДАПТИВНОСТИ
+==============================================
+
+1. СОЗДАНИЕ СТРУКТУРЫ ПАПОК:
+mkdir -p diagnostics/{screenshots,patch_examples}
+[успешно]
+
+2. ПРОВЕРКА ОКРУЖЕНИЯ:
+node -v        → v20.19.5
+npm -v         → 10.8.2
+python3 -V     → Python 3.13.5
+uname -s -r    → Darwin 24.6.0
+pwd            → /Users/kairatkhidirboev/Desktop/Projects/businesshub
+
+3. ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ:
+NODE_ENV: [не установлен]
+VITE_*: [переменные не найдены]
+
+4. СТРУКТУРА ПРОЕКТА:
+- Корневая папка: businesshub
+- Основной проект: b2b-platform/
+- Frontend: b2b-platform/frontend/
+- Backend: b2b-platform/backend/
+- .env файлы: не найдены
+
+5. УСТАНОВКА ЗАВИСИМОСТЕЙ И СБОРКА:
+cd frontend && npm install
+[успешно - 630 пакетов установлено с 5 уязвимостями]
+
+npm run build
+[успешно - размер bundle: 903.03 kB, предупреждение о размере чанков]
+
+6. СТАТИЧЕСКИЙ АНАЛИЗ:
+npm run lint
+[найдены предупреждения: missing trailing comma, console statements, no-explicit-any]
+
+npx stylelint "src/**/*.css"
+[ошибка: отсутствует конфигурация Stylelint]
+
+7. ПОИСК ПРОБЛЕМНЫХ ПАТТЕРНОВ:
+grep -r "width:\s*\d+px\|height:\s*\d+px" src/
+[найдены фиксированные размеры в styles/index.css и inline стилях]
+
+grep -r "style.*width.*px\|style.*height.*px" src/
+[найдены inline стили в CompanyCard:625 и ProductDetail:169]
+
+grep -r "grid-cols-6" src/
+[найдена неадаптивная сетка в CompanyCard:623]
+
+8. ПРОВЕРКА META VIEWPORT:
+cat index.html | grep viewport
+[найден корректный viewport: width=device-width, initial-scale=1.0]
+
+9. АНАЛИЗ СЕТОК:
+grep -r "grid-cols\|grid-template-columns" src/
+[найдено множество использований сеток, включая проблемный grid-cols-6]
+
+10. РЕЗУЛЬТАТЫ ДИАГНОСТИКИ:
+- Создан отчет: diagnostic_report.md
+- Создана таблица проблем: issues.csv
+- Созданы патчи: patch_examples/*.diff
+- Выявлено 10 проблем различной критичности
+
+КРИТИЧНЫЕ ПРОБЛЕМЫ:
+- ISSUE-001: grid-cols-6 не адаптивен для мобильных
+- ISSUE-002: фиксированные inline размеры элементов
+- ISSUE-003: фиксированная ширина боковой панели
+- ISSUE-005: отсутствие глобального box-sizing: border-box
+
+КОМАНДЫ ДЛЯ ВОСПРОИЗВЕДЕНИЯ:
+1. cd b2b-platform/frontend
+2. npm install
+3. npm run build
+4. npm run lint
+5. npm run dev (для локального тестирования)
+
+РЕКОМЕНДАЦИИ:
+1. Применить критичные патчи из patch_examples/
+2. Протестировать на различных разрешениях экрана
+3. Запустить lighthouse audit
+4. Исправить ESLint предупреждения

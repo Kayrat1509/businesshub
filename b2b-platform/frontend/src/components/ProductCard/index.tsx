@@ -54,8 +54,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     : product.description;
 
   const cardClasses = variant === 'compact'
-    ? "card p-4 cursor-pointer hover:shadow-lg transition-all duration-200 h-full flex flex-col"
-    : "card p-6 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200";
+    ? "card p-3 sm:p-4 cursor-pointer hover:shadow-lg transition-all duration-200 h-full flex flex-col w-full max-w-sm mx-auto"
+    : "card p-4 sm:p-6 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200 w-full";
 
   const imageHeight = variant === 'compact' ? 'h-32' : 'h-48';
 
