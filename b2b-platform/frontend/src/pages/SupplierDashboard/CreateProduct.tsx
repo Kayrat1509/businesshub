@@ -79,25 +79,21 @@ const CreateProduct = () => {
   const loadCategories = async () => {
     try {
       setIsLoadingCategories(true);
-      // Загружаем иерархическое дерево категорий через API
+      // Загружаем иерархическое дерево только активных категорий
       const data = await apiService.get<Category[]>('/categories/tree/');
 
-      // API возвращает массив корневых категорий с детьми
       if (data && Array.isArray(data)) {
-        // Убеждаемся что каждая категория имеет поле children
         const processedCategories = data.map(cat => ({
           ...cat,
           children: Array.isArray(cat.children) ? cat.children : []
         }));
         setCategories(processedCategories);
       } else {
-        console.error('Получены некорректные данные категорий:', data);
         setCategories([]);
       }
     } catch (error) {
       console.error('Ошибка загрузки категорий:', error);
       setCategories([]);
-      // Не показываем ошибку пользователю при выборе категории
     } finally {
       setIsLoadingCategories(false);
     }
@@ -132,6 +128,7 @@ const CreateProduct = () => {
       category: categoryId,
     });
   };
+
 
   // Fallback на простой select если категории не загрузились или произошла ошибка
   const renderCategorySelector = () => {
@@ -241,9 +238,6 @@ const CreateProduct = () => {
       // Добавляем изображение
       if (formData.image) {
         formDataToSend.append('image', formData.image);
-        console.log('Создание товара с изображением:', formData.image.name);
-      } else {
-        console.log('Создание товара без изображения');
       }
 
       // Добавляем ID выбранной компании
@@ -251,8 +245,7 @@ const CreateProduct = () => {
         formDataToSend.append('company_id', formData.company_id.toString());
       }
 
-      // Отправляем запрос на backend с FormData
-      // Content-Type будет установлен автоматически браузером
+      // Отправляем запрос на стандартный endpoint
       const createdProduct = await apiService.post('/products/', formDataToSend);
 
       console.log('Продукт создан:', createdProduct);

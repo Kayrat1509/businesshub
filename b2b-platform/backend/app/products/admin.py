@@ -447,3 +447,5 @@ class ProductImageAdmin(admin.ModelAdmin):
             )
         return "Нет изображения"
     image_thumbnail.short_description = "Изображение"
+
+

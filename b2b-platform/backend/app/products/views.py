@@ -5,7 +5,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+import pandas as pd
+import io
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework.exceptions import ValidationError
 
 from app.common.permissions import IsOwnerOrReadOnly
 # from app.common.services import CurrencyConverter
@@ -227,3 +231,204 @@ def convert_price(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def download_import_template(request):
+    """
+    Скачать шаблон Excel для импорта товаров
+    """
+    # Создаем DataFrame с примерами данных
+    template_data = {
+        'name': [
+            'Смартфон Samsung Galaxy S24',
+            'Ноутбук MacBook Pro 14"',
+            'Беспроводные наушники AirPods Pro',
+            'Планшет iPad Air 10.9"'
+        ],
+        'description': [
+            'Флагманский смартфон с камерой 200MP и процессором Snapdragon 8 Gen 3',
+            'Профессиональный ноутбук для разработки и дизайна с чипом M3 Pro',
+            'Наушники с активным шумоподавлением и пространственным звуком',
+            'Универсальный планшет для работы и творчества с поддержкой Apple Pencil'
+        ],
+        'price': [350000.00, 980000.00, 85000.00, 220000.00],
+        'sku': ['SMS24-256GB-BLK', 'MBP14-M3PRO-512', 'APP-PRO-2GEN', 'IPAD-AIR-256-WF'],
+        'category': ['Электроника', 'Компьютеры', 'Аксессуары', 'Планшеты'],
+        'currency': ['KZT', 'KZT', 'KZT', 'KZT'],
+        'in_stock': [True, True, True, False]
+    }
+
+    df = pd.DataFrame(template_data)
+
+    # Создаем Excel файл в памяти
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Товары')
+
+        # Получаем рабочую книгу для форматирования
+        workbook = writer.book
+        worksheet = writer.sheets['Товары']
+
+        # Автоматическая настройка ширины колонок
+        for column in worksheet.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            worksheet.column_dimensions[column_letter].width = adjusted_width
+
+    output.seek(0)
+
+    # Создаем HTTP ответ с Excel файлом
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="template_import_products.xlsx"'
+
+    return response
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def import_products_from_excel(request):
+    """
+    Импорт товаров из Excel файла
+    """
+    if 'file' not in request.FILES:
+        return Response({
+            'success': False,
+            'error': 'Файл не найден'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    excel_file = request.FILES['file']
+
+    # Проверяем расширение файла
+    if not excel_file.name.endswith(('.xlsx', '.xls')):
+        return Response({
+            'success': False,
+            'error': 'Поддерживаются только файлы Excel (.xlsx, .xls)'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Читаем Excel файл
+        df = pd.read_excel(excel_file)
+
+        # Нормализуем заголовки колонок (приводим к нижнему регистру и убираем пробелы)
+        df.columns = df.columns.str.lower().str.strip()
+
+        # Проверяем наличие обязательной колонки 'name'
+        if 'name' not in df.columns:
+            return Response({
+                'success': False,
+                'error': 'Обязательная колонка "name" не найдена в файле'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Получаем компанию пользователя
+        from app.companies.models import Company
+        user_companies = Company.objects.filter(owner=request.user)
+
+        if user_companies.count() == 0:
+            return Response({
+                'success': False,
+                'error': 'У вас нет компании для импорта товаров'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        elif user_companies.count() == 1:
+            user_company = user_companies.first()
+        else:
+            # Если у пользователя несколько компаний, берем первую или используем company_id из запроса
+            company_id = request.data.get('company_id')
+            if company_id:
+                try:
+                    user_company = user_companies.get(id=company_id)
+                except Company.DoesNotExist:
+                    return Response({
+                        'success': False,
+                        'error': 'Указанная компания не найдена'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                user_company = user_companies.first()
+
+        # Получаем категории для соответствия
+        from app.categories.models import Category
+        categories_dict = {cat.name.lower(): cat for cat in Category.objects.all()}
+
+        imported_products = []
+        skipped_products = []
+
+        # Обрабатываем каждую строку
+        for index, row in df.iterrows():
+            # Пропускаем строки без названия
+            if pd.isna(row['name']) or str(row['name']).strip() == '':
+                skipped_products.append(f"Строка {index + 2}: отсутствует название товара")
+                continue
+
+            try:
+                # Подготавливаем данные для создания продукта
+                product_data = {
+                    'title': str(row['name']).strip(),
+                    'company': user_company
+                }
+
+                # Опциональные поля
+                if 'description' in df.columns and not pd.isna(row['description']):
+                    product_data['description'] = str(row['description']).strip()
+                else:
+                    product_data['description'] = ''
+
+                if 'price' in df.columns and not pd.isna(row['price']):
+                    try:
+                        product_data['price'] = float(row['price'])
+                    except (ValueError, TypeError):
+                        pass
+
+                if 'sku' in df.columns and not pd.isna(row['sku']):
+                    product_data['sku'] = str(row['sku']).strip()
+
+                if 'currency' in df.columns and not pd.isna(row['currency']):
+                    currency = str(row['currency']).upper().strip()
+                    if currency in ['KZT', 'RUB', 'USD']:
+                        product_data['currency'] = currency
+
+                if 'in_stock' in df.columns and not pd.isna(row['in_stock']):
+                    product_data['in_stock'] = bool(row['in_stock'])
+
+                # Обработка категории
+                if 'category' in df.columns and not pd.isna(row['category']):
+                    category_name = str(row['category']).lower().strip()
+                    if category_name in categories_dict:
+                        product_data['category'] = categories_dict[category_name]
+
+                # Создаем продукт
+                product = Product.objects.create(**product_data)
+                imported_products.append({
+                    'id': product.id,
+                    'name': product.title,
+                    'price': product.price,
+                    'currency': product.currency
+                })
+
+            except Exception as e:
+                skipped_products.append(f"Строка {index + 2}: {str(e)}")
+
+        return Response({
+            'success': True,
+            'message': f'Импортировано {len(imported_products)} товаров',
+            'imported_count': len(imported_products),
+            'skipped_count': len(skipped_products),
+            'imported_products': imported_products,
+            'skipped_products': skipped_products
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': f'Ошибка при обработке файла: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

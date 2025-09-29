@@ -13,7 +13,7 @@ from django.urls import reverse
 from openpyxl import load_workbook
 import logging
 
-from app.common.permissions import IsAdminOrReadOnly
+from app.common.permissions import IsAdminOrReadOnly, IsSupplierOrAdmin
 
 from .models import Category
 from .serializers import CategorySerializer, CategoryTreeSerializer
@@ -46,6 +46,20 @@ def category_tree(request):
     root_categories = Category.objects.filter(parent=None, is_active=True)
     serializer = CategoryTreeSerializer(root_categories, many=True)
     return Response(serializer.data)
+
+
+class SupplierCategoryCreateView(generics.CreateAPIView):
+    """
+    Endpoint для создания категорий поставщиками.
+    Созданные категории попадают на модерацию (is_active=False).
+    """
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsSupplierOrAdmin]
+
+    def perform_create(self, serializer):
+        # Категории созданные поставщиками требуют модерации
+        serializer.save(is_active=False)
 
 
 @staff_member_required

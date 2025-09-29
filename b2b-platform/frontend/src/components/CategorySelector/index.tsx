@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronRight, Search, X } from 'lucide-react';
 
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  parent?: number;
-  children: Category[];
-}
+// Импортируем глобальный тип Category и создаем локальный алиас
+import { Category as GlobalCategory } from '../../types';
+
+type Category = GlobalCategory;
 
 interface CategorySelectorProps {
   categories: Category[];
@@ -112,6 +109,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
       console.error('Ошибка при выборе категории:', error);
     }
   };
+
 
   // Безопасный рендер категории
   const renderCategory = (category: Category, level: number = 0): React.ReactNode => {
@@ -231,8 +229,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
               </div>
             )}
           </div>
+
         </div>
       )}
+
     </div>
   );
 };

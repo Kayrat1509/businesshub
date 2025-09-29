@@ -9,16 +9,38 @@ import datetime
 from .models import Category
 
 
+class ModerationStatusFilter(admin.SimpleListFilter):
+    title = 'статус модерации'
+    parameter_name = 'moderation_status'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('pending', '⏳ Ожидают модерации'),
+            ('approved', '✓ Одобренные'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'pending':
+            return queryset.filter(is_active=False)
+        if self.value() == 'approved':
+            return queryset.filter(is_active=True)
+        return queryset
+
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["display_name", "parent", "slug", "is_active", "products_count", "companies_count", "created_at"]
-    list_filter = ["is_active", "parent", "created_at"]
+    list_display = ["display_name", "parent", "slug", "status_display", "is_active", "products_count", "companies_count", "created_at"]
+    list_filter = [
+        ModerationStatusFilter,
+        "parent",
+        ("created_at", admin.DateFieldListFilter),
+    ]
     search_fields = ["name", "slug"]
     prepopulated_fields = {"slug": ("name",)}
     list_editable = ["is_active"]
-    ordering = ["parent__name", "name"]
+    ordering = ["is_active", "parent__name", "name"]  # Неактивные (на модерации) сверху
     list_per_page = 50
-    actions = ['export_to_excel']
+    actions = ['export_to_excel', 'approve_categories', 'reject_categories']
 
     # Указываем наш кастомный шаблон для списка
     change_list_template = 'admin/categories/category/change_list.html'
@@ -40,6 +62,18 @@ class CategoryAdmin(admin.ModelAdmin):
         return format_html("<strong>{}</strong>", obj.name)
     display_name.short_description = "Название"
     display_name.admin_order_field = "name"
+
+    def status_display(self, obj):
+        if obj.is_active:
+            return format_html(
+                '<span style="color: green; font-weight: bold;">✓ Одобрено</span>'
+            )
+        else:
+            return format_html(
+                '<span style="color: orange; font-weight: bold;">⏳ На модерации</span>'
+            )
+    status_display.short_description = "Статус"
+    status_display.admin_order_field = "is_active"
 
     def products_count(self, obj):
         count = obj.products.count()
@@ -126,6 +160,58 @@ class CategoryAdmin(admin.ModelAdmin):
         return response
     
     export_to_excel.short_description = "Экспорт в Excel"
+
+    def approve_categories(self, request, queryset):
+        """
+        Одобрить выбранные категории (активировать)
+        """
+        updated = queryset.filter(is_active=False).update(is_active=True)
+        if updated:
+            self.message_user(
+                request,
+                f'Одобрено {updated} категорий. Они теперь доступны в каталоге.'
+            )
+        else:
+            self.message_user(
+                request,
+                'Нет категорий для одобрения (все выбранные уже активны).'
+            )
+    approve_categories.short_description = "✓ Одобрить выбранные категории"
+
+    def reject_categories(self, request, queryset):
+        """
+        Отклонить выбранные категории (удалить)
+        """
+        pending_categories = queryset.filter(is_active=False)
+        count = pending_categories.count()
+
+        if count > 0:
+            # Проверяем, не связаны ли категории с продуктами
+            categories_with_products = []
+            for category in pending_categories:
+                if category.products.exists():
+                    categories_with_products.append(category.name)
+
+            if categories_with_products:
+                self.message_user(
+                    request,
+                    f'Нельзя удалить категории, так как они используются в продуктах: {", ".join(categories_with_products)}',
+                    level='ERROR'
+                )
+                return
+
+            # Удаляем категории без связанных продуктов
+            pending_categories.delete()
+            self.message_user(
+                request,
+                f'Отклонено и удалено {count} категорий.'
+            )
+        else:
+            self.message_user(
+                request,
+                'Нет категорий для отклонения (можно отклонять только неактивные категории).'
+            )
+    reject_categories.short_description = "✗ Отклонить выбранные категории"
 
     def generate_sample_excel(self, request, queryset=None):
         """

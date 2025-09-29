@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("", views.CategoryListCreateView.as_view(), name="category-list-create"),
     path("tree/", views.category_tree, name="category-tree"),
+    path("create/", views.SupplierCategoryCreateView.as_view(), name="supplier-category-create"),
     path("import/", views.import_categories_from_excel, name="category-import"),
     path(
         "<slug:slug>/",
