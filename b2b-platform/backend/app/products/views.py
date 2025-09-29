@@ -26,8 +26,11 @@ class ProductFilter(filters.FilterSet):
     price_min = filters.NumberFilter(field_name="price", lookup_expr="gte")
     price_max = filters.NumberFilter(field_name="price", lookup_expr="lte")
     in_stock = filters.BooleanFilter()
+    on_sale = filters.BooleanFilter()
     # добавлен фильтр по городу компании
     city = filters.CharFilter(field_name="company__city", lookup_expr="iexact")
+    # добавлен фильтр по стране компании
+    country = filters.CharFilter(field_name="company__country", lookup_expr="iexact")
 
     class Meta:
         model = Product
@@ -38,7 +41,9 @@ class ProductFilter(filters.FilterSet):
             "price_min",
             "price_max",
             "in_stock",
+            "on_sale",  # добавлен фильтр по акциям
             "city",  # добавлен фильтр по городу
+            "country",  # добавлен фильтр по стране
         ]
 
 
@@ -439,4 +444,41 @@ def import_products_from_excel(request):
         return Response({
             'success': False,
             'error': f'Ошибка при обработке файла: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def filter_options(request):
+    """
+    Возвращает доступные варианты для фильтров на странице акций
+    """
+    from app.categories.models import Category
+
+    try:
+        # Получаем товары в акции для фильтров
+        sale_products = Product.objects.filter(on_sale=True, is_active=True)
+
+        # Получаем уникальные категории
+        categories = Category.objects.filter(
+            products__in=sale_products
+        ).distinct().values('id', 'name', 'slug')
+
+        # Получаем уникальные города
+        cities = list(set(sale_products.values_list('company__city', flat=True)))
+        cities = [city for city in cities if city]  # Убираем пустые значения
+
+        # Получаем уникальные страны
+        countries = list(set(sale_products.values_list('company__country', flat=True)))
+        countries = [country for country in countries if country]  # Убираем пустые значения
+
+        return Response({
+            'categories': list(categories),
+            'cities': sorted(cities),
+            'countries': sorted(countries)
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'error': f'Ошибка получения опций фильтров: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Building2, Package, Star, TrendingUp, Users, Eye,
-  Plus, Calendar, ArrowUpRight, Activity, FileText, Edit3,
+  Plus, Calendar, ArrowUpRight, Activity, FileText, Edit3, Zap, Tag,
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -15,6 +15,7 @@ const SupplierDashboard = () => {
   const [companies, setCompanies] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [tenders, setTenders] = useState<any[]>([]); // Состояние для тендеров пользователя
+  const [actions, setActions] = useState<any[]>([]); // Состояние для акций пользователя
   const [isLoading, setIsLoading] = useState(false);
 
   const [stats] = useState({
@@ -82,6 +83,22 @@ const SupplierDashboard = () => {
         console.error('Ошибка загрузки тендеров:', tenderError);
         setTenders([]);
       }
+
+      // Загружаем акции пользователя
+      try {
+        const actionsData = await apiService.get<{ results: any[] }>('/ads/actions/my/');
+        if (actionsData && Array.isArray(actionsData.results)) {
+          setActions(actionsData.results);
+        } else if (Array.isArray(actionsData)) {
+          setActions(actionsData);
+        } else {
+          console.log('Нет акций или некорректные данные акций:', actionsData);
+          setActions([]);
+        }
+      } catch (actionError) {
+        console.error('Ошибка загрузки акций:', actionError);
+        setActions([]);
+      }
     } catch (error) {
       console.error('Общая ошибка загрузки данных пользователя:', error);
     } finally {
@@ -109,6 +126,30 @@ const SupplierDashboard = () => {
     }
   };
 
+  // Обработчик переключения статуса акции товара
+  const handleToggleProductSale = async (productId: number, currentSaleStatus: boolean) => {
+    try {
+      const newStatus = !currentSaleStatus;
+      await apiService.patch(`/products/${productId}/`, {
+        on_sale: newStatus
+      });
+
+      const message = newStatus
+        ? 'Товар добавлен в акцию!'
+        : 'Товар исключен из акции!';
+      toast.success(message);
+
+      // Обновляем список товаров после изменения
+      loadUserData();
+    } catch (error: any) {
+      console.error('Ошибка изменения статуса акции:', error);
+      const errorMessage = error?.response?.data?.error ||
+                          error?.response?.data?.detail ||
+                          'Ошибка при изменении статуса акции';
+      toast.error(errorMessage);
+    }
+  };
+
   // Обработчик удаления тендера
   const handleDeleteTender = async (tenderId: number) => {
     if (!window.confirm('Вы уверены, что хотите удалить этот тендер?')) {
@@ -122,9 +163,29 @@ const SupplierDashboard = () => {
       loadUserData();
     } catch (error: any) {
       console.error('Ошибка удаления тендера:', error);
-      const errorMessage = error?.response?.data?.error || 
-                          error?.response?.data?.detail || 
+      const errorMessage = error?.response?.data?.error ||
+                          error?.response?.data?.detail ||
                           'Ошибка при удалении тендера';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Обработчик удаления акции
+  const handleDeleteAction = async (actionId: number) => {
+    if (!window.confirm('Вы уверены, что хотите удалить эту акцию?')) {
+      return;
+    }
+
+    try {
+      await apiService.delete(`/ads/actions/${actionId}/`);
+      toast.success('Акция успешно удалена');
+      // Обновляем список акций после удаления
+      loadUserData();
+    } catch (error: any) {
+      console.error('Ошибка удаления акции:', error);
+      const errorMessage = error?.response?.data?.error ||
+                          error?.response?.data?.detail ||
+                          'Ошибка при удалении акции';
       toast.error(errorMessage);
     }
   };
@@ -563,7 +624,20 @@ return null;
                           Управление
                         </Link>
                         <span className="text-dark-600">|</span>
-                        <button 
+                        <button
+                          onClick={() => handleToggleProductSale(product.id, product.on_sale)}
+                          className={`flex items-center text-sm px-2 py-1 rounded transition-colors ${
+                            product.on_sale
+                              ? 'text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10'
+                              : 'text-green-400 hover:text-green-300 hover:bg-green-500/10'
+                          }`}
+                          title={product.on_sale ? 'Исключить из акции' : 'Добавить в акцию'}
+                        >
+                          <Tag className="w-3 h-3 mr-1" />
+                          {product.on_sale ? 'В акции' : 'В акцию'}
+                        </button>
+                        <span className="text-dark-600">|</span>
+                        <button
                           onClick={() => handleDeleteProduct(product.id)}
                           className="text-red-400 hover:text-red-300 text-sm hover:bg-red-500/10 px-1 py-0.5 rounded transition-colors"
                         >
@@ -699,6 +773,132 @@ return null;
             </p>
             <Link to="/dashboard/tenders/create" className="btn-primary">
               Создать тендер
+            </Link>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Actions Table - Список объявленных акций */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.3 }}
+        className="card p-6"
+      >
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+          <Zap className="w-5 h-5 mr-2 text-purple-400" />
+          Список объявленных акций
+        </h3>
+
+        {actions.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-dark-700">
+                  <th className="pb-3 text-dark-300 font-medium">Название</th>
+                  <th className="pb-3 text-dark-300 font-medium">Период</th>
+                  <th className="pb-3 text-dark-300 font-medium">Статус</th>
+                  <th className="pb-3 text-dark-300 font-medium">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {actions.slice(0, 10).map((action: any) => {
+                  // Функция для получения статуса акции
+                  const getActionStatus = () => {
+                    const now = new Date();
+                    const startDate = new Date(action.starts_at);
+                    const endDate = new Date(action.ends_at);
+
+                    if (!action.is_active) {
+                      return { text: 'Отключена', color: 'bg-gray-500/20 text-gray-400' };
+                    }
+
+                    if (now < startDate) {
+                      return { text: 'Запланирована', color: 'bg-blue-500/20 text-blue-400' };
+                    }
+
+                    if (now >= startDate && now <= endDate) {
+                      return { text: 'Активна', color: 'bg-green-500/20 text-green-400' };
+                    }
+
+                    return { text: 'Завершена', color: 'bg-red-500/20 text-red-400' };
+                  };
+
+                  const status = getActionStatus();
+
+                  return (
+                    <tr key={action.id} className="border-b border-dark-800">
+                      <td className="py-3">
+                        <div>
+                          <p className="text-white font-medium">{action.title}</p>
+                          <p className="text-dark-400 text-sm">{action.description?.slice(0, 50)}...</p>
+                        </div>
+                      </td>
+                      <td className="py-3">
+                        <div className="text-sm">
+                          <p className="text-white">
+                            {new Date(action.starts_at).toLocaleDateString('ru-RU', {
+                              day: '2-digit',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                          <p className="text-dark-400">
+                            до {new Date(action.ends_at).toLocaleDateString('ru-RU', {
+                              day: '2-digit',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="py-3">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${status.color}`}>
+                          {status.text}
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        <div className="flex items-center space-x-2">
+                          <Link
+                            to={`/dashboard/actions/edit/${action.id}`}
+                            className="text-primary-400 hover:text-primary-300 text-sm"
+                          >
+                            Редактировать
+                          </Link>
+                          <span className="text-dark-600">|</span>
+                          <button
+                            onClick={() => handleDeleteAction(action.id)}
+                            className="text-red-400 hover:text-red-300 text-sm hover:bg-red-500/10 px-1 py-0.5 rounded transition-colors"
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {actions.length > 10 && (
+              <div className="mt-4 text-center">
+                <Link to="/dashboard/actions" className="btn-outline px-6 py-2">
+                  Посмотреть все {actions.length} акций
+                </Link>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Zap className="w-16 h-16 text-dark-400 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-white mb-2">Акции не объявлены</h4>
+            <p className="text-dark-300 mb-6">
+              Создайте первую акцию для привлечения клиентов
+            </p>
+            <Link to="/dashboard/actions/create" className="btn-primary">
+              Создать акцию
             </Link>
           </div>
         )}

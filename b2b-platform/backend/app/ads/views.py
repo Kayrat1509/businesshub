@@ -105,10 +105,14 @@ class ActionListCreateView(generics.ListCreateAPIView):
         return [permissions.AllowAny()]
 
     def perform_create(self, serializer):
-        # Get the user's company
-        user_company = self.request.user.companies.filter(status="APPROVED").first()
+        # Get the user's company (не обязательно одобренная)
+        user_company = self.request.user.companies.first()
         if user_company:
             serializer.save(company=user_company)
+        else:
+            # Если нет компании, показываем ошибку
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("У вас нет компании для создания акций")
 
 
 class ActionRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):

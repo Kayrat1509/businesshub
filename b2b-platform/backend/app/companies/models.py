@@ -134,6 +134,7 @@ class Company(models.Model):
     # Location
     latitude = models.FloatField(null=True, blank=True, verbose_name="Широта")
     longitude = models.FloatField(null=True, blank=True, verbose_name="Долгота")
+    country = models.CharField(max_length=100, default="Казахстан", verbose_name="Страна")
     city = models.CharField(max_length=100, verbose_name="Город")
     address = models.TextField(verbose_name="Адрес")
 

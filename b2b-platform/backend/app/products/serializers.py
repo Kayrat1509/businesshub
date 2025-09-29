@@ -29,6 +29,8 @@ class ProductListSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source="company.name", read_only=True)
     # добавлен город компании для фильтрации
     company_city = serializers.CharField(source="company.city", read_only=True)
+    # добавлена страна компании для фильтрации
+    company_country = serializers.CharField(source="company.country", read_only=True)
     image = serializers.SerializerMethodField()
 
     class Meta:
@@ -43,9 +45,11 @@ class ProductListSerializer(serializers.ModelSerializer):
             "category",
             "company_name",
             "company_city",  # добавлен город для фильтрации
+            "company_country",  # добавлена страна для фильтрации
             "image",
             "rating",
             "in_stock",
+            "on_sale",  # добавлен флаг акции
             "created_at",
         ]
 
@@ -97,6 +101,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "image",
             "rating",
             "in_stock",
+            "on_sale",  # добавлен флаг акции
             "is_active",
             "created_at",
             "updated_at",
@@ -163,6 +168,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             "image",
             "rating",
             "in_stock",
+            "on_sale",  # добавлен флаг акции
             "is_active",
             "company",  # только для чтения
         ]

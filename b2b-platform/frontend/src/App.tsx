@@ -18,6 +18,7 @@ import Category from './pages/Category';
 import Tenders from './pages/Tenders';
 import TenderDetail from './pages/TenderDetail';
 import Suppliers from './pages/Suppliers';
+import Actions from './pages/Actions';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import ForgotPassword from './pages/Auth/ForgotPassword';
@@ -33,6 +34,8 @@ import DashboardCompany from './pages/SupplierDashboard/Company';
 import DashboardProducts from './pages/SupplierDashboard/Products';
 import DashboardImport from './pages/SupplierDashboard/Import';
 import DashboardActions from './pages/SupplierDashboard/Actions';
+import CreateAction from './pages/SupplierDashboard/CreateAction';
+import EditAction from './pages/SupplierDashboard/EditAction';
 import DashboardSettings from './pages/SupplierDashboard/Settings';
 import DashboardReviews from './pages/SupplierDashboard/Reviews';
 import CreateTender from './pages/SupplierDashboard/CreateTender';
@@ -80,6 +83,7 @@ function App() {
           <Route path="tenders" element={<Tenders />} />
           <Route path="tenders/:id" element={<TenderDetail />} />
           <Route path="suppliers" element={<Suppliers />} />
+          <Route path="actions" element={<Actions />} />
           <Route path="company/:id" element={<CompanyCard />} />
           <Route path="product/:id" element={<ProductDetail />} />
           <Route path="category/:slug" element={<Category />} />
@@ -112,6 +116,8 @@ function App() {
           <Route path="reviews" element={<DashboardReviews />} />
           <Route path="import" element={<DashboardImport />} />
           <Route path="actions" element={<DashboardActions />} />
+          <Route path="actions/create" element={<CreateAction />} />
+          <Route path="actions/edit/:id" element={<EditAction />} />
           <Route path="tenders" element={<DashboardTenders />} />
           <Route path="tenders/create" element={<CreateTender />} />
           <Route path="tenders/edit/:id" element={<EditTender />} />

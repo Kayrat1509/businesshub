@@ -29,6 +29,7 @@ class Product(models.Model):
     images = models.JSONField(default=list, help_text="List of image URLs")
     in_stock = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
+    on_sale = models.BooleanField(default=False, help_text="Товар участвует в акции/скидке")
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=4.5, help_text="Product rating from 4.0 to 5.0")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -831,6 +831,12 @@ return;
               >
                 Продукты
               </button>
+              <button
+                onClick={() => navigate('/actions')}
+                className="btn-outline px-6 py-3 hover:shadow-glow"
+              >
+                Акции
+              </button>
               <Link to="/tenders" className="btn-ghost px-6 py-3 hover:bg-dark-700">
                 Тендеры
               </Link>
