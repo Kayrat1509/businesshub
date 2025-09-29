@@ -253,11 +253,11 @@ def download_import_template(request):
             'Наушники с активным шумоподавлением и пространственным звуком',
             'Универсальный планшет для работы и творчества с поддержкой Apple Pencil'
         ],
-        'price': [350000.00, 980000.00, 85000.00, 220000.00],
+        'price': [350000.00, 2100.00, 85000.00, 450.00],
         'sku': ['SMS24-256GB-BLK', 'MBP14-M3PRO-512', 'APP-PRO-2GEN', 'IPAD-AIR-256-WF'],
         'category': ['Электроника', 'Компьютеры', 'Аксессуары', 'Планшеты'],
-        'currency': ['KZT', 'KZT', 'KZT', 'KZT'],
-        'in_stock': [True, True, True, False]
+        'currency': ['KZT', 'USD', 'RUB', 'USD'],
+        'in_stock': ['Да', 'Да', 'Да', 'Нет']
     }
 
     df = pd.DataFrame(template_data)
@@ -398,7 +398,15 @@ def import_products_from_excel(request):
                         product_data['currency'] = currency
 
                 if 'in_stock' in df.columns and not pd.isna(row['in_stock']):
-                    product_data['in_stock'] = bool(row['in_stock'])
+                    # Обработка различных значений для поля in_stock
+                    stock_value = str(row['in_stock']).lower().strip()
+                    if stock_value in ['да', 'yes', 'true', '1', 'есть', 'в наличии']:
+                        product_data['in_stock'] = True
+                    elif stock_value in ['нет', 'no', 'false', '0', 'нету', 'отсутствует']:
+                        product_data['in_stock'] = False
+                    else:
+                        # По умолчанию считаем, что товар в наличии
+                        product_data['in_stock'] = True
 
                 # Обработка категории
                 if 'category' in df.columns and not pd.isna(row['category']):

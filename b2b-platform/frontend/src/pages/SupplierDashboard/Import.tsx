@@ -248,7 +248,7 @@ const DashboardImport: React.FC = () => {
             <li>• <strong className="text-white">sku</strong> - артикул товара (опционально)</li>
             <li>• <strong className="text-white">category</strong> - категория товара (опционально)</li>
             <li>• <strong className="text-white">currency</strong> - валюта (KZT, RUB, USD)</li>
-            <li>• <strong className="text-white">in_stock</strong> - наличие товара (true/false)</li>
+            <li>• <strong className="text-white">in_stock</strong> - наличие товара (Да/Нет, true/false, 1/0)</li>
             <li>• Заголовки могут быть в любом регистре (Name, NAME, name)</li>
           </ul>
         </div>
