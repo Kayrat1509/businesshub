@@ -115,12 +115,12 @@ const SupplierDashboard = () => {
     try {
       await apiService.delete(`/products/${productId}/`);
       toast.success('Продукт успешно удален');
-      // Обновляем список товаров после удаления
-      loadUserData();
+      // Обновляем список товаров, удаляя конкретный товар без перезагрузки страницы
+      setProducts(prevProducts => prevProducts.filter(product => product.id !== productId));
     } catch (error: any) {
       console.error('Ошибка удаления товара:', error);
-      const errorMessage = error?.response?.data?.error || 
-                          error?.response?.data?.detail || 
+      const errorMessage = error?.response?.data?.error ||
+                          error?.response?.data?.detail ||
                           'Ошибка при удалении товара';
       toast.error(errorMessage);
     }
@@ -139,8 +139,14 @@ const SupplierDashboard = () => {
         : 'Товар исключен из акции!';
       toast.success(message);
 
-      // Обновляем список товаров после изменения
-      loadUserData();
+      // Обновляем только состояние конкретного товара, без перезагрузки всей страницы
+      setProducts(prevProducts =>
+        prevProducts.map(product =>
+          product.id === productId
+            ? { ...product, on_sale: newStatus }
+            : product
+        )
+      );
     } catch (error: any) {
       console.error('Ошибка изменения статуса акции:', error);
       const errorMessage = error?.response?.data?.error ||
@@ -159,8 +165,8 @@ const SupplierDashboard = () => {
     try {
       await apiService.delete(`/tenders/${tenderId}/`);
       toast.success('Тендер успешно удален');
-      // Обновляем список тендеров после удаления
-      loadUserData();
+      // Обновляем список тендеров, удаляя конкретный тендер без перезагрузки страницы
+      setTenders(prevTenders => prevTenders.filter(tender => tender.id !== tenderId));
     } catch (error: any) {
       console.error('Ошибка удаления тендера:', error);
       const errorMessage = error?.response?.data?.error ||
@@ -179,8 +185,8 @@ const SupplierDashboard = () => {
     try {
       await apiService.delete(`/ads/actions/${actionId}/`);
       toast.success('Акция успешно удалена');
-      // Обновляем список акций после удаления
-      loadUserData();
+      // Обновляем список акций, удаляя конкретную акцию без перезагрузки страницы
+      setActions(prevActions => prevActions.filter(action => action.id !== actionId));
     } catch (error: any) {
       console.error('Ошибка удаления акции:', error);
       const errorMessage = error?.response?.data?.error ||

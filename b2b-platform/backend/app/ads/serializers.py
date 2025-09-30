@@ -25,6 +25,9 @@ class AdSerializer(serializers.ModelSerializer):
 class ActionSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source="company.name", read_only=True)
     is_current = serializers.ReadOnlyField()
+    # Добавляем список ID товаров и их количество
+    products = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    products_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Action
@@ -37,11 +40,24 @@ class ActionSerializer(serializers.ModelSerializer):
             "starts_at",
             "ends_at",
             "is_current",
+            "products",
+            "products_count",
             "created_at",
         ]
 
+    def get_products_count(self, obj):
+        """Возвращает количество товаров в акции"""
+        return obj.products.count()
+
 
 class ActionCreateUpdateSerializer(serializers.ModelSerializer):
+    # Позволяем добавлять товары при создании/обновлении акции (опционально)
+    products = serializers.PrimaryKeyRelatedField(
+        many=True,
+        required=False,
+        read_only=True  # Управление товарами через отдельные эндпоинты
+    )
+
     class Meta:
         model = Action
-        fields = ["title", "description", "starts_at", "ends_at", "is_active"]
+        fields = ["title", "description", "starts_at", "ends_at", "is_active", "products"]

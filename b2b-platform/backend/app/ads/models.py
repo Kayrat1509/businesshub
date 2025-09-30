@@ -66,6 +66,13 @@ class Action(models.Model):
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField()
     is_active = models.BooleanField(default=True)
+    # Связь ManyToMany с товарами - акция может содержать много товаров
+    products = models.ManyToManyField(
+        "products.Product",
+        related_name="actions",
+        blank=True,
+        help_text="Товары, участвующие в данной акции"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

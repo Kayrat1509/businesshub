@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Zap, Plus, Calendar, Clock, Edit3, Trash2, Eye, Users, CheckCircle, XCircle
+  Zap, Plus, Calendar, Clock, Edit3, Trash2, Eye, Users, CheckCircle, XCircle, Package
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../api';
@@ -239,6 +239,13 @@ const DashboardActions: React.FC = () => {
 
                     {/* Действия */}
                     <div className="flex items-center space-x-2 ml-4">
+                      <Link
+                        to={`/dashboard/actions/${action.id}/products`}
+                        className="p-2 text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded-lg transition-colors"
+                        title="Управление товарами"
+                      >
+                        <Package className="w-4 h-4" />
+                      </Link>
                       <Link
                         to={`/dashboard/actions/edit/${action.id}`}
                         className="p-2 text-primary-400 hover:text-primary-300 hover:bg-primary-500/10 rounded-lg transition-colors"

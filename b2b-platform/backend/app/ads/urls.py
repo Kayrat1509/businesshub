@@ -14,4 +14,20 @@ urlpatterns = [
         views.ActionRetrieveUpdateDestroyView.as_view(),
         name="action-detail",
     ),
+    # Управление товарами в акциях
+    path(
+        "actions/<int:action_id>/add-products/",
+        views.add_products_to_action,
+        name="action-add-products",
+    ),
+    path(
+        "actions/<int:action_id>/remove-products/",
+        views.remove_products_from_action,
+        name="action-remove-products",
+    ),
+    path(
+        "actions/<int:action_id>/products/",
+        views.get_action_products,
+        name="action-get-products",
+    ),
 ]

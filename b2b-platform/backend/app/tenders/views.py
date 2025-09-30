@@ -81,7 +81,7 @@ class TenderListCreateView(generics.ListCreateAPIView):
             )
 
 
-class TenderRetrieveUpdateView(generics.RetrieveUpdateAPIView):
+class TenderRetrieveUpdateView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Tender.objects.all()
 
     def get_serializer_class(self):
@@ -95,8 +95,8 @@ class TenderRetrieveUpdateView(generics.RetrieveUpdateAPIView):
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
-        if self.request.method in ["PUT", "PATCH"]:
-            # Users can edit all their own tenders regardless of status
+        if self.request.method in ["PUT", "PATCH", "DELETE"]:
+            # Users can edit and delete all their own tenders regardless of status
             return Tender.objects.filter(author=self.request.user)
         return Tender.objects.all()
 

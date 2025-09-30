@@ -7,3 +7,11 @@ The project is build as docker compose services, conduct all the debugging and t
 Do not create duplicate methods for refresh/access tokens.
 All requests must go through the common API layer to avoid inconsistencies.
 - все библиотеки и новые создаваемые библиотеки должны быть включены в requirements.txt
+
+# Docker Ports Configuration
+## b2b-platform (занятые порты - НЕ ИСПОЛЬЗОВАТЬ для других сервисов)
+- **postgres** (b2b_postgres): 5433:5432
+- **backend** (b2b_backend): 8000:8000
+- **frontend** (b2b_frontend): 5173:5173
+- **pgadmin** (b2b_pgadmin): 5050:80
+- **nginx** (b2b_nginx): 80:80

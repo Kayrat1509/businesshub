@@ -36,6 +36,7 @@ import DashboardImport from './pages/SupplierDashboard/Import';
 import DashboardActions from './pages/SupplierDashboard/Actions';
 import CreateAction from './pages/SupplierDashboard/CreateAction';
 import EditAction from './pages/SupplierDashboard/EditAction';
+import ManageActionProducts from './pages/SupplierDashboard/ManageActionProducts';
 import DashboardSettings from './pages/SupplierDashboard/Settings';
 import DashboardReviews from './pages/SupplierDashboard/Reviews';
 import CreateTender from './pages/SupplierDashboard/CreateTender';
@@ -118,6 +119,7 @@ function App() {
           <Route path="actions" element={<DashboardActions />} />
           <Route path="actions/create" element={<CreateAction />} />
           <Route path="actions/edit/:id" element={<EditAction />} />
+          <Route path="actions/:id/products" element={<ManageActionProducts />} />
           <Route path="tenders" element={<DashboardTenders />} />
           <Route path="tenders/create" element={<CreateTender />} />
           <Route path="tenders/edit/:id" element={<EditTender />} />
